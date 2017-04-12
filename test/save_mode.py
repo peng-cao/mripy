@@ -1,0 +1,11 @@
+import tensorflow as tf
+v1 = tf.Variable(1.32, name="v1")
+v2 = tf.Variable(1.33, name="v2")
+init = tf.initialize_all_variables()
+sess = tf.Session()
+sess.run(init)
+print v2.eval(sess)
+saver = tf.train.Saver(tf.all_variables())
+saver.save(sess,'ddd')
+#meta_graph_def = tf.train.export_meta_graph('ddd.meta')
+#print("Model restored.")
