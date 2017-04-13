@@ -4,8 +4,8 @@ import numba
 from numba import cuda
 from time import time
 from math import exp
-import utilities_func as ut
-import nufft_func
+import utilities.utilities_func as ut
+import nufft.nufft_func as unfft_func
 #import matplotlib.pyplot as plt
 
 

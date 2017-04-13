@@ -7,9 +7,9 @@ print results
 """
 from joblib import Parallel, delayed
 import multiprocessing
-import sim_spin as ss
+import bloch_sim.sim_spin as ss
 import numpy as np
-import sim_seq as sseq
+import bloch_sim.sim_seq as sseq
 import scipy.io as sio
 
 # read rf and tr arrays from mat file 

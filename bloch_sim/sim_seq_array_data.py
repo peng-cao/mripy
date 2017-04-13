@@ -1,8 +1,8 @@
-from joblib import Parallel, delayed
-import multiprocessing
-import sim_spin as ss
+#from joblib import Parallel, delayed
+#import multiprocessing
+import block_sim.sim_spin as ss
 import numpy as np
-import sim_seq as sseq
+import block_sim.sim_seq as sseq
 
 """
 class simple empty seq simulation and data  output

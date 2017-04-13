@@ -14,23 +14,23 @@ print test_outxhat
 """
 from joblib import Parallel, delayed
 import multiprocessing
-import sim_seq_array_data as ssad
-import sim_spin as ss
+import bloch_sim.sim_seq_array_data as ssad
+import bloch_sim.sim_spin as ss
 import numpy as np
 #from sim_seq import sim_irssfp_arrayin
 import scipy.io as sio
 import os
-import proximal_func as pf
-import utilities_func as ut
+import pics.proximal_func as pf
+import utilities.utilities_func as ut
 from numba import cuda
 import numba
-import sim_spin as ss
+import bloch_sim.sim_spin as ss
 from math import cos, sin, exp
 from numpy.linalg import solve
 from cmath import phase
 from time import time
-import sim_spin_cuda as ss_cu
-import utilities_class as utc
+import bloch_sim.sim_spin_cuda as ss_cu
+import utilities.utilities_class as utc
 
 def set_par( t1t2dfpdr ):
     T1 = 5000.0 * np.array(t1t2dfpdr[:,0].squeeze()) #ms

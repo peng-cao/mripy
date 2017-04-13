@@ -15,8 +15,8 @@ import scipy.ndimage as spimg
 import scipy.io as sio
 import importlib
 import matplotlib.cm as cm
-import proximal_func as pf
-import IST
+import pics.proximal_func as pf
+import pics.CS_MRI_solvers_func as solvers
 import tvop_func as tv
 def plotim1(im):
     fig, ax = plt.subplots()
@@ -109,8 +109,8 @@ plotim1(np.absolute(f))
 Nite = 80 #number of iterations
 step = 1 #step size
 th = 1000 # theshold level
-#xopt = IST.IST_2(Afunc,invAfunc,x,b, Nite, step,th)
-#xopt = IST.ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, 100, 1 )
-#xopt = IST.ADMM_l2Afxnb_l1x_2( Afunc, invAfunc, b, Nite, step, 100, 1 )
+#xopt = solvers.IST_2(Afunc,invAfunc,x,b, Nite, step,th)
+#xopt = solvers.ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, 100, 1 )
+#xopt = solvers.ADMM_l2Afxnb_l1x_2( Afunc, invAfunc, b, Nite, step, 100, 1 )
 
 #plotim1(np.absolute(xopt))

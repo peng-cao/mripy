@@ -4,7 +4,7 @@ import numba
 from numba import cuda
 from time import time
 from math import exp
-import utilities_func as ut
+import utilities.utilities_func as ut
 import matplotlib.pyplot as plt
 
 """

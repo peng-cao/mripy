@@ -7,9 +7,9 @@ print abs(results)
 """
 from joblib import Parallel, delayed
 import multiprocessing
-import sim_spin as ss
-import numpy as np0
-import sim_seq as sseq
+import bloch_sim.sim_spin as ss
+import numpy as np
+import bloch_sim.sim_seq as sseq
 
 M0 = np.matrix([0.0,0.0,1.0]).T
 tr = 10.0 #ms

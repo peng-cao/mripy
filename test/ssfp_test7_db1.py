@@ -14,14 +14,14 @@ print test_outxhat
 """
 from joblib import Parallel, delayed
 import multiprocessing
-import sim_seq_array_data as ssad
-import sim_spin as ss
+import bloch_sim.sim_seq_array_data as ssad
+import bloch_sim.sim_spin as ss
 import numpy as np
-import sim_seq as sseq
+import bloch_sim.sim_seq as sseq
 import scipy.io as sio
 import os
-import proximal_func as pf
-import utilities_func as ut
+import pics.proximal_func as pf
+import utilities.utilities_func as ut
 
 # restore tensorflow model
 pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'

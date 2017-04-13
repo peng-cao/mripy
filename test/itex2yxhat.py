@@ -13,8 +13,8 @@ sys.path.append('/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/
 #from load_cnn_t1t2b0_1dcov import *
 from joblib import Parallel, delayed
 import multiprocessing
-import sim_seq_array_data as ssad
-import sim_spin as ss
+import bloch_sim.sim_seq_array_data as ssad
+import bloch_sim.sim_spin as ss
 import numpy as np
 import sim_seq as sseq
 import scipy.io as sio

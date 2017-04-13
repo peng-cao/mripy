@@ -1,4 +1,4 @@
-import nufft_func as nft
+import nufft.nufft_func as nft
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -6,7 +6,7 @@ import scipy.optimize as spopt
 import scipy.fftpack as spfft
 import scipy.ndimage as spimg
 import scipy.io as sio
-import utilities_func as ut
+import utilities.utilities_func as ut
 #from numba import jit
 
 def plot_recon():

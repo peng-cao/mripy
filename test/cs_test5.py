@@ -15,9 +15,9 @@ import scipy.ndimage as spimg
 import scipy.io as sio
 import importlib
 import matplotlib.cm as cm
-import proximal_func as pf
-import CS_MRI_solvers_func as solvers
-import tvop as tv
+import pics.proximal_func as pf
+import pics.CS_MRI_solvers_func as solvers
+import pics.tvop_func as tv
 
 def plotim1(im):
     fig, ax = plt.subplots()
