@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.io as sio
-import proximal_func as pf
-import CS_MRI_solvers as solvers
+import pics.proximal_func as pf
+import pics.CS_MRI_solvers_func as solvers
 #import tvop as tv
-import utilities.utilities as ut
+import utilities.utilities_func as ut
 import pics.operators_class as op
 import hankel_func as hk
 

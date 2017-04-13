@@ -17,7 +17,7 @@ import importlib
 import matplotlib.cm as cm
 import pics.proximal_func as pf
 import pics.CS_MRI_solvers_func as solvers
-import tvop_func as tv
+import pics.tvop_func as tv
 def plotim1(im):
     fig, ax = plt.subplots()
     ax.imshow(im)
