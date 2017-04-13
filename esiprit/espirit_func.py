@@ -5,7 +5,7 @@ import pics.CS_MRI_solvers_func as solvers
 #import tvop as tv
 import utilities.utilities_func as ut
 import pics.operators_class as op
-import hankel_func as hk
+import pics.hankel_func as hk
 
 """
 2d espirit
