@@ -4,10 +4,10 @@ function simulate MRF and perform the training of cnn model
 
 from joblib import Parallel, delayed
 import multiprocessing
-import sim_seq_array_data as ssad
-import sim_spin as ss
+import bloch_sim.sim_seq_array_data as ssad
+import bloch_sim.sim_spin as ss
 import numpy as np
-import sim_seq as sseq
+import bloch_sim.sim_seq as sseq
 import scipy.io as sio
 import os
 
@@ -40,7 +40,7 @@ def max_pool_2x2(x):
 
 #############dense connection layer 1
 #weighting and bias for a layer with 1024 neurons
-W_fc1 = weight_variable([2*960, 128])  #40*48 *64 /32 
+W_fc1 = weight_variable([2*960, 128])  #40*48 *64 /32
 b_fc1 = bias_variable([128])
 
 # densely connected layer with relu output
@@ -51,7 +51,7 @@ h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
 #############dense connection layer 2
 #weighting and bias for a layer with 1024 neurons
-W_fc2 = weight_variable([128, 128])  #40*48 *64 /32 
+W_fc2 = weight_variable([128, 128])  #40*48 *64 /32
 b_fc2 = bias_variable([128])
 
 # densely connected layer with relu output
@@ -60,7 +60,7 @@ h_fc2 = tf.sigmoid(tf.matmul(h_fc1, W_fc2) + b_fc2)
 
 #############dense connection layer 3
 #weighting and bias for a layer with 1024 neurons
-#W_fc3 = weight_variable([1024, 1024])  #40*48 *64 /32 
+#W_fc3 = weight_variable([1024, 1024])  #40*48 *64 /32
 #b_fc3 = bias_variable([1024])
 
 # densely connected layer with relu output
@@ -99,7 +99,7 @@ sess.run(tf.global_variables_initializer())
 batch_size = 100
 
 # load far and trr
-# read rf and tr arrays from mat file 
+# read rf and tr arrays from mat file
 mat_contents = sio.loadmat(pathdat+'mrf_t1t2b0pd_mrf_randphasecyc_traintest.mat');
 far = mat_contents["rf"]
 trr = mat_contents["trr"]
@@ -107,31 +107,31 @@ trr = mat_contents["trr"]
 # prepare for sequence simulation, y->x_hat
 Nk = far.shape[1]
 ti = 10 #ms
-M0 = np.matrix([0.0,0.0,1.0]).T 
+M0 = np.matrix([0.0,0.0,1.0]).T
 
-#run for 2000 
+#run for 2000
 for i in range(200000):
-    batch_ys = np.random.uniform(0,1,(batch_size,4)) 
+    batch_ys = np.random.uniform(0,1,(batch_size,4))
     batch_xs = 1.0*np.zeros((batch_size,2*Nk))
     # intial seq simulation with t1t2b0 values
     seq_data = ssad.irssfp_arrayin_data( batch_size, Nk ).set( batch_ys )
 
     inputs = range(batch_size)
     def processFunc(i):
-        S = seq_data.sim_seq_tc(i,M0, trr, far, ti ) 
+        S = seq_data.sim_seq_tc(i,M0, trr, far, ti )
         return S
-    
+
     num_cores = multiprocessing.cpu_count()
     batch_xs_c = Parallel(n_jobs=16, verbose=5)(delayed(processFunc)(i) for i in inputs)
 
     #add noise
     #rand_c = np.random.uniform(-0.001,0.001,(batch_size,Nk)) + 1j*np.random.uniform(-0.001,0.001,(batch_size,Nk))
-    
+
     #batch_xs_c = batch_xs_c + rand_c
     #seperate real/imag parts or abs/angle parts, no noise output
     batch_xs[:,0:Nk] = np.real(batch_xs_c)
     batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)
-    
+
     #input with noise
     batch_xsnoise = batch_xs + np.random.uniform(-0.001,0.001,(batch_size,2*Nk))
 
@@ -148,4 +148,3 @@ for i in range(200000):
 #save the model into file
 saver = tf.train.Saver()
 saver.save(sess,'enc_dencoder_t1t2b0-mrf-ir-ssfp-20170316')
-
