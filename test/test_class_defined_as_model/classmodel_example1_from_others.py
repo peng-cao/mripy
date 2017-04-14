@@ -1,3 +1,7 @@
+"""
+this demo came from https://danijar.com/structuring-your-tensorflow-models/
+"""
+
 import pickle
 import cPickle
 import traceback
@@ -64,4 +68,3 @@ if __name__ == '__main__':
       for _ in range(60):
         #images, labels = mnist.train.next_batch(100)
         sess.run(model.optimize, {image: x, label: y_})
-

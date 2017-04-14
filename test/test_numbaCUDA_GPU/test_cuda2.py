@@ -7,9 +7,6 @@ def cu_add2(a, b, c):
 
     if i > a.shape[0]:
         return
-    #d = [[1, 1, 0.],[1, 1, 0.],[0., 0., 1.]]
-    #e = [0., 0., 1.]
-    #c = cuda.local.array(shape=(100), dtype=np.float32)
     c[i] = a[i] + b[i]
     c[i+10] = a[i] + b[i]
 
