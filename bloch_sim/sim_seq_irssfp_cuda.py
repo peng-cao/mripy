@@ -125,6 +125,31 @@ def batch_apply_tf_cuda( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, 
         test_outy[bstart:bstop,:] = sess.run(y_conv, feed_dict={x: data_x_acc[bstart:bstop,:], keep_prob: 1.0}); 
     return test_outy
 
+def sep_complex_realimag(data_x_c):
+    #seperate real/imag parts or abs/angle parts
+    data_x_ri[:, 0:Nk  ] = np.real(data_x_c)
+    data_x_ri[:,Nk:2*Nk] = np.imag(data_x_c)
+    return data_x_ri
+
+"""
+
+project MRF data on to CNN and transform back into MRF data space
+"""
+
+def batch_apply_tf_bloch_cuda( Nexample, batch_size, trr, far, ti, sess_run, x, data_x, y_conv, test_outy ):
+    Nexample = test_outy.shape[0]
+    Nk       = far.shape[0]
+    M0 = np.array([0.0,0.0,1.0]).astype(np.float32)  
+     # apply CNN model, x->y, data_x_acc->CNN->test_outy 
+    batch_apply_tf_cuda( Nexample, batch_size, sess.run, x, sep_complex_realimag(data_x), y_conv, test_outy )     
+    #cuda simulate bloch for each pixel
+    T1r, T2r, dfr, PDr = set_par( test_outy )
+    timing.start()
+    data_xhat = bloch_sim_batch_cuda( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
+    timing.stop().display() 
+    return data_xhat
+   
+
 
 
 
