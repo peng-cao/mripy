@@ -5,50 +5,13 @@ from numba import cuda
 from time import time
 from math import exp
 import utilities.utilities_func as ut
-import nufft_func as unfft_func
+import nufft_func #as unfft_func
 #import matplotlib.pyplot as plt
 
 
-# this implementation is very slow due to the for loop used in build_grid_1d1_cuda_1, 
-# should be accelerated by jit and percomputing of some exponentials
-# kernal for griding in cuda
-@cuda.jit
-def gaussker_1d1_cuda_1(x, m, c, hx, nf1, nspread, tau, adftau, mm ):
-    """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
-    i  = cuda.grid(1)
-    if i > x.shape[0]:
-        return
-    #compute griding here
-    adftau[i] = c[i] * exp(-0.25 * (x[i] % (2 * np.pi) - hx * (m[i] + mm)) ** 2 / tau)
 
-# do griding with cuda acceleration
-#@numba.jit(nopython=True)
-def build_grid_1d1_cuda_1( x, c, tau, nspread, ftau ):
-    nf1 = ftau.shape[0]
-    hx = 2 * np.pi / nf1    
-    device = cuda.get_current_device()
-    n = x.shape[0] #number of kernels in the computing
-    tpb = device.WARP_SIZE
-    bpg = int(np.ceil(float(n)/tpb))
-    #print ('Blocks per grid: %d' % bpg)
-    #print ('Threads per block: %d'% tpb)
-    #due to the memory conflict, I moved the sumation out of the cuda kernel 
-    adftau = np.zeros(c.shape,dtype=ftau.dtype)#get the kernel results from cuda parallel computing   
-    m = np.zeros(x.shape,dtype=np.int)#the index of the closest grid for x
-    for i in range(n): #compute the index m
-        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]    
-        m[i] = 1 + int(xi // hx) #index for the closest grid point  
-    for mm in range(-nspread, nspread):
-        #computing the kernel on gpu
-        gaussker_1d1_cuda_1[bpg, tpb](x, m, c, hx, nf1, nspread, tau, adftau, mm ) 
-        #do accumulative sum on cpu, due to the memory conflict, when doing it on gpu
-        for i in range(n):
-            ftau[(m[i]+mm) % nf1] += adftau[i]
-    return ftau
-
-
-# this function has memory conflict in gpu, due to the overlapped ftau when doing griding
-# kernal for griding in cuda
+# type1, 
+#I used atom add to solve the memory conflict in gpu
 #@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
 @cuda.jit
 def gaussker_1d1_cuda(x, c, hx, nf1, nspread, tau, real_ftau, imag_ftau ):
@@ -63,8 +26,8 @@ def gaussker_1d1_cuda(x, c, hx, nf1, nspread, tau, real_ftau, imag_ftau ):
         #griding with g(x) = exp(-(x^2) / 4*tau)
         #ftau[(m1 + mm1) % nf1] += c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau) 
         tmp = c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau)
-        cuda.atomic.add(real_ftau, i, tmp.real) 
-        cuda.atomic.add(imag_ftau, i, tmp.imag)
+        cuda.atomic.add(real_ftau, (m1 + mm1) % nf1, tmp.real) 
+        cuda.atomic.add(imag_ftau, (m1 + mm1) % nf1, tmp.imag)
     
 # do griding with cuda acceleration
 def build_grid_1d1_cuda( x, c, tau, nspread, ftau ):
@@ -80,101 +43,48 @@ def build_grid_1d1_cuda( x, c, tau, nspread, ftau ):
     ftau = real_ftau + 1j*imag_ftau
     return ftau
 
-# this function has memory conflict in gpu, due to the overlapped ftau when doing griding
-# kernal for griding in cuda
-#@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
+
+
+#type1, fast version with precompute of exponentials   
 @cuda.jit
-def gaussker_1d1_cuda1(x, c, hx, nf1, nspread, tau, ftau, mm1 ):
+def gaussker_1d1_fast_cuda(x, c, hx, nf1, nspread, tau, E3, real_ftau, imag_ftau ):
     """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
-    #sftau = cuda.shared.array(shape=320, dtype=numba.complex128)
     i  = cuda.grid(1)
     if i > x.shape[0]:
         return
-    #do the 1d griding here
-    xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi] 
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    #for mm1 in range(-nspread, nspread): #mm index for all the spreading point
+    xi = x[i] % (2 * np.pi) #x
+    m = 1 + int(xi // hx) #index for the closest grid point
+    xi = (xi - hx * m) #
+    E1 = np.exp(-0.25 * xi ** 2 / tau)
+    E2 = np.exp((xi * np.pi) / (nf1 * tau))
+    E2mm = 1
+    for mm in range(nspread):
+        #ftau[(m + mm) % nf1] +
+        tmpp = c[i] * E1 * E2mm * E3[mm]
+        E2mm *= E2
+        #ftau[(m - mm - 1) % nf1] +
+        tmpn = c[i] * E1 / E2mm * E3[mm + 1]
+        cuda.atomic.add(real_ftau, (m1 + mm1) % nf1,   tmpp.real) 
+        cuda.atomic.add(imag_ftau, (m1 + mm1) % nf1,   tmpp.imag)
+        cuda.atomic.add(real_ftau, (m - mm - 1) % nf1, tmpn.real) 
+        cuda.atomic.add(imag_ftau, (m - mm - 1) % nf1, tmpn.imag)        
 
-    ftau[(m1 + mm1) % nf1] += c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau) 
-
-    
-# do griding with cuda acceleration
-def build_grid_1d1_cuda1( x, c, tau, nspread, ftau ):
+@numba.jit(nopython=True)
+def build_grid_1d1_fast_cuda( x, c, tau, nspread, ftau, E3 ):
     nf1 = ftau.shape[0]
-    hx = 2 * np.pi / nf1
+    hx = 2 * np.pi / nf1    
+    # precompute some exponents
+    for j in range(nspread + 1):
+        E3[j] = np.exp(-(np.pi * j / nf1) ** 2 / tau)
     device = cuda.get_current_device()
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
     bpg = int(np.ceil(float(n)/tpb))
-
-    for mm1 in range(-nspread, nspread):             
-        gaussker_1d1_cuda1[bpg, tpb](x, c, hx, nf1, nspread, tau, ftau, mm1 )
+    real_ftau = np.zeros(ftau.shape,np.float64)
+    imag_ftau = np.zeros(ftau.shape,np.float64)
+    gaussker_1d1_fast_cuda[bpg, tpb](x, c, hx, nf1, nspread, tau, E3, real_ftau, imag_ftau)
+    ftau = real_ftau + 1j*imag_ftau        
     return ftau
-
-# this function has memory conflict in gpu, due to the overlapped ftau when doing griding
-# kernal for griding in cuda
-#@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
-@cuda.jit
-def gaussker_1d1_cuda2(x, c, hx, nf1, nspread, tau, ftau, tmp, idx ):
-    i  = cuda.grid(1)
-    #tx = cuda.threadIdx.x
-    if i > x.shape[0]:
-        return
-    #do the 1d griding here
-    xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi] 
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-        #griding with g(x) = exp(-(x^2) / 4*tau)
-        tmp[i,mm1] = c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau)
-        idx[i,mm1] = (m1 + mm1) % nf1 
-    #cuda.syncthreads()
-    #for mm1 in range(-nspread, nspread): #mm index for all the spreading points                     
-    #    ftau[(m1 + mm1) % nf1] += tmp[i,mm1] 
-    
-# do griding with cuda acceleration
-def build_grid_1d1_cuda2( x, c, tau, nspread, ftau ):
-    nf1 = ftau.shape[0]
-    hx = 2 * np.pi / nf1
-    device = cuda.get_current_device()
-    n = x.shape[0] #number of kernels in the computing
-    tpb = device.WARP_SIZE
-    bpg = int(np.ceil(float(n)/tpb))
-    tmp = np.zeros((n,2*nspread+1),dtype=c.dtype)
-    idx =  np.zeros((n,2*nspread+1),dtype=np.int)
-    gaussker_1d1_cuda2[bpg, tpb](x, c, hx, nf1, nspread, tau, ftau, tmp, idx )
-    for x in range(n):
-        for mm1 in range(-nspread, nspread):
-            ftau[idx[x,mm1]] += tmp[x,mm1] 
-    return ftau
-
-@cuda.jit
-def gaussker_1d1_cuda3(x, c, hx, nf1, nspread, tau, ftau ):
-    """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
-    #sftau = cuda.shared.array(shape=320, dtype=numba.complex128)
-    q  = cuda.grid(1)
-    if q > nf1:
-        return
-    #do the 1d griding here
-    for i in range(x.shape[0]):
-        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi] 
-        m1 = 1 + int(xi // hx) #index for the closest grid point
-        for mm1 in range(-nspread, nspread): #mm index for all the spreading point
-            if (((m1 + mm1) % nf1)== q):
-                ftau[q] += c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau) 
-
-    
-# do griding with cuda acceleration
-def build_grid_1d1_cuda3( x, c, tau, nspread, ftau ):
-    nf1 = ftau.shape[0]
-    hx = 2 * np.pi / nf1
-    device = cuda.get_current_device()
-    n = nf1#x.shape[0] #number of kernels in the computing
-    tpb = device.WARP_SIZE
-    bpg = int(np.ceil(float(n)/tpb))
-             
-    gaussker_1d1_cuda3[bpg, tpb](x, c, hx, nf1, nspread, tau, ftau )
-    return ftau
-
 
 # type 2
 # kernal for griding in cuda
@@ -205,10 +115,10 @@ def build_grid_1d2_cuda( x, fntau, tau, nspread ):
     return c/nf1
 
 # type 1
-# kernal for griding in cuda
+# kernal for griding in cuda, atom add is used to solve the momory conflict
 #@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
 @cuda.jit
-def gaussker_2d1_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, ftau ):
+def gaussker_2d1_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, real_ftau, imag_ftau ):
     """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
     i  = cuda.grid(1)
     if i > x.shape[0]:
@@ -221,10 +131,12 @@ def gaussker_2d1_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, ftau ):
     for mm1 in range(-nspread, nspread): #mm index for all the spreading points
         for mm2 in range(-nspread,nspread):
             #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-            ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] \
-            += c[i] * exp(-0.25 * (\
+            #ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] += 
+            tmp = c[i] * exp(-0.25 * (\
             (xi - hx * (m1 + mm1)) ** 2 + \
             (yi - hy * (m2 + mm2)) ** 2 ) / tau) 
+            cuda.atomic.add(real_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2), tmp.real) 
+            cuda.atomic.add(imag_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2), tmp.imag)
     
 # do griding with cuda acceleration
 def build_grid_2d1_cuda( x, y, c, tau, nspread, ftau ):
@@ -236,7 +148,71 @@ def build_grid_2d1_cuda( x, y, c, tau, nspread, ftau ):
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
     bpg = int(np.ceil(float(n)/tpb))
-    gaussker_2d1_cuda[bpg, tpb](x, y, c, hx, hy, nf1, nf2, nspread, tau, ftau)
+    real_ftau = np.zeros(ftau.shape, dtype=np.float64)
+    imag_ftau = np.zeros(ftau.shape, dtype=np.float64) #atom add only support float32 or 64   
+    gaussker_2d1_cuda[bpg, tpb](x, y, c, hx, hy, nf1, nf2, nspread, tau, real_ftau, imag_ftau)
+    ftau = real_ftau + 1j*imag_ftau
+    return ftau
+
+#type1, fast version with precompute of exponentials   
+@cuda.jit
+def gaussker_2d1_fast_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, E3, real_ftau, imag_ftau ):
+    """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
+    i     = cuda.grid(1)
+    if i > x.shape[0]:
+        return
+    xi    = x[i] % (2 * np.pi) #x
+    yi    = y[i] % (2 * np.pi) #y
+    mx    = 1 + int(xi // hx) #index for the closest grid point
+    my    = 1 + int(yi // hy)
+    xi    = (xi - hx * mx) #
+    yi    = (yi - hy * my)
+    E1    = np.exp(-0.25 * (xi ** 2 + yi ** 2) / tau)
+    E2x   = np.exp((xi * np.pi) / (nf1 * tau))
+    E2y   = np.exp((yi * np.pi) / (nf2 * tau))
+    E2mmx = 1
+    V0    = c[i] * E1
+    for mmx in range(nspread):
+        E2mmy = 1 
+        for mmy in range(nspread):#use the symmetry of E1, E2 and E3, e.g. 1/(E2(mmx)*E2x) = E2(mx-mmx) 
+            #ftau[    (mx + mmx) % nf1,     (my + mmy) % nf2] +=
+            tmpxpyp = V0 * E2mmx       * E2mmy       * E3[    mmx,     mmy]
+            #ftau[    (mx + mmx) % nf1, (my - mmy - 1) % nf2] += 
+            tmpxpyn = V0 * E2mmx       / (E2mmy*E2y) * E3[    mmx, mmy + 1]
+            #ftau[(mx - mmx - 1) % nf1,     (my + mmy) % nf2] += 
+            tmpxnyp = V0 / (E2mmx*E2x) * E2mmy       * E3[mmx + 1,     mmy]
+            #ftau[(mx - mmx - 1) % nf1, (my - mmy - 1) % nf2] += 
+            tmpxnyn = V0 / (E2mmx*E2x) / (E2mmy*E2y) * E3[mmx + 1, mmy + 1]
+            #atom add solves the memory conflict issue in GPU
+            cuda.atomic.add(real_ftau, (    (mx + mmx) % nf1,     (my + mmy) % nf2), tmpxpyp.real) #x  1, y  1
+            cuda.atomic.add(imag_ftau, (    (mx + mmx) % nf1,     (my + mmy) % nf2), tmpxpyp.imag) 
+            cuda.atomic.add(real_ftau, (    (mx + mmx) % nf1, (my - mmy - 1) % nf2), tmpxpyn.real) #x  1, y -1
+            cuda.atomic.add(imag_ftau, (    (mx + mmx) % nf1, (my - mmy - 1) % nf2), tmpxpyn.imag)  
+            cuda.atomic.add(real_ftau, ((mx - mmx - 1) % nf1,     (my + mmy) % nf2), tmpxnyp.real) #x -1, y  1
+            cuda.atomic.add(imag_ftau, ((mx - mmx - 1) % nf1,     (my + mmy) % nf2), tmpxnyp.imag) 
+            cuda.atomic.add(real_ftau, ((mx - mmx - 1) % nf1, (my - mmy - 1) % nf2), tmpxnyn.real) #x -1, y -1
+            cuda.atomic.add(imag_ftau, ((mx - mmx - 1) % nf1, (my - mmy - 1) % nf2), tmpxnyn.imag)              
+            E2mmy *= E2y
+        E2mmx *= E2x
+
+@numba.jit(nopython=True)
+def build_grid_2d1_fast_cuda( x, y, c, tau, nspread, ftau, E3 ):
+    nf1 = ftau.shape[0]
+    nf2 = ftau.shape[1]
+    hx  = 2 * np.pi / nf1 
+    hy  = 2 * np.pi / nf2      
+    # precompute some exponents
+    for l in range(nspread + 1):
+        for j in range(nspread + 1):
+            E3[j,l] = np.exp(-((np.pi * j / nf1) ** 2 + (np.pi * l /nf2) ** 2)/ tau)  
+    device    = cuda.get_current_device()
+    n         = x.shape[0] #number of kernels in the computing
+    tpb       = device.WARP_SIZE
+    bpg       = int(np.ceil(float(n)/tpb))
+    real_ftau = np.zeros(ftau.shape,np.float64)
+    imag_ftau = np.zeros(ftau.shape,np.float64)
+    gaussker_2d1_fast_cuda[bpg, tpb](x, y, c, hx, hy, nf1, nf2, nspread, tau, E3, real_ftau, imag_ftau )
+    ftau = real_ftau + 1j*imag_ftau        
     return ftau
 
 # type 2
@@ -259,6 +235,7 @@ def gaussker_2d2_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, fntau ):
             += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] * exp(-0.25 * (\
             (xi - hx * (m1 + mm1)) ** 2 + \
             (yi - hy * (m2 + mm2)) ** 2 ) / tau) 
+
     
 # do griding with cuda acceleration
 #@numba.jit(nopython=True)
@@ -279,7 +256,7 @@ def build_grid_2d2_cuda( x, y, fntau, tau, nspread ):
 # kernal for griding in cuda
 #@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
 @cuda.jit
-def gaussker_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ftau ):
+def gaussker_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, real_ftau, imag_ftau ):
     """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
     i  = cuda.grid(1)
     if i > x.shape[0]:
@@ -295,11 +272,14 @@ def gaussker_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ftau 
         for mm2 in range(-nspread,nspread):
             for mm3 in range(-nspread,nspread):
                 #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-                ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
-                += c[i] * exp(-0.25 * (\
+                #ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] += 
+                tmp = c[i] * exp(-0.25 * (\
                 (xi - hx * (m1 + mm1)) ** 2 + \
                 (yi - hy * (m2 + mm2)) ** 2 + \
                 (zi - hz * (m3 + mm3)) ** 2 ) / tau)
+                cuda.atomic.add(real_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3), tmp.real) 
+                cuda.atomic.add(imag_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3), tmp.imag)
+
     
 # do griding with cuda acceleration
 def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau ):
@@ -313,9 +293,104 @@ def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau ):
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
     bpg = int(np.ceil(float(n)/tpb))
-    gaussker_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ftau)
+    real_ftau = np.zeros(ftau.shape, dtype=np.float64)
+    imag_ftau = np.zeros(ftau.shape, dtype=np.float64) #atom add only support float32 or 64   
+    gaussker_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, real_ftau, imag_ftau)
+    ftau = real_ftau + 1j*imag_ftau
     return ftau
 
+
+#type1, fast version with precompute of exponentials   
+@cuda.jit
+def gaussker_3d1_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, real_ftau, imag_ftau ):
+    """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
+    i     = cuda.grid(1)
+    if i > x.shape[0]:
+        return
+
+    xi    = x[i] % (2 * np.pi) #x
+    yi    = y[i] % (2 * np.pi) #y
+    zi    = z[i] % (2 * np.pi)
+    mx    = 1 + int(xi // hx) #index for the closest grid point
+    my    = 1 + int(yi // hy)
+    mz    = 1 + int(zi // hz)
+    xi    = (xi - hx * mx) #
+    yi    = (yi - hy * my)
+    zi    = (zi - hz * mz)
+    E1    = np.exp(-0.25 * (xi ** 2 + yi ** 2) / tau)
+    E2x   = np.exp((xi * np.pi) / (nf1 * tau))
+    E2y   = np.exp((yi * np.pi) / (nf2 * tau))
+    E2z   = np.exp((zi * np.pi) / (nf3 * tau))
+    V0    = c[i] * E1
+    E2mmx = 1        
+    for mmx in range(nspread):
+        E2mmy = 1 
+        for mmy in range(nspread):#use the symmetry of E1, E2 and E3, e.g. 1/(E2(mmx)*E2x) = E2(mx-mmx) 
+            E2mmz = 1
+            for mmz in range(nspread):
+                #ftau[    (mx + mmx) % nf1,     (my + mmy) % nf2,     (mz + mmz) % nf3] += 
+                tmpxpypzp = V0 * E2mmx       * E2mmy       * E2mmz        * E3[    mmx,     mmy,     mmz]
+                #ftau[    (mx + mmx) % nf1, (my - mmy - 1) % nf2,     (mz + mmz) % nf3] += 
+                tmpxpynzp = V0 * E2mmx       / (E2mmy*E2y) * E2mmz        * E3[    mmx, mmy + 1,     mmz]
+                #ftau[(mx - mmx - 1) % nf1,     (my + mmy) % nf2,     (mz + mmz) % nf3] += 
+                tmpxnypzp = V0 / (E2mmx*E2x) * E2mmy       * E2mmz        * E3[mmx + 1,     mmy,     mmz]
+                #ftau[(mx - mmx - 1) % nf1, (my - mmy - 1) % nf2,     (mz + mmz) % nf3] += 
+                tmpxnynzp = V0 / (E2mmx*E2x) / (E2mmy*E2y) * E2mmz        * E3[mmx + 1, mmy + 1,     mmz]
+
+                #ftau[    (mx + mmx) % nf1,     (my + mmy) % nf2, (mz - mmz - 1) % nf3] += 
+                tmpxpypzn = V0 * E2mmx       * E2mmy       / (E2mmz*E2z)  * E3[    mmx,     mmy, mmz + 1]
+                #ftau[    (mx + mmx) % nf1, (my - mmy - 1) % nf2, (mz - mmz - 1) % nf3] += 
+                tmpxpynzn = V0 * E2mmx       / (E2mmy*E2y) / (E2mmz*E2z)  * E3[    mmx, mmy + 1, mmz + 1]
+                #ftau[(mx - mmx - 1) % nf1,     (my + mmy) % nf2, (mz - mmz - 1) % nf3] += 
+                tmpxnypzn = V0 / (E2mmx*E2x) * E2mmy       / (E2mmz*E2z)  * E3[mmx + 1,     mmy, mmz + 1]
+                #ftau[(mx - mmx - 1) % nf1, (my - mmy - 1) % nf2, (mz - mmz - 1) % nf3] += 
+                tmpxnynzn = V0 / (E2mmx*E2x) / (E2mmy*E2y) / (E2mmz*E2z)  * E3[mmx + 1, mmy + 1, mmz + 1]
+                #use atom sum here
+                cuda.atomic.add(real_ftau, (    (mx + mmx) % nf1,     (my + mmy) % nf2,     (mz + mmz) % nf3), tmpxpypzp.real) #x  1, y  1, z  1
+                cuda.atomic.add(imag_ftau, (    (mx + mmx) % nf1,     (my + mmy) % nf2,     (mz + mmz) % nf3), tmpxpypzp.imag) 
+                cuda.atomic.add(real_ftau, (    (mx + mmx) % nf1, (my - mmy - 1) % nf2,     (mz + mmz) % nf3), tmpxpynzp.real) #x  1, y -1, z  1
+                cuda.atomic.add(imag_ftau, (    (mx + mmx) % nf1, (my - mmy - 1) % nf2,     (mz + mmz) % nf3), tmpxpynzp.imag)  
+                cuda.atomic.add(real_ftau, ((mx - mmx - 1) % nf1,     (my + mmy) % nf2,     (mz + mmz) % nf3), tmpxnypzp.real) #x -1, y  1, z  1
+                cuda.atomic.add(imag_ftau, ((mx - mmx - 1) % nf1,     (my + mmy) % nf2,     (mz + mmz) % nf3), tmpxnypzp.imag) 
+                cuda.atomic.add(real_ftau, ((mx - mmx - 1) % nf1, (my - mmy - 1) % nf2,     (mz + mmz) % nf3), tmpxnynzp.real) #x -1, y -1, z  1
+                cuda.atomic.add(imag_ftau, ((mx - mmx - 1) % nf1, (my - mmy - 1) % nf2,     (mz + mmz) % nf3), tmpxnynzp.imag)
+
+                cuda.atomic.add(real_ftau, (    (mx + mmx) % nf1,     (my + mmy) % nf2, (mz - mmz - 1) % nf3), tmpxpypzn.real) #x  1, y  1, z  1
+                cuda.atomic.add(imag_ftau, (    (mx + mmx) % nf1,     (my + mmy) % nf2, (mz - mmz - 1) % nf3), tmpxpypzn.imag) 
+                cuda.atomic.add(real_ftau, (    (mx + mmx) % nf1, (my - mmy - 1) % nf2, (mz - mmz - 1) % nf3), tmpxpynzn.real) #x  1, y -1, z  1
+                cuda.atomic.add(imag_ftau, (    (mx + mmx) % nf1, (my - mmy - 1) % nf2, (mz - mmz - 1) % nf3), tmpxpynzn.imag)  
+                cuda.atomic.add(real_ftau, ((mx - mmx - 1) % nf1,     (my + mmy) % nf2, (mz - mmz - 1) % nf3), tmpxnypzn.real) #x -1, y  1, z  1
+                cuda.atomic.add(imag_ftau, ((mx - mmx - 1) % nf1,     (my + mmy) % nf2, (mz - mmz - 1) % nf3), tmpxnypzn.imag) 
+                cuda.atomic.add(real_ftau, ((mx - mmx - 1) % nf1, (my - mmy - 1) % nf2, (mz - mmz - 1) % nf3), tmpxnynzn.real) #x -1, y -1, z  1
+                cuda.atomic.add(imag_ftau, ((mx - mmx - 1) % nf1, (my - mmy - 1) % nf2, (mz - mmz - 1) % nf3), tmpxnynzn.imag)  
+
+                E2mmz *= E2z
+            E2mmy *= E2y
+        E2mmx *= E2x
+
+
+@numba.jit(nopython=True)
+def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3 ):
+    nf1 = ftau.shape[0]
+    nf2 = ftau.shape[1]
+    nf3 = ftau.shape[2]
+    hx = 2 * np.pi / nf1 
+    hy = 2 * np.pi / nf2 
+    hz = 2 * np.pi / nf3      
+    # precompute some exponents
+    for p in range(nspread + 1):
+        for l in range(nspread + 1):
+            for j in range(nspread + 1):
+                E3[j,l,p] = np.exp(-((np.pi * j / nf1) ** 2 + (np.pi * l / nf2) ** 2 + (np.pi * p / nf3) ** 2)/ tau)       
+    device    = cuda.get_current_device()
+    n         = x.shape[0] #number of kernels in the computing
+    tpb       = device.WARP_SIZE
+    bpg       = int(np.ceil(float(n)/tpb))
+    real_ftau = np.zeros(ftau.shape,np.float64)
+    imag_ftau = np.zeros(ftau.shape,np.float64)
+    gaussker_3d1_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, real_ftau, imag_ftau )
+    ftau = real_ftau + 1j*imag_ftau        
+    return ftau
 
 # kernal for griding in cuda
 #@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
@@ -395,7 +470,7 @@ def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     if gridfast is 0:
         # Construct the convolved grid
         #ftau = nufft_func.build_grid_1d1(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
-        ftau = build_grid_1d1_cuda2(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
+        ftau = build_grid_1d1_cuda(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
     else:#fast griding with precomputing of some expoentials
         ftau = nufft_func.build_grid_1d1_fast(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype),\
                            np.zeros(nspread + 1, dtype=c.dtype))    
@@ -622,10 +697,10 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
     fx = build_grid_3d2_cuda(x/df, y/df, z/df, fntau, tau, nspread)
     return fx
 
-if __name__ == "__main__":
-    
+
+def test():
     #test nufft type1
-    #nufft_func.time_nufft1d1(nufft1d1_gaussker_cuda,64,5120,5)
+    nufft_func.time_nufft1d1(nufft1d1_gaussker_cuda,64,51200,5)
     #nufft_func.time_nufft2d1(nufft2d1_gaussker_cuda,64,64,5120)
     #nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,32,32,16,2048)
     
@@ -638,3 +713,6 @@ if __name__ == "__main__":
     nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,3200)
     #nufft_func.compare_nufft2d1(nufft2d1_gaussker_cuda, 64, 64,2500)
     #nufft_func.compare_nufft3d1(nufft3d1_gaussker_cuda, 32, 32,16,2048)
+
+#if __name__ == "__main__":
+    #test()
