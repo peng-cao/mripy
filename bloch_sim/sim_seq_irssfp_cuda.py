@@ -29,7 +29,7 @@ from math import cos, sin, exp
 from numpy.linalg import solve
 from cmath import phase 
 #from time import time
-import bloch_sim.sim_spin_cuda as ss_cu
+import sim_spin_cuda as ss_cu
 import utilities.utilities_class as utc
 
 def set_par( t1t2dfpdr ):
@@ -117,7 +117,7 @@ def bloch_sim_batch_cuda( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr,
     return sim_out
 
 # apply CNN model, x->y, 
-def batch_apply_tf( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, test_outy ):
+def batch_apply_tf_cuda( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, test_outy ):
     for nb in range(Nexample//batch_size):
         #print('Doing batch %d/%d for applying CNN' % (nb+1,Nexample//batch_size))
         bstart = nb*batch_size      #batch start index
@@ -126,79 +126,69 @@ def batch_apply_tf( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, test_
     return test_outy
 
 
-# restore tensorflow model
-pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
-pathexe = '/working/larson/UTE_GRE_shuffling_recon/python_test/'
-os.chdir(pathdat)
-execfile('load_cnn_t1t2b0_1dcov.py')
-#execfile('load_cnn_t1t2b0_1dcov.py')#I figured out that currently I have to do this twice to get the model restured correctly
-os.chdir(pathexe)
-
-# read rf and tr arrays from mat file 
-mat_contents = sio.loadmat(pathdat+'mrf_t1t2b0pd_mrf_randphasecyc_traintest.mat');
-far = np.array(mat_contents["rf"].astype(np.complex128).squeeze())
-trr = np.array(mat_contents["trr"].astype(np.int64).squeeze())
-
-# input MRF time courses
-mat_contents2 = sio.loadmat(pathdat+'datax1.mat');
-data_x0 = mat_contents2["datax1"]
-
-# prepare for sequence simulation, y->x_hat
-Nk = far.shape[0]
-Nexample = data_x0.shape[0]
-ti = 10 #ms
-M0 = np.array([0.0,0.0,1.0]).astype(np.float32) 
-
-nx = 217
-ny = 181
-
-timing = utc.timing()
-#times = []
-# x real and imag parts should be combined        
-#data_x0_c = data_x0[:,0:Nexample] + 1j*data_x0[:,-Nexample:]
-data_x0_c = data_x0[:,0:Nk]+1j*data_x0[:,Nk:2*Nk]
-# inital x 
-data_x_acc = data_x0 #1j*np.zeros( (Nexample, 2*Nk) )
-data_x_acc_c = 1j*np.zeros((Nexample,Nk))#data_x0_c
-
-mat_contents2 = sio.loadmat(pathdat+'cnn_cs_testouty.mat'); 
-test_outy0    = mat_contents2["test_outy"].astype(np.float32)
-test_outy     = np.zeros((Nexample,4),dtype=np.float32)
-dtest_outy    = np.zeros((Nexample,4),dtype=np.float32)
-# for loop start here
-for _ in range(10):
-    #cuda simulate bloch for each pixel
-    T1r, T2r, dfr, PDr = set_par( test_outy )
-    timing.start()
-    test_outxhat = bloch_sim_batch_cuda( Nexample, 7*ny, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
-    timing.stop().display() 
-
-    #d||f(x)-y||_2^2/dx = 2*f'(x)*(f(x)-y)
-    #f(x) - y
-    data_x_acc_c = 2*(test_outxhat-data_x0_c)
-
-    #seperate real/imag parts or abs/angle parts
-    data_x_acc[:,0:Nk] = np.real(data_x_acc_c)
-    data_x_acc[:,Nk:2*Nk] = np.imag(data_x_acc_c)
-
-    # apply CNN model, x->y, data_x_acc->CNN->test_outy 
-    # 2*f'(x)*(f(x)-y)
-    batch_apply_tf( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy )
-    # d||x-x0||_2^2/dx = 2* -x0 * (x-x0)
-    dtest_outy = test_outy -0.1*test_outy0
-
-    test_outy = test_outy - dtest_outy
-    sio.savemat(pathdat+'cnn_cs_testouty.mat', {'test_outy': test_outy})
 
 
-#save x_hat and y
-#sio.savemat(pathdat+'cnn_cs_testoutxhat.mat', {'test_outxhat': test_outxhat})
-#sio.savemat(pathdat+'cnn_cs_testouty.mat', {'test_outy': test_outy})
+if __name__ == "__main__":
+    # restore tensorflow model
+    pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
+    pathexe = '/working/larson/UTE_GRE_shuffling_recon/python_test/'
+    os.chdir(pathdat)
+    execfile('load_cnn_t1t2b0_1dcov.py')
+    #execfile('load_cnn_t1t2b0_1dcov.py')#I figured out that currently I have to do this twice to get the model restured correctly
+    os.chdir(pathexe)
 
-    #for dd in range(10):
-        #print('T1:%g ms, T2:%g ms' % (T1r[dd*2000],T2r[dd*2000]))
-        #ut.plot(np.absolute(test_outxhat[dd*2000,:].squeeze()))  
-    #test_outxhat = pf.prox_l1_soft_thresh(test_outxhat,0.1) 
-    # x_acc += step*(x0-x), later should use the A^H A (x0-x)
-    #data_x_acc_c = data_x_acc_c + 0.1*(data_x0_c-test_outxhat)
-    #data_x_acc_c = 0.5*(data_x0_c+test_outxhat)
+    # read rf and tr arrays from mat file 
+    mat_contents = sio.loadmat(pathdat+'mrf_t1t2b0pd_mrf_randphasecyc_traintest.mat');
+    far = np.array(mat_contents["rf"].astype(np.complex128).squeeze())
+    trr = np.array(mat_contents["trr"].astype(np.int64).squeeze())
+
+    # input MRF time courses
+    mat_contents2 = sio.loadmat(pathdat+'datax1.mat');
+    data_x0 = mat_contents2["datax1"]
+
+    # prepare for sequence simulation, y->x_hat
+    Nk = far.shape[0]
+    Nexample = data_x0.shape[0]
+    ti = 10 #ms
+    M0 = np.array([0.0,0.0,1.0]).astype(np.float32) 
+
+    nx = 217
+    ny = 181
+
+    timing = utc.timing()
+    #times = []
+    # x real and imag parts should be combined        
+    #data_x0_c = data_x0[:,0:Nexample] + 1j*data_x0[:,-Nexample:]
+    data_x0_c = data_x0[:,0:Nk]+1j*data_x0[:,Nk:2*Nk]
+    # inital x 
+    data_x_acc = data_x0 #1j*np.zeros( (Nexample, 2*Nk) )
+    data_x_acc_c = 1j*np.zeros((Nexample,Nk))#data_x0_c
+
+    mat_contents2 = sio.loadmat(pathdat+'cnn_cs_testouty.mat'); 
+    test_outy0    = mat_contents2["test_outy"].astype(np.float32)
+    test_outy     = np.zeros((Nexample,4),dtype=np.float32)
+    dtest_outy    = np.zeros((Nexample,4),dtype=np.float32)
+    # for loop start here
+    for _ in range(10):
+        #cuda simulate bloch for each pixel
+        T1r, T2r, dfr, PDr = set_par( test_outy )
+        timing.start()
+        test_outxhat = bloch_sim_batch_cuda( Nexample, 7*ny, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
+        timing.stop().display() 
+
+        #d||f(x)-y||_2^2/dx = 2*f'(x)*(f(x)-y)
+        #f(x) - y
+        data_x_acc_c = 2*(test_outxhat-data_x0_c)
+
+        #seperate real/imag parts or abs/angle parts
+        data_x_acc[:,0:Nk] = np.real(data_x_acc_c)
+        data_x_acc[:,Nk:2*Nk] = np.imag(data_x_acc_c)
+
+        # apply CNN model, x->y, data_x_acc->CNN->test_outy 
+        # 2*f'(x)*(f(x)-y)
+        batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy )
+        # d||x-x0||_2^2/dx = 2* -x0 * (x-x0)
+        dtest_outy = test_outy -0.1*test_outy0
+
+        test_outy = test_outy - dtest_outy
+        sio.savemat(pathdat+'cnn_cs_testouty.mat', {'test_outy': test_outy})

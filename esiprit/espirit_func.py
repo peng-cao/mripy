@@ -52,12 +52,12 @@ def espirit2d( xcrop, x_shape, nsigular = 150, hkwin_shape=(16,16) ):
 
     for ix in range(nx):
         for iy in range(ny):
-        vpix = imvn[ix,iy,:,:].squeeze()
-        vpix = np.matrix(vpix).transpose()
-        vvH = vpix.dot(vpix.getH())
-        U, s, V = np.linalg.svd(vvH, full_matrices=False)
-        sim[ix,iy] = s[0]
-        Vim[ix,iy,:] = V[0,:].squeeze()
+            vpix = imvn[ix,iy,:,:].squeeze()
+            vpix = np.matrix(vpix).transpose()
+            vvH = vpix.dot(vpix.getH())
+            U, s, V = np.linalg.svd(vvH, full_matrices=False)
+            sim[ix,iy] = s[0]
+            Vim[ix,iy,:] = V[0,:].squeeze()
 
     #plot first eigen vector, eigen value
     ut.plotim3(np.absolute(Vim))

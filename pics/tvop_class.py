@@ -8,7 +8,7 @@ and a pdf file
 Total Variation Regularization with Chambolle Algorihtm.pdf
 """
 class totalvariation2d:
-   	"this define functions related to totalvariation minimization"
+    "this define functions related to totalvariation minimization"
     def grad( self, x ):
         sx, sy = x.shape
         Dx = x[np.r_[1:sx, sx-1],:] - x
@@ -40,7 +40,7 @@ class totalvariation2d:
 
     # this define the 3d tv operator including gradient and divergense functions
 class totalvariation2d:
-   	"this define functions related to totalvariation minimization"
+    "this define functions related to totalvariation minimization"
     def grad( self, x ):
         sx, sy, sz = x.shape
         Dx = x[np.r_[1:sx, sx-1],:,:] - x

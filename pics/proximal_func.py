@@ -1,6 +1,6 @@
 import numpy as np
-from pics.opt_alg import BacktrackingLineSearch2
-import pics.tvop_func as tv
+from opt_alg import BacktrackingLineSearch2
+import tvop_func as tv
 
 """
 softthreshold/proximal for l1 norm, th = lambda/rho

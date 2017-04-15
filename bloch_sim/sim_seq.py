@@ -1,6 +1,6 @@
 from joblib import Parallel, delayed
 import multiprocessing
-import block_sim.sim_spin as ss
+import sim_spin as ss
 import numpy as np
 
 """

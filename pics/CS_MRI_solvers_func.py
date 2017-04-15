@@ -1,5 +1,5 @@
 import numpy as np
-import pics.proximal_func as pf
+import proximal_func as pf
 
 """
 iterative soft-thresholding
