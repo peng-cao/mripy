@@ -51,7 +51,7 @@ def build_grid_1d1_cuda_1( x, c, tau, nspread, ftau ):
 # kernal for griding in cuda
 #@cuda.jit('void(float64[:], complex128[:], float64, int32, int32, float64, complex128[:])')
 @cuda.jit
-def gaussker_1d1_cuda(x, c, hx, nf1, nspread, tau, ftau ):
+def gaussker_1d1_cuda(x, c, hx, nf1, nspread, tau, real_ftau, imag_ftau ):
     """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
     i  = cuda.grid(1)
     if i > x.shape[0]:
@@ -61,8 +61,10 @@ def gaussker_1d1_cuda(x, c, hx, nf1, nspread, tau, ftau ):
     m1 = 1 + int(xi // hx) #index for the closest grid point
     for mm1 in range(-nspread, nspread): #mm index for all the spreading points
         #griding with g(x) = exp(-(x^2) / 4*tau)
-        ftau[(m1 + mm1) % nf1] += c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau) 
-
+        #ftau[(m1 + mm1) % nf1] += c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau) 
+        tmp = c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau)
+        cuda.atomic.add(real_ftau, i, tmp.real) 
+        cuda.atomic.add(imag_ftau, i, tmp.imag)
     
 # do griding with cuda acceleration
 def build_grid_1d1_cuda( x, c, tau, nspread, ftau ):
@@ -72,7 +74,10 @@ def build_grid_1d1_cuda( x, c, tau, nspread, ftau ):
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
     bpg = int(np.ceil(float(n)/tpb))
-    gaussker_1d1_cuda[bpg, tpb](x, c, hx, nf1, nspread, tau, ftau)
+    real_ftau = np.zeros(ftau.shape,np.float64)
+    imag_ftau = np.zeros(ftau.shape,np.float64)
+    gaussker_1d1_cuda[bpg, tpb](x, c, hx, nf1, nspread, tau, real_ftau, imag_ftau)
+    ftau = real_ftau + 1j*imag_ftau
     return ftau
 
 # this function has memory conflict in gpu, due to the overlapped ftau when doing griding
