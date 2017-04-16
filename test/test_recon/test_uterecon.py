@@ -17,7 +17,7 @@ def plot_recon():
 """
 ute recon for one coil image
 """
-def unfft_ute( ktraj, dcf, kdata, ci, im_shape ): 
+def unfft_ute( ktraj, dcf, kdata, ci, im_shape ):
     #nufft for one coil
     kdata1coil = kdata[:,:,:,ci].squeeze()
     kdata1coil = np.multiply(kdata1coil, dcf)
@@ -33,7 +33,7 @@ def unfft_ute( ktraj, dcf, kdata, ci, im_shape ):
 
 
 def ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape ):
-    im = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)	
+    im = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
     for i in range(ncoils):
         print('Reconstructing coil: %d/%d' % (i+1, ncoils))
         im[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )
@@ -49,26 +49,26 @@ def rss( im_coils, axis_rss=None ):
         axis_rss = len(im_coils.shape) - 1 #guess the last dimention is the coil dimention
     return np.linalg.norm(im_coils, ord=None, axis = axis_rss)
 
-if __name__ == "__main__":
+def test():
     im_shape = [100, 100, 64]
     #path = '/home/pcao/3d_recon/'
     #matfile = 'Phantom_res256_256_20.mat'
     path = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/scan_1_phantom/'
-    matfile = 'Phantom_utecone.mat'	
+    matfile = 'Phantom_utecone.mat'
     mat_contents = sio.loadmat(path + matfile);
 
     ktraj = mat_contents["ktraj"]
     dcf   = mat_contents["dcf"]
     kdata = mat_contents["kdata"]
     ncoils = kdata.shape[3]
-   
+
     print(dcf.dtype)
 
     #im_under = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
-    im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )    
+    im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
     #for i in range(ncoils):
     #    print('Reconstructing coil: %d/%d' % (i+1, ncoils))
-    #    im_under[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )	
+    #    im_under[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )
 
     sio.savemat(path +'nufftrecon.mat', {'im_under': im_under})
     #im_under = ut.loadmat(path +'nufftrecon.mat','im_under')
@@ -77,3 +77,4 @@ if __name__ == "__main__":
     ut.plotim3(rss_im_under[:,:,:],[8,-1])
 
     sio.savemat(path+'nufftrecon_rss.mat', {'rss_im_under': rss_im_under})
+#if __name__ == "__main__":
