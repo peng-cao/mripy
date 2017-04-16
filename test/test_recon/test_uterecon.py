@@ -1,4 +1,5 @@
 import nufft.nufft_func as nft
+import nufft.nufft_func_cuda as nft_cuda
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -27,8 +28,8 @@ def unfft_ute( ktraj, dcf, kdata, ci, im_shape ):
     x = ktraj[0,:].flatten()
     y = ktraj[1,:].flatten()
     z = 2*ktraj[2,:].flatten()
-
-    im_under = nft.nufft3d1_gaussker(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=0.6, eps=1E-5)
+    #im_under = nft.nufft3d1_gaussker(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=0.6, eps=1E-5)
+    im_under = nft_cuda.nufft3d1_gaussker_cuda(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=0.6, eps=1E-5)
     return im_under
 
 
@@ -50,7 +51,7 @@ def rss( im_coils, axis_rss=None ):
     return np.linalg.norm(im_coils, ord=None, axis = axis_rss)
 
 def test():
-    im_shape = [100, 100, 64]
+    im_shape = [100, 100, 128]
     #path = '/home/pcao/3d_recon/'
     #matfile = 'Phantom_res256_256_20.mat'
     path = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/scan_1_phantom/'
@@ -66,6 +67,7 @@ def test():
 
     #im_under = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
     im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
+
     #for i in range(ncoils):
     #    print('Reconstructing coil: %d/%d' % (i+1, ncoils))
     #    im_under[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )

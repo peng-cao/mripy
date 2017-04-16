@@ -55,8 +55,8 @@ def gaussker_1d1_fast_cuda(x, c, hx, nf1, nspread, tau, E3, real_ftau, imag_ftau
     xi = x[i] % (2 * np.pi) #x
     m = 1 + int(xi // hx) #index for the closest grid point
     xi = (xi - hx * m) #
-    E1 = np.exp(-0.25 * xi ** 2 / tau)
-    E2 = np.exp((xi * np.pi) / (nf1 * tau))
+    E1 = exp(-0.25 * xi ** 2 / tau)
+    E2 = exp((xi * np.pi) / (nf1 * tau))
     E2mm = 1
     for mm in range(nspread):
         #ftau[(m + mm) % nf1] +
@@ -75,7 +75,7 @@ def build_grid_1d1_fast_cuda( x, c, tau, nspread, ftau, E3 ):
     hx = 2 * np.pi / nf1
     # precompute some exponents
     for j in range(nspread + 1):
-        E3[j] = np.exp(-(np.pi * j / nf1) ** 2 / tau)
+        E3[j] = exp(-(np.pi * j / nf1) ** 2 / tau)
     device = cuda.get_current_device()
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
@@ -124,8 +124,8 @@ def gaussker_1d2_fast_cuda( x, c, hx, nf1, nspread, tau, E3, fntau ):
     xi = x[i] % (2 * np.pi) #x
     m = 1 + int(xi // hx) #index for the closest grid point
     xi = (xi - hx * m) #
-    E1 = np.exp(-0.25 * xi ** 2 / tau)
-    E2 = np.exp((xi * np.pi) / (nf1 * tau))
+    E1 = exp(-0.25 * xi ** 2 / tau)
+    E2 = exp((xi * np.pi) / (nf1 * tau))
     E2mm = 1
     for mm in range(nspread):
         c[i] += fntau[(m + mm) % nf1] * E1 * E2mm * E3[mm]
@@ -139,7 +139,7 @@ def build_grid_1d2_fast_cuda( x, fntau, tau, nspread, E3 ):
     c = np.zeros(x.shape,dtype=fntau.dtype)
     # precompute some exponentials
     for j in range(nspread + 1):
-        E3[j] = np.exp(-(np.pi * j / nf1) ** 2 / tau)
+        E3[j] = exp(-(np.pi * j / nf1) ** 2 / tau)
     device = cuda.get_current_device()
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
@@ -201,9 +201,9 @@ def gaussker_2d1_fast_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, E3, real_fta
     my    = 1 + int(yi // hy)
     xi    = (xi - hx * mx) #
     yi    = (yi - hy * my)
-    E1    = np.exp(-0.25 * (xi ** 2 + yi ** 2) / tau)
-    E2x   = np.exp((xi * np.pi) / (nf1 * tau))
-    E2y   = np.exp((yi * np.pi) / (nf2 * tau))
+    E1    = exp(-0.25 * (xi ** 2 + yi ** 2) / tau)
+    E2x   = exp((xi * np.pi) / (nf1 * tau))
+    E2y   = exp((yi * np.pi) / (nf2 * tau))
     E2mmx = 1
     V0    = c[i] * E1
     for mmx in range(nspread):
@@ -238,7 +238,7 @@ def build_grid_2d1_fast_cuda( x, y, c, tau, nspread, ftau, E3 ):
     # precompute some exponents
     for l in range(nspread + 1):
         for j in range(nspread + 1):
-            E3[j,l] = np.exp(-((np.pi * j / nf1) ** 2 + (np.pi * l /nf2) ** 2)/ tau)
+            E3[j,l] = exp(-((np.pi * j / nf1) ** 2 + (np.pi * l /nf2) ** 2)/ tau)
     device    = cuda.get_current_device()
     n         = x.shape[0] #number of kernels in the computing
     tpb       = device.WARP_SIZE
@@ -302,9 +302,9 @@ def gaussker_2d2_fast_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, E3, fntau ):
     my = 1 + int(yi // hy)
     xi = (xi - hx * mx) #
     yi = (yi - hy * my)
-    E1 = np.exp(-0.25 * (xi ** 2 + yi ** 2) / tau)
-    E2x = np.exp((xi * np.pi) / (nf1 * tau))
-    E2y = np.exp((yi * np.pi) / (nf2 * tau))
+    E1 = exp(-0.25 * (xi ** 2 + yi ** 2) / tau)
+    E2x = exp((xi * np.pi) / (nf1 * tau))
+    E2y = exp((yi * np.pi) / (nf2 * tau))
     E2mmx = 1
     for mmx in range(nspread):
         E2mmy = 1
@@ -327,7 +327,7 @@ def build_grid_2d2_fast_cuda( x, y, fntau, tau, nspread, E3 ):
     # precompute some exponents
     for l in range(nspread + 1):
         for j in range(nspread + 1):
-            E3[j,l] = np.exp(-((np.pi * j / nf1) ** 2 + (np.pi * l /nf2) ** 2)/ tau)
+            E3[j,l] = exp(-((np.pi * j / nf1) ** 2 + (np.pi * l /nf2) ** 2)/ tau)
     device = cuda.get_current_device()
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
@@ -400,10 +400,10 @@ def gaussker_3d1_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, 
     yi    = (yi - hy * my) #offsets from the closest grid point
     zi    = (zi - hz * mz) #offsets from the closest grid point
     # precompute E1, E2x, E2y, E2z
-    E1    = np.exp(-0.25 * (xi ** 2 + yi ** 2 + zi ** 2) / tau)
-    E2x   = np.exp((xi * np.pi) / (nf1 * tau))
-    E2y   = np.exp((yi * np.pi) / (nf2 * tau))
-    E2z   = np.exp((zi * np.pi) / (nf3 * tau))
+    E1    = exp(-0.25 * (xi ** 2 + yi ** 2 + zi ** 2) / tau)
+    E2x   = exp((xi * np.pi) / (nf1 * tau))
+    E2y   = exp((yi * np.pi) / (nf2 * tau))
+    E2z   = exp((zi * np.pi) / (nf3 * tau))
     V0    = c[i] * E1
     #do the 3d griding here,
     #use the symmetry of E1, E2 and E3, e.g. 1/(E2mmz*E2z) = 1/(E2x**(mmx)*E2x) = E2x**(-mmx-1)
@@ -451,7 +451,6 @@ def gaussker_3d1_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, 
         E2mmx *= E2x
 
 # do griding with cuda acceleration
-@numba.jit(nopython=True)
 def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3 ):
     #number of pioints along x, y, z
     nf1 = ftau.shape[0]
@@ -465,7 +464,7 @@ def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3 ):
     for p in range(nspread + 1):
         for l in range(nspread + 1):
             for j in range(nspread + 1):
-                E3[j,l,p] = np.exp(-((np.pi * j / nf1) ** 2 + (np.pi * l / nf2) ** 2 + (np.pi * p / nf3) ** 2)/ tau)
+                E3[j,l,p] = exp(-((np.pi * j / nf1) ** 2 + (np.pi * l / nf2) ** 2 + (np.pi * p / nf3) ** 2)/ tau)
     #prepare for CUDA, compute CUDA parameters n, tpb, bpg
     device    = cuda.get_current_device()
     n         = x.shape[0] #number of kernels in the computing
@@ -547,10 +546,10 @@ def gaussker_3d2_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, 
     yi = (yi - hy * my)
     zi = (zi - hz * mz)
     # precompute E1, E2x, E2y, E2z
-    E1 = np.exp(-0.25 * (xi ** 2 + yi ** 2 + zi ** 2) / tau)
-    E2x = np.exp((xi * np.pi) / (nf1 * tau))
-    E2y = np.exp((yi * np.pi) / (nf2 * tau))
-    E2z = np.exp((zi * np.pi) / (nf3 * tau))
+    E1 = exp(-0.25 * (xi ** 2 + yi ** 2 + zi ** 2) / tau)
+    E2x = exp((xi * np.pi) / (nf1 * tau))
+    E2y = exp((yi * np.pi) / (nf2 * tau))
+    E2z = exp((zi * np.pi) / (nf3 * tau))
     #do the 3d griding here,
     #use the symmetry of E1, E2 and E3, e.g. 1/(E2mmx*E2x)=1/(E2x**(mmx)*E2x) = E2x**(-mmx-1)
     E2mmx = 1 #update with E2mmx *= E2x <-> E2mmx=E2x**(mmx) in the outer loop
@@ -588,7 +587,7 @@ def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
     for p in range(nspread + 1):
         for l in range(nspread + 1):
             for j in range(nspread + 1):
-                E3[j,l,p] = np.exp(-((np.pi * j / nf1) ** 2 + (np.pi * l / nf2) ** 2 + (np.pi * p / nf3) ** 2)/ tau)
+                E3[j,l,p] = exp(-((np.pi * j / nf1) ** 2 + (np.pi * l / nf2) ** 2 + (np.pi * p / nf3) ** 2)/ tau)
     #prepare for CUDA, compute CUDA parameters n, tpb, bpg
     device = cuda.get_current_device()
     n = x.shape[0] #number of kernels in the computing
@@ -628,7 +627,7 @@ output:
 the nufft, output dim is ms X 1
 
 """
-def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
+def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, tau = nufft_func._compute_1d_grid_params(ms, eps)
 
@@ -637,7 +636,7 @@ def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
         #ftau = nufft_func.build_grid_1d1(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
         ftau = build_grid_1d1_cuda(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
     else:#fast griding with precomputing of some expoentials
-        ftau = nufft_func.build_grid_1d1_fast(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype),\
+        ftau = build_grid_1d1_fast_cuda(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype),\
                            np.zeros(nspread + 1, dtype=c.dtype))
 
     # Compute the FFT on the convolved grid # do gpu fft later here
@@ -672,11 +671,11 @@ def nufft1d2_gaussker_cuda( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
         fntau = np.fft.fft(Fntau)
 
     # Construct the convolved grid
-    #if gridfast is not 1:
-        #fx = build_grid_1d2(x/df, fntau, tau, nspread)
-    #else:
-        #fx = build_grid_1d2_fast(x/df, fntau, tau, nspread, np.zeros(nspread + 1, dtype=Fk.dtype))
-    fx = build_grid_1d2_cuda(x/df, fntau, tau, nspread)
+    if gridfast is not 1:
+        fx = build_grid_1d2_cuda(x/df, fntau, tau, nspread)
+    else:
+        fx = build_grid_1d2_fast_cuda(x/df, fntau, tau, nspread, np.zeros(nspread + 1, dtype=Fk.dtype))
+    
     return fx
 
 
@@ -715,9 +714,9 @@ def nufft2d1_gaussker_cuda( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfas
     #ftau = build_grid_2d1(x * df, y * df, c, tau, nspread,
     #                  np.zeros((nf1, nf2), dtype = c.dtype))
     if gridfast is 0:
-        ftau = nufft_func.build_grid_2d1(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype))
+        ftau = build_grid_2d1_cuda(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype))
     else:#griding with precomputing of some exponentials
-        ftau = nufft_func.build_grid_2d1_fast(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype),\
+        ftau = build_grid_2d1_fast_cuda(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype),\
                            np.zeros((nspread + 1, nspread + 1), dtype=c.dtype))
 
     # Compute the FFT on the convolved grid
@@ -758,12 +757,12 @@ def nufft2d2_gaussker_cuda( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfa
     else:
         fntau = np.fft.fft2(Fntau)
     # Construct the convolved grid
-    #if gridfast is not 1:
-    #    fx = build_grid_2d2(x/df, y/df, fntau, tau, nspread)
-    #else:
-    #    fx = build_grid_2d2_fast(x/df, y/df, fntau, tau, nspread,\
-    #        np.zeros((nspread + 1, nspread + 1), dtype=Fk.dtype))
-    fx = build_grid_2d2_cuda(x/df, y/df, fntau, tau, nspread)
+    if gridfast is not 1:
+        fx = build_grid_2d2_cuda(x/df, y/df, fntau, tau, nspread)
+    else:
+        fx = build_grid_2d2_fast_cuda(x/df, y/df, fntau, tau, nspread,\
+            np.zeros((nspread + 1, nspread + 1), dtype=Fk.dtype))
+    
     return fx
 """
 nufft3d type 1
@@ -803,10 +802,10 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
 
     # Construct the convolved grid
     if gridfast is 0:
-        ftau = nufft_func.build_grid_3d1(x * df, y * df, z *df, c, tau, nspread,\
+        ftau = build_grid_3d1_cuda(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros((nf1, nf2, nf3), dtype=c.dtype))
     else:#precompute some exponentials, not working
-        ftau = nufft_func.build_grid_3d1_fast(x * df, y * df, z *df, c, tau, nspread,\
+        ftau = build_grid_3d1_fast_cuda(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros((nf1, nf2, nf3), dtype=c.dtype), \
                       np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype))
 
@@ -854,12 +853,12 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
         fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))
 
     # Construct the convolved grid
-    #if gridfast is not 1:
-    #    fx = build_grid_3d2(x/df, y/df, z/df, fntau, tau, nspread)
-    #else:
-    #    fx = build_grid_3d2_fast(x/df, y/df, z/df, fntau, tau, nspread,\
-    #     np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
-    fx = build_grid_3d2_cuda(x/df, y/df, z/df, fntau, tau, nspread)
+    if gridfast is not 1:
+        fx = build_grid_3d2_cuda(x/df, y/df, z/df, fntau, tau, nspread)
+    else:
+        fx = build_grid_3d2_fast_cuda(x/df, y/df, z/df, fntau, tau, nspread,\
+         np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
+    #fx = build_grid_3d2_cuda(x/df, y/df, z/df, fntau, tau, nspread)
     return fx
 
 
