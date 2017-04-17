@@ -45,7 +45,6 @@ def define_scope(function, scope=None, *args, **kwargs):
 
 
 class Model:
-
     def __init__(self, image, label):
         self.image = image
         self.label = label

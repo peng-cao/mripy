@@ -12,9 +12,6 @@ your.a
 
 
 """
-
-
-
 import cPickle
 import traceback
 import h5py
@@ -41,4 +38,3 @@ class someClass:
         file.close()
         self.__dict__ = cPickle.loads(dataPickle)
         return self
-
