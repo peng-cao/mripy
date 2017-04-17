@@ -80,3 +80,4 @@ def test():
 
     sio.savemat(path+'nufftrecon_rss.mat', {'rss_im_under': rss_im_under})
 #if __name__ == "__main__":
+    #test()

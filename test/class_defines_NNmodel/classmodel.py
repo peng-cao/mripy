@@ -1,4 +1,4 @@
-# Working example for my blog post at:
+# Working example from blog post at:
 # https://danijar.github.io/structuring-your-tensorflow-models
 import functools
 import tensorflow as tf
