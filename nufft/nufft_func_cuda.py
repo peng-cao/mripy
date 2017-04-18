@@ -7,7 +7,7 @@ from math import exp
 import utilities.utilities_func as ut
 import nufft_func #as unfft_func
 #import matplotlib.pyplot as plt
-
+from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
 
 
 # type1,
@@ -21,13 +21,13 @@ def gaussker_1d1_cuda(x, c, hx, nf1, nspread, tau, real_ftau, imag_ftau ):
         return
     #do the 1d griding here
     xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    for mmx in range(-nspread, nspread): #mm index for all the spreading points
         #griding with g(x) = exp(-(x^2) / 4*tau)
-        #ftau[(m1 + mm1) % nf1] += c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau)
-        tmp = c[i] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau)
-        cuda.atomic.add(real_ftau, (m1 + mm1) % nf1, tmp.real)
-        cuda.atomic.add(imag_ftau, (m1 + mm1) % nf1, tmp.imag)
+        #ftau[(mx + mmx) % nf1] += c[i] * exp(-0.25 * ((xi - hx * (mx + mmx)) ** 2 ) / tau)
+        tmp = c[i] * exp(-0.25 * ((xi - hx * (mx + mmx)) ** 2 ) / tau)
+        cuda.atomic.add(real_ftau, (mx + mmx) % nf1, tmp.real)
+        cuda.atomic.add(imag_ftau, (mx + mmx) % nf1, tmp.imag)
 
 # do griding with cuda acceleration
 def build_grid_1d1_cuda( x, c, tau, nspread, ftau ):
@@ -53,23 +53,23 @@ def gaussker_1d1_fast_cuda(x, c, hx, nf1, nspread, tau, E3, real_ftau, imag_ftau
     if i > x.shape[0]:
         return
     xi = x[i] % (2 * np.pi) #x
-    m = 1 + int(xi // hx) #index for the closest grid point
-    xi = (xi - hx * m) #
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    xi = (xi - hx * mx) #
     E1 = exp(-0.25 * xi ** 2 / tau)
     E2 = exp((xi * np.pi) / (nf1 * tau))
     E2mm = 1
-    for mm in range(nspread):
+    for mmx in range(nspread):
         #ftau[(m + mm) % nf1] +
-        tmpp = c[i] * E1 * E2mm * E3[mm]
+        tmpp = c[i] * E1 * E2mm * E3[mmx]
         E2mm *= E2
         #ftau[(m - mm - 1) % nf1] +
-        tmpn = c[i] * E1 / E2mm * E3[mm + 1]
-        cuda.atomic.add(real_ftau, (m1 + mm1) % nf1,   tmpp.real)
-        cuda.atomic.add(imag_ftau, (m1 + mm1) % nf1,   tmpp.imag)
-        cuda.atomic.add(real_ftau, (m - mm - 1) % nf1, tmpn.real)
-        cuda.atomic.add(imag_ftau, (m - mm - 1) % nf1, tmpn.imag)
+        tmpn = c[i] * E1 / E2mm * E3[mmx + 1]
+        cuda.atomic.add(real_ftau, (mx + mmx) % nf1,     tmpp.real)
+        cuda.atomic.add(imag_ftau, (mx + mmx) % nf1,     tmpp.imag)
+        cuda.atomic.add(real_ftau, (mx - mmx - 1) % nf1, tmpn.real)
+        cuda.atomic.add(imag_ftau, (mx - mmx - 1) % nf1, tmpn.imag)
 
-@numba.jit(nopython=True)
+#@numba.jit(nopython=True)
 def build_grid_1d1_fast_cuda( x, c, tau, nspread, ftau, E3 ):
     nf1 = ftau.shape[0]
     hx = 2 * np.pi / nf1
@@ -96,10 +96,10 @@ def gaussker_1d2_cuda(x, c, hx, nf1, nspread, tau, fntau ):
         return
     #do the 1d griding here
     xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    for mmx in range(-nspread, nspread): #mm index for all the spreading points
         #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-        c[i] += fntau[(m1 + mm1) % nf1] * exp(-0.25 * ((xi - hx * (m1 + mm1)) ** 2 ) / tau)
+        c[i] += fntau[(mx + mmx) % nf1] * exp(-0.25 * ((xi - hx * (mx + mmx)) ** 2 ) / tau)
 
 # do griding with cuda acceleration
 #@numba.jit(nopython=True)
@@ -122,17 +122,17 @@ def gaussker_1d2_fast_cuda( x, c, hx, nf1, nspread, tau, E3, fntau ):
     if i > x.shape[0]:
         return
     xi = x[i] % (2 * np.pi) #x
-    m = 1 + int(xi // hx) #index for the closest grid point
-    xi = (xi - hx * m) #
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    xi = (xi - hx * mx) #
     E1 = exp(-0.25 * xi ** 2 / tau)
     E2 = exp((xi * np.pi) / (nf1 * tau))
     E2mm = 1
-    for mm in range(nspread):
-        c[i] += fntau[(m + mm) % nf1] * E1 * E2mm * E3[mm]
+    for mmx in range(nspread):
+        c[i] += fntau[(mx + mmx) % nf1] * E1 * E2mm * E3[mmx]
         E2mm *= E2
-        c[i] += fntau[(m - mm - 1) % nf1] * E1 / E2mm * E3[mm + 1]
+        c[i] += fntau[(mx - mmx - 1) % nf1] * E1 / E2mm * E3[mmx + 1]
 
-@numba.jit(nopython=True)
+#@numba.jit(nopython=True)
 def build_grid_1d2_fast_cuda( x, fntau, tau, nspread, E3 ):
     nf1 = fntau.shape[0]
     hx = 2 * np.pi / nf1
@@ -160,17 +160,17 @@ def gaussker_2d1_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, real_ftau, imag_f
     #do the 1d griding here
     xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
     yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    m2 = 1 + int(yi // hy) #index for the closest grid point
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-        for mm2 in range(-nspread,nspread):
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    my = 1 + int(yi // hy) #index for the closest grid point
+    for mmx in range(-nspread, nspread): #mm index for all the spreading points
+        for mmy in range(-nspread,nspread):
             #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-            #ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] +=
+            #ftau[(mx + mmx) % nf1, (my + mmy) % nf2] +=
             tmp = c[i] * exp(-0.25 * (\
-            (xi - hx * (m1 + mm1)) ** 2 + \
-            (yi - hy * (m2 + mm2)) ** 2 ) / tau)
-            cuda.atomic.add(real_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2), tmp.real)
-            cuda.atomic.add(imag_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2), tmp.imag)
+            (xi - hx * (mx + mmx)) ** 2 + \
+            (yi - hy * (my + mmy)) ** 2 ) / tau)
+            cuda.atomic.add(real_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2), tmp.real)
+            cuda.atomic.add(imag_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2), tmp.imag)
 
 # do griding with cuda acceleration
 def build_grid_2d1_cuda( x, y, c, tau, nspread, ftau ):
@@ -229,7 +229,7 @@ def gaussker_2d1_fast_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, E3, real_fta
             E2mmy *= E2y
         E2mmx *= E2x
 
-@numba.jit(nopython=True)
+#@numba.jit(nopython=True)
 def build_grid_2d1_fast_cuda( x, y, c, tau, nspread, ftau, E3 ):
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -260,15 +260,15 @@ def gaussker_2d2_cuda(x, y, c, hx, hy, nf1, nf2, nspread, tau, fntau ):
     #do the 1d griding here
     xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
     yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    m2 = 1 + int(yi // hy) #index for the closest grid point
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-        for mm2 in range(-nspread,nspread):
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    my = 1 + int(yi // hy) #index for the closest grid point
+    for mmx in range(-nspread, nspread): #mm index for all the spreading points
+        for mmy in range(-nspread,nspread):
             #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
             c[i] \
-            += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] * exp(-0.25 * (\
-            (xi - hx * (m1 + mm1)) ** 2 + \
-            (yi - hy * (m2 + mm2)) ** 2 ) / tau)
+            += fntau[(mx + mmx) % nf1, (my + mmy) % nf2] * exp(-0.25 * (\
+            (xi - hx * (mx + mmx)) ** 2 + \
+            (yi - hy * (my + mmy)) ** 2 ) / tau)
 
 
 # do griding with cuda acceleration
@@ -347,21 +347,20 @@ def gaussker_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, real_
     xi = x[i] % (2.0 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
     yi = y[i] % (2.0 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
     zi = z[i] % (2.0 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    m2 = 1 + int(yi // hy) #index for the closest grid point
-    m3 = 1 + int(zi // hz) #index for the closest grid point
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-        for mm2 in range(-nspread,nspread):
-            for mm3 in range(-nspread,nspread):
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    my = 1 + int(yi // hy) #index for the closest grid point
+    mz = 1 + int(zi // hz) #index for the closest grid point
+    for mmx in range(-nspread, nspread): #mm index for all the spreading points
+        for mmy in range(-nspread,nspread):
+            for mmz in range(-nspread,nspread):
                 #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-                #ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] +=
+                #ftau[(mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3] +=
                 tmp = c[i] * exp(-0.25 * (\
-                (xi - hx * (m1 + mm1)) ** 2 + \
-                (yi - hy * (m2 + mm2)) ** 2 + \
-                (zi - hz * (m3 + mm3)) ** 2 ) / tau)
-                cuda.atomic.add(real_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3), tmp.real)
-                cuda.atomic.add(imag_ftau, ((m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3), tmp.imag)
-
+                (xi - hx * (mx + mmx)) ** 2 + \
+                (yi - hy * (my + mmy)) ** 2 + \
+                (zi - hz * (mz + mmz)) ** 2 ) / tau)
+                cuda.atomic.add(real_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3), tmp.real)
+                cuda.atomic.add(imag_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3), tmp.imag)
 
 # do griding with cuda acceleration
 def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau ):
@@ -489,19 +488,19 @@ def gaussker_3d2_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, fntau
     xi = x[i] % (2.0 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
     yi = y[i] % (2.0 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
     zi = z[i] % (2.0 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    m2 = 1 + int(yi // hy) #index for the closest grid point
-    m3 = 1 + int(zi // hz) #index for the closest grid point
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    my = 1 + int(yi // hy) #index for the closest grid point
+    mz = 1 + int(zi // hz) #index for the closest grid point
     #do the 3d griding here
-    for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-        for mm2 in range(-nspread,nspread):#mm index for all the spreading points
-            for mm3 in range(-nspread,nspread):#mm index for all the spreading points
+    for mmx in range(-nspread, nspread): #mm index for all the spreading points
+        for mmy in range(-nspread,nspread):#mm index for all the spreading points
+            for mmz in range(-nspread,nspread):#mm index for all the spreading points
                 #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
                 c[i] \
-                += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] * exp(-0.25 * (\
-                (xi - hx * (m1 + mm1)) ** 2 + \
-                (yi - hy * (m2 + mm2)) ** 2 + \
-                (zi - hz * (m3 + mm3)) ** 2 ) / tau)
+                += fntau[(mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3] * exp(-0.25 * (\
+                (xi - hx * (mx + mmx)) ** 2 + \
+                (yi - hy * (my + mmy)) ** 2 + \
+                (zi - hz * (mz + mmz)) ** 2 ) / tau)
 
 # do griding with cuda acceleration
 def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread ):
@@ -538,9 +537,9 @@ def gaussker_3d2_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, 
     yi = y[i] % (2.0 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
     zi = z[i] % (2.0 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
     #index for the closest grid point
-    m1 = 1 + int(xi // hx) #index for the closest grid point
-    m2 = 1 + int(yi // hy) #index for the closest grid point
-    m3 = 1 + int(zi // hz) #index for the closest grid point
+    mx = 1 + int(xi // hx) #index for the closest grid point
+    my = 1 + int(yi // hy) #index for the closest grid point
+    mz = 1 + int(zi // hz) #index for the closest grid point
     #offsets from the closest grid point
     xi = (xi - hx * mx) #
     yi = (yi - hy * my)
@@ -627,7 +626,7 @@ output:
 the nufft, output dim is ms X 1
 
 """
-def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, tau = nufft_func._compute_1d_grid_params(ms, eps)
 
@@ -641,9 +640,9 @@ def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
 
     # Compute the FFT on the convolved grid # do gpu fft later here
     if iflag < 0:
-        Ftau = (1 / nf1) * np.fft.fft(ftau)
+        Ftau = (1 / nf1) * np.fft.fft(ftau)#fftnc2c_cuda(ftau)#
     else:
-        Ftau = np.fft.ifft(ftau)
+        Ftau = np.fft.ifft(ftau)#fftnc2c_cuda(ftau)#
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
@@ -651,7 +650,7 @@ def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
 
 #1d nufft type 2
-def nufft1d2_gaussker_cuda( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft1d2_gaussker_cuda( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, tau = nufft_func._compute_1d_grid_params(ms, eps)
 
@@ -666,9 +665,9 @@ def nufft1d2_gaussker_cuda( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = nf1 * np.fft.ifft(Fntau)
+        fntau = nf1 * np.fft.ifft(Fntau)#ifftnc2c_cuda(Fntau)#
     else:
-        fntau = np.fft.fft(Fntau)
+        fntau = np.fft.fft(Fntau)#ifftnc2c_cuda(Fntau)#
 
     # Construct the convolved grid
     if gridfast is not 1:
@@ -707,7 +706,7 @@ output:
 the nufft, output dim is ms X mt
 
 """
-def nufft2d1_gaussker_cuda( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft2d1_gaussker_cuda( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, tau = nufft_func._compute_2d_grid_params(ms, mt, eps)
     # Construct the convolved grid
@@ -721,9 +720,9 @@ def nufft2d1_gaussker_cuda( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfas
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(ftau)
+        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(ftau)#fftnc2c_cuda(ftau)#
     else:
-        Ftau = np.fft.ifft2(ftau) #1/(nf1*nf2) in ifft2 function when norm = None
+        Ftau = np.fft.ifft2(ftau) #1/(nf1*nf2) in ifft2 function when norm = None#fftnc2c_cuda(ftau)#
 
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
@@ -735,7 +734,7 @@ def nufft2d1_gaussker_cuda( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfas
     return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
 
 #2d nufft type 2
-def nufft2d2_gaussker_cuda( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft2d2_gaussker_cuda( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, tau = nufft_func._compute_2d_grid_params(ms, mt, eps)
 
@@ -753,9 +752,9 @@ def nufft2d2_gaussker_cuda( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfa
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = nf1 * nf2 * np.fft.ifft2(Fntau)
+        fntau = nf1 * nf2 * np.fft.ifft2(Fntau)#ifftnc2c_cuda(Fntau)#
     else:
-        fntau = np.fft.fft2(Fntau)
+        fntau = np.fft.fft2(Fntau)#ifftnc2c_cuda(Fntau)#
     # Construct the convolved grid
     if gridfast is not 1:
         fx = build_grid_2d2_cuda(x/df, y/df, fntau, tau, nspread)
@@ -794,7 +793,7 @@ exp(+/- i k2 y) and exp(+/- i k3 z); default is negative
 output:
 the nufft result, output dim is ms X mt X mu
 """
-def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=2 ):
+def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps)
     #try to override nspread
@@ -811,9 +810,10 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(ftau,s=None,axes=(0,1,2))
+        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(ftau,s=None,axes=(0,1,2))#fftnc2c_cuda(ftau)#
     else:
-        Ftau = np.fft.ifftn(ftau,s=None,axes=(0,1,2))
+        Ftau = np.fft.ifftn(ftau,s=None,axes=(0,1,2))#fftnc2c_cuda(ftau)#
+
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:,:], Ftau[:ms//2 + ms % 2,:,:]],0)
@@ -826,7 +826,7 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
     np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Ftau
 
 #3d unfft type 2
-def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps)
 
@@ -848,9 +848,9 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = (nf1 * nf2 * nf3) * np.fft.ifftn(Fntau,s=None,axes=(0,1,2))
+        fntau = (nf1 * nf2 * nf3) * np.fft.ifftn(Fntau,s=None,axes=(0,1,2))#ifftnc2c_cuda(Fntau)#
     else:
-        fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))
+        fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))#ifftnc2c_cuda(Fntau)#
 
     # Construct the convolved grid
     if gridfast is not 1:
@@ -864,17 +864,17 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
 
 def test():
     #test nufft type1
-    nufft_func.time_nufft1d1(nufft1d1_gaussker_cuda,64,51200,5)
+    #nufft_func.time_nufft1d1(nufft1d1_gaussker_cuda,64,5120,5)
     #nufft_func.time_nufft2d1(nufft2d1_gaussker_cuda,64,64,5120)
-    #nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,32,32,16,2048)
+    nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,32,32,16,2048)
 
     #test nufft type2
     #nufft_func.time_nufft1d2(nufft1d1_gaussker_cuda,nufft1d2_gaussker_cuda,32,102400,10)
-    #nufft_func.time_nufft2d2(nufft2d1_gaussker_cuda,nufft2d2_gaussker_cuda,16,16,25000,1)
+    #nufft_func.time_nufft2d2(nufft2d1_gaussker_cuda,nufft2d2_gaussker_cuda,16,16,250000,1)
     #nufft_func.time_nufft3d2(nufft3d1_gaussker_cuda,nufft3d2_gaussker_cuda,8,8,8,204800,1)
 
     #compare
-    nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,3200)
+    #nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,3200)
     #nufft_func.compare_nufft2d1(nufft2d1_gaussker_cuda, 64, 64,2500)
     #nufft_func.compare_nufft3d1(nufft3d1_gaussker_cuda, 32, 32,16,2048)
 

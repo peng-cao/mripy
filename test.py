@@ -1,5 +1,5 @@
-#import nufft.nufft_func_cuda as nufft_func_cuda
-#nufft_func_cuda.test()
+import nufft.nufft_func_cuda as nufft_func_cuda
+nufft_func_cuda.test()
 
 #import test.MRI_recon.test_uterecon as test_uterecon
 #test_uterecon.test()
@@ -22,6 +22,9 @@
 #import block_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
 #MRF_irssfp_cuda.test()
 
-import test.class_defines_NNmodel.classmodel_tf_wrap2 as tfmodel
+#import test.class_defines_NNmodel.classmodel_tf_wrap4 as tfmodel
 #tfmodel.test1()
-tfmodel.test2()
+#tfmodel.test2()
+
+#import test.numbaCUDA_GPU.test_cufft as test_cufft
+#test_cufft.test4()

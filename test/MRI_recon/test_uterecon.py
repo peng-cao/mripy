@@ -27,7 +27,7 @@ def unfft_ute( ktraj, dcf, kdata, ci, im_shape ):
     ktraj = 2.0 * np.pi * ktraj/ktraj.flatten().max()
     x = ktraj[0,:].flatten()
     y = ktraj[1,:].flatten()
-    z = 2*ktraj[2,:].flatten()
+    z = ktraj[2,:].flatten()
     #im_under = nft.nufft3d1_gaussker(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=0.6, eps=1E-5)
     im_under = nft_cuda.nufft3d1_gaussker_cuda(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=0.6, eps=1E-5)
     return im_under
