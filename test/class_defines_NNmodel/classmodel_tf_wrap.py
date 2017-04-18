@@ -33,6 +33,7 @@ import traceback
 import numpy as np
 import functools
 import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
 
 # define the model in abstract form
 class model_abstract:
@@ -41,7 +42,7 @@ class model_abstract:
         self._prediction_func = prediction_func
         self._optimize_func   = optimize_func
         self._error_func      = error_func
-
+    
     def prediction( self, data, target ):
         return self._prediction_func(data, target)
 
@@ -90,7 +91,7 @@ class tf_model_wrap:
     def __init__( self, data, target, model ):
         self.data       = data
         self.target     = target
-        self.mode       = model
+        self.model      = model
         self.prediction
         self.optimize
         self.error
@@ -119,14 +120,14 @@ class tf_model_top:
         # put data, target and model together
         self.model_wrap = tf_model_wrap(self.data, self.target, self.model)
         self.sess       = tf.Session()
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
 
     # train neural network, using all training data, do mini-batch in this function
     def train_all_batch( self, train_data, train_target, N_example, N_batch, mini_batch_func ):
         #mini-batch
         batch_x, batch_y = mini_batch_func(N_example, N_batch, train_data, train_target)
         for _ in range(N_example//N_batch):
-            self.sess.run(self.model_wrap.optimize, {self.data: batch_x, self.target: batch_y})
+            self.sess.run(self.model_wrap.optimize, {self.data: batch_x, self.target: batch_y})            
         return self
 
     # simple training function, do one step training, should be putted in a loop for mini-batch
@@ -135,8 +136,8 @@ class tf_model_top:
         return self
 
     # simple training function, do one step training, should be putted in a loop for mini-batch
-    def prediction( self, data ):
-        target = self.sess.run(self.model_wrap.prediction, {self.data: data})
+    def prediction( self, data, target ):
+        target = self.sess.run(self.model_wrap.prediction, {self.data: data, self.target: target})
         return target
 
     # test neural network using testing data
@@ -147,14 +148,16 @@ class tf_model_top:
 
     # save the tensorflow model
     def save( self, name ):
-        saver = tf.train.Saver(tf.all_variables())
+        saver = tf.train.Saver(tf.global_variables())
         saver.save(self.sess, name)
+        print('model saved')
         return self
 
     # restore the tensorflow model
     def restore( self, name ):
-        nsaver = tf.train.Saver(tf.all_variables())
-        nsaver.restore(self.sess, name)
+        nsaver = tf.train.Saver(tf.global_variables())
+        nsaver.restore(self.sess, './'+name)
+        print('model restored')
         return self
 
 # these functions should be defined specifically for individal neural network
@@ -176,7 +179,7 @@ def tf_optimize_func( target, prediction ):
     # cost funcion as cross entropy = y * log(y)
     cross_entropy = -tf.reduce_sum(target * tf.log(prediction))
     # optimizer using RMSPropOptimizer
-    optimizer     = tf.train.RMSPropOptimizer(0.03)
+    optimizer     = tf.train.RMSPropOptimizer(0.3)
     # minimization apply to cross_entropy
     return optimizer.minimize(cross_entropy)
 
@@ -188,15 +191,21 @@ def tf_error_func( target, prediction ):
     return tf.reduce_mean(tf.cast(mistakes, tf.float32))
 
 def test1():
-    #mnist = input_data.read_data_sets('./MNIST_data/', one_hot=True)
-    x = np.zeros((1000,784))
-    y_ = np.zeros((1000,10))
+    mnist = input_data.read_data_sets('./MNIST_data/', one_hot=True)
     model = tf_model_top([None, 784], [None, 10], tf_prediction_func, tf_optimize_func, tf_error_func)
     for _ in range(10):
-        #model.test(images, labels)
-      for _ in range(60):
-        images, labels = mnist.train.next_batch(100)
-        model.train(images, labels)
+        model.test(mnist.test.images, mnist.test.labels)
+        for _ in range(10):
+            batch_xs, batch_ys = mnist.train.next_batch(100)            
+            model.train(batch_xs, batch_ys)
+    model.save('test_model_save')
+    #yy = model.prediction(x,y_)
+    #print(yy[0:5,:])
+
+def test2():
+    #mnist = input_data.read_data_sets('./MNIST_data/', one_hot=True)
+    model = tf_model_top([None, 784], [None, 10], tf_prediction_func, tf_optimize_func, tf_error_func)
+    model.restore('test_model_save')
 
 #if __name__ == '__main__':
     #test1()
