@@ -570,6 +570,13 @@ def gaussker_3d2_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, 
             E2mmy *= E2y
         E2mmx *= E2x
 
+#@cuda.jit
+#def compute_E3( nspread, nf1, nf2, nf3, tau, E3 ):
+#    p, l, j  = cuda.grid(3)
+#    if (p > nspread + 1) or (l > nspread + 1) or (j > nspread + 1):
+#        return
+#    E3[j,l,p] = exp(-((np.pi * j / nf1) ** 2 + (np.pi * l / nf2) ** 2 + (np.pi * p / nf3) ** 2)/ tau)
+
 # do griding with cuda acceleration
 def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
     #number of pioints along x, y, z
@@ -592,6 +599,7 @@ def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
     n = x.shape[0] #number of kernels in the computing
     tpb = device.WARP_SIZE
     bpg = int(np.ceil(float(n)/tpb))
+    #compute_E3[bpg, tpb](nspread, nf1, nf2, nf3, tau, E3)
     #computing start here
     gaussker_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, fntau)
     #type2 nufft has 1/N term
@@ -640,9 +648,9 @@ def nufft1d1_gaussker_cuda( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
 
     # Compute the FFT on the convolved grid # do gpu fft later here
     if iflag < 0:
-        Ftau = (1 / nf1) * np.fft.fft(ftau)#fftnc2c_cuda(ftau)#
+        Ftau = (1 / nf1) * fftnc2c_cuda(ftau)#np.fft.fft(ftau)#
     else:
-        Ftau = np.fft.ifft(ftau)#fftnc2c_cuda(ftau)#
+        Ftau = ifftnc2c_cuda(ftau)#np.fft.ifft(ftau)#
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
@@ -665,9 +673,9 @@ def nufft1d2_gaussker_cuda( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = nf1 * np.fft.ifft(Fntau)#ifftnc2c_cuda(Fntau)#
+        fntau = nf1 * ifftnc2c_cuda(Fntau)#np.fft.ifft(Fntau)#
     else:
-        fntau = np.fft.fft(Fntau)#ifftnc2c_cuda(Fntau)#
+        fntau = fftnc2c_cuda(Fntau)#np.fft.fft(Fntau)#
 
     # Construct the convolved grid
     if gridfast is not 1:
@@ -720,9 +728,9 @@ def nufft2d1_gaussker_cuda( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfas
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(ftau)#fftnc2c_cuda(ftau)#
+        Ftau = (1 / (nf1 * nf2)) * fftnc2c_cuda(ftau)#np.fft.fft2(ftau)#
     else:
-        Ftau = np.fft.ifft2(ftau) #1/(nf1*nf2) in ifft2 function when norm = None#fftnc2c_cuda(ftau)#
+        Ftau = ifftnc2c_cuda(ftau)#np.fft.ifft2(ftau) #
 
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
@@ -752,16 +760,15 @@ def nufft2d2_gaussker_cuda( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfa
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = nf1 * nf2 * np.fft.ifft2(Fntau)#ifftnc2c_cuda(Fntau)#
+        fntau = nf1 * nf2 * ifftnc2c_cuda(Fntau)#np.fft.ifft2(Fntau)#
     else:
-        fntau = np.fft.fft2(Fntau)#ifftnc2c_cuda(Fntau)#
+        fntau = fftnc2c_cuda(Fntau)#np.fft.fft2(Fntau)#
     # Construct the convolved grid
     if gridfast is not 1:
         fx = build_grid_2d2_cuda(x/df, y/df, fntau, tau, nspread)
     else:
         fx = build_grid_2d2_fast_cuda(x/df, y/df, fntau, tau, nspread,\
             np.zeros((nspread + 1, nspread + 1), dtype=Fk.dtype))
-    
     return fx
 """
 nufft3d type 1
@@ -810,9 +817,9 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(ftau,s=None,axes=(0,1,2))#fftnc2c_cuda(ftau)#
+        Ftau = (1 / (nf1 * nf2 * nf3)) * fftnc2c_cuda(ftau)#np.fft.fftn(ftau,s=None,axes=(0,1,2))#
     else:
-        Ftau = np.fft.ifftn(ftau,s=None,axes=(0,1,2))#fftnc2c_cuda(ftau)#
+        Ftau = ifftnc2c_cuda(ftau)#np.fft.ifftn(ftau,s=None,axes=(0,1,2))#
 
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
@@ -848,9 +855,9 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = (nf1 * nf2 * nf3) * np.fft.ifftn(Fntau,s=None,axes=(0,1,2))#ifftnc2c_cuda(Fntau)#
+        fntau = (nf1 * nf2 * nf3) * ifftnc2c_cuda(Fntau)#np.fft.ifftn(Fntau,s=None,axes=(0,1,2))#
     else:
-        fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))#ifftnc2c_cuda(Fntau)#
+        fntau = fftnc2c_cuda(Fntau)#np.fft.fftn(Fntau,s=None,axes=(0,1,2))#
 
     # Construct the convolved grid
     if gridfast is not 1:
@@ -858,7 +865,6 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
     else:
         fx = build_grid_3d2_fast_cuda(x/df, y/df, z/df, fntau, tau, nspread,\
          np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
-    #fx = build_grid_3d2_cuda(x/df, y/df, z/df, fntau, tau, nspread)
     return fx
 
 
@@ -866,17 +872,17 @@ def test():
     #test nufft type1
     #nufft_func.time_nufft1d1(nufft1d1_gaussker_cuda,64,5120,5)
     #nufft_func.time_nufft2d1(nufft2d1_gaussker_cuda,64,64,5120)
-    nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,32,32,16,2048)
+    #nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,32,32,16,2048)
 
     #test nufft type2
-    #nufft_func.time_nufft1d2(nufft1d1_gaussker_cuda,nufft1d2_gaussker_cuda,32,102400,10)
-    #nufft_func.time_nufft2d2(nufft2d1_gaussker_cuda,nufft2d2_gaussker_cuda,16,16,250000,1)
+    #nufft_func.time_nufft1d2(nufft1d1_gaussker_cuda,nufft1d2_gaussker_cuda,32,102400,5)
+    #nufft_func.time_nufft2d2(nufft2d1_gaussker_cuda,nufft2d2_gaussker_cuda,32,32,25000,5)
     #nufft_func.time_nufft3d2(nufft3d1_gaussker_cuda,nufft3d2_gaussker_cuda,8,8,8,204800,1)
 
     #compare
-    #nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,3200)
+    nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,32000)
     #nufft_func.compare_nufft2d1(nufft2d1_gaussker_cuda, 64, 64,2500)
-    #nufft_func.compare_nufft3d1(nufft3d1_gaussker_cuda, 32, 32,16,2048)
+    #nufft_func.compare_nufft3d1(nufft3d1_gaussker_cuda, 32, 32,16,20480)
 
 #if __name__ == "__main__":
     #test()
