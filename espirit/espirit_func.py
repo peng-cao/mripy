@@ -11,15 +11,15 @@ import pics.hankel_func as hk
 2d espirit
 inputs
 xcrop is 3d matrix with first two dimentions as nx,ny and third one as coil
-nsingular = 150, number of truncated sigular vectors
+nsingularv = 150, number of truncated singular vectors
 outputs
 Vim the sensitivity map
-sim the sigular value map
+sim the singular value map
 
 """
-def espirit2d( xcrop, x_shape, nsigular = 150, hkwin_shape=(16,16) ):
+def espirit2d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16) ):
 	ft = op.FFT2d()#2d fft operator
-    #multidimention tensor as the block hankel matrix 
+    #multidimention tensor as the block hankel matrix
     h = hk.hankelnd_r(xcrop, (hkwin_shape[0], hkwin_shape[1], 1))
     dimh = h.shape
     #flatten the tensor to create a matrix
@@ -29,17 +29,17 @@ def espirit2d( xcrop, x_shape, nsigular = 150, hkwin_shape=(16,16) ):
     U, s, V = np.linalg.svd(hmtx, full_matrices=False)
     #S = np.diag(s)
     #ut.plotim1(np.absolute(V[:,0:150]).T)#plot V singular vectors
-    ut.plot(s)#plot sigular values
+    ut.plot(s)#plot singular values
     #invh = np.zeros(x.shape,complex)
     #print h.shape
     #hk.invhankelnd(h,invh,(2,3,1))
 
     #reshape vn to generate k-space vn tensor
-    
-    vn = V[0:nsingular,:].reshape((nsingular,dimh[3],dimh[4],dimh[5])).transpose((1,2,0,3))
+
+    vn = V[0:nsingularv,:].reshape((nsingularv,dimh[3],dimh[4],dimh[5])).transpose((1,2,0,3))
 
     #zero pad vn, vn matrix of reshaped singular vectors,
-    #dims of vn: nx,ny,nsingular,ncoil
+    #dims of vn: nx,ny,nsingularv,ncoil
     nx = x_shape[0]
     ny = x_shape[1]
     nc = x_shape[2]
@@ -62,21 +62,23 @@ def espirit2d( xcrop, x_shape, nsigular = 150, hkwin_shape=(16,16) ):
     #plot first eigen vector, eigen value
     ut.plotim3(np.absolute(Vim))
     ut.plotim1(np.absolute(sim))
-    return Vim, sim
+	Vim_dims_name = ['x', 'y', 'coil']
+	sim_dims_name = ['x', 'y']
+    return Vim, sim, Vim_dims_name, sim_dims_name
 
 """
 3d espirit
 inputs
 xcrop is 3d matrix with first two dimentions as nx,ny and third one as coil
-nsingular = 150, number of truncated sigular vectors
+nsingularv = 150, number of truncated singular vectors
 outputs
 Vim the sensitivity map
-sim the sigular value map
+sim the singular value map
 
 """
-def espirit3d( xcrop, nsigular = 150 ,hkwin_shape=(16,16,16) ):
+def espirit3d( xcrop, nsingularv = 150 ,hkwin_shape=(16,16,16) ):
     ft = op.FFTnd((0,1,2))#3d fft operator
-    #multidimention tensor as the block hankel matrix 
+    #multidimention tensor as the block hankel matrix
     h = hk.hankelnd_r(xcrop, (hkwin_shape[0], hkwin_shape[1], hkwin_shape[2], 1))
     dimh = h.shape
     #flatten the tensor to create a matrix
@@ -86,17 +88,17 @@ def espirit3d( xcrop, nsigular = 150 ,hkwin_shape=(16,16,16) ):
     U, s, V = np.linalg.svd(hmtx, full_matrices=False)
     #S = np.diag(s)
     #ut.plotim1(np.absolute(V[:,0:150]).T)#plot V singular vectors
-    ut.plot(s)#plot sigular values
+    ut.plot(s)#plot singular values
     #invh = np.zeros(x.shape,complex)
     #print h.shape
     #hk.invhankelnd(h,invh,(2,3,1))
 
     #reshape vn to generate k-space vn tensor
-    
-    vn = V[0:nsingular,:].reshape((nsingular,dimh[4],dimh[5],dimh[6],dimh[7])).transpose((1,2,3,0,4))
+
+    vn = V[0:nsingularv,:].reshape((nsingularv,dimh[4],dimh[5],dimh[6],dimh[7])).transpose((1,2,3,0,4))
 
     #zero pad vn, vn matrix of reshaped singular vectors,
-    #dims of vn: nx,ny,nsingular,ncoil
+    #dims of vn: nx,ny,nsingularv,ncoil
     vn = ut.pad3d(vn,nx,ny,nz)
     #plot first singular vecctor Vn[0]
     imvn = ft.backward(vn)
@@ -114,7 +116,9 @@ def espirit3d( xcrop, nsigular = 150 ,hkwin_shape=(16,16,16) ):
                 sim[ix,iy,iz] = s[0]
                 Vim[ix,iy,iz,:] = V[0,:].squeeze()
 
-    #plot first eigen vector, eigen value
+    #plot first eigen vector, which is coil sensitvity map, and eigen value
     ut.plotim3(np.absolute(Vim[:,:,1,:].squeeze()))
     ut.plotim1(np.absolute(sim[:,:,1,:].squeeze()))
-    return Vim, sim
+	Vim_dims_name = ['x', 'y', 'z', 'coil']
+	sim_dims_name = ['x', 'y', 'z']
+    return Vim, sim, Vim_dims_name, sim_dims_name

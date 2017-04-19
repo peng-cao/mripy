@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 import scipy.optimize as spopt
 import scipy.fftpack as spfft
 
-
+class data_class:
+    def __init__( self, data, dims_name ):
+        self.dims_name = dims_name
+        self.data = data
 
 """
 this class apply 2d FFT for the input 2d image, and apply mask in the forward function
 k-space -> image is forward; image -> k-space is backward
-usage: 
+usage:
 im = np.ones((128,128))
 mask = np.ones(im.shape)
 fft2dm = FFT2d_kmask(mask)
@@ -18,31 +21,31 @@ imhat = fft2dm.backward(ksp)
 """
 class FFT2d_kmask:
     "this is 2d FFT with k-space mask for CS MRI recon"
-    def __intial__( self, mask ):
+    def __init__( self, mask ):
         self.mask = mask #save the k-space mask
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im = np.fft.ifftshift(im,(0,1))
-        ksp = np.fft.ifft2(im,s=None,axes=(0,1))
-        return np.multiply(ksp,self.mask)
+        im0 = np.fft.ifftshift(im,(0,1))
+        ksp = np.fft.ifft2(im0,s=None,axes=(0,1))
+        return np.multiply(ksp,self.mask)#apply mask
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.multiply(ksp,self.mask)
-        im = np.fft.fft2(ksp,s=None,axes=(0,1))
-        im = np.fft.fftshift(ksp,(0,1))
+        ksp0 = np.multiply(ksp,self.mask)#apply mask
+        im = np.fft.fft2(ksp0,s=None,axes=(0,1))
+        im = np.fft.fftshift(im,(0,1))
         return im
-        
+
 
 class FFT2d:
     "this is 2d FFT without k-space mask for CS MRI recon"
-    #def __intial__( self ):
+    #def __init__( self ):
         #self.mask = mask #save the k-space mask
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im = np.fft.ifftshift(im,(0,1))
-        ksp = np.fft.ifft2(im,s=None,axes=(0,1))
+        im0 = np.fft.ifftshift(im,(0,1))
+        ksp = np.fft.ifft2(im0,s=None,axes=(0,1))
         return ksp
 
     # let's call image <- k-space as backward
@@ -56,14 +59,14 @@ define n-dim fft here, default is 3d
 """
 class FFTnd:
     "this is ndim FFT without k-space mask for CS MRI recon"
-    def __intial__( self, axes = (0,1,2)):
+    def __init__( self, axes = (0,1,2)):
         #self.mask = mask #save the k-space mask
         self.axes = axes
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im = np.fft.ifftshift(im,self.axes)
-        ksp = np.fft.ifftn(im,s=None,axes=self.axes)
+        im0 = np.fft.ifftshift(im,self.axes)
+        ksp = np.fft.ifftn(im0,s=None,axes=self.axes)
         return ksp
 
     # let's call image <- k-space as backward
@@ -74,20 +77,20 @@ class FFTnd:
 
 class FFTnd_kmask:
     "this is ndim FFT with k-space mask for CS MRI recon"
-    def __intial__( self, mask, axes = (0,1,2)):
+    def __init__( self, mask, axes = (0,1,2)):
         self.mask = mask #save the k-space mask
         self.axes = axes
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im = np.fft.ifftshift(im,self.axes)
-        ksp = np.fft.ifftn(im,s=None,axes=self.axes)
+        im0 = np.fft.ifftshift(im,self.axes)
+        ksp = np.fft.ifftn(im0,s=None,axes=self.axes)
         return np.multiply(ksp,self.mask)
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.multiply(ksp,self.mask)
-        im = np.fft.fftn(ksp,s=None,axes=self.axes)
+        ksp0 = np.multiply(ksp,self.mask)
+        im = np.fft.fftn(ksp0,s=None,axes=self.axes)
         im = np.fft.fftshift(im,self.axes)
         return im
 
@@ -137,7 +140,7 @@ ft_sense = joint2operators(fft2dm,sense2d)
 """
 class joint2operators:
     "this apply two operators jointly"
-    def __inital__( self, Aopt, Bopt ):
+    def __init__( self, Aopt, Bopt ):
         self.Aopt = Aopt
         self.Bopt = Bopt
 
@@ -167,4 +170,3 @@ class joint3operators:
     def backward( self, xin ):
         xout = self.Copt.backward(self.Aopt.backward(self.Bopt.backward(xin)))
         return xout
-

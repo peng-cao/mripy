@@ -22,9 +22,9 @@ print hankel1d(a, 3)
 """
 
 def hankel1d(a, win_w, step_w = 1):
-    #shape of raw hankel tensor with 
-    #dims   : times_of_moving, win_w 
-    bh_shape = ((a.size - win_w)//step_w + 1, win_w) 
+    #reshape of raw hankel tensor with
+    #dims   : times_of_moving, win_w
+    bh_shape = ((a.size - win_w)//step_w + 1, win_w)
     #strides define the moving steps along each dim of the block hankel matrix
     #strides: step_of__moving, step_1_each_item
     bh_strides = (step_w*a.itemsize, a.itemsize)
@@ -33,9 +33,9 @@ def hankel1d(a, win_w, step_w = 1):
 
 def invhankel1d(h, a, win_w, step_w = 1):
 
-    #shape of raw hankel tensor with 
-    #dims   : times_of_moving, win_w 
-    bh_shape = ((a.size - win_w)//step_w + 1, win_w) 
+    #reshape of raw hankel tensor with
+    #dims   : times_of_moving, win_w
+    bh_shape = ((a.size - win_w)//step_w + 1, win_w)
     #strides define the moving steps along each dim of the block hankel matrix
     #strides: step_of__moving, step_1_each_item
     bh_strides = (step_w*a.itemsize, a.itemsize)
@@ -43,7 +43,7 @@ def invhankel1d(h, a, win_w, step_w = 1):
     np.lib.stride_tricks.as_strided(a, shape=bh_shape, strides=bh_strides)[:] = h
     return a
 
-#window dimentions first,reversed the order of dims in output
+#window dimentions first reverse the order of window dims and rolling/repeating dims in output
 def hankel1d_r(a, win_w, step_w = 1):
     return hankel1d(a, win_w, step_w).transpose((1,0))
 
@@ -74,15 +74,15 @@ print hankel2d (a,3,3,1,1)
 def hankel2d(a,win_h,win_w,step_h=1,step_w=1):
     # get the shape of input matrix: h, height; w, weight
     h,w = a.shape
-    # define shape of block hankel matrix
+    # define the shape of block hankel matrix
     # dims          : num_moving_h,  num_moving_w, win_size_h , win_size_w
     bh_shape = ( ((h-win_h)//step_h + 1)  , ((w-win_w)//step_w + 1) , win_h, win_w )
-    # each move step: step_h * w  ,  step_w      , w          , 1 
+    # each move/stride step: step_h * w  ,  step_w      , w          , 1
     bh_strides = ( step_h * w * a.itemsize, step_w * a.itemsize, w * a.itemsize, a.itemsize )
 
     return np.lib.stride_tricks.as_strided(a, shape=bh_shape, strides=bh_strides)
 
-#reversed the order of dims in output
+#reverse the order of dims in output, i.e. the Hankel window dims first
 def hankel2d_r(a,win_h,win_w,step_h,step_w):
     return hankel2d(a,win_h,win_w,step_h,step_w).transpose((2,3,0,1))
 
@@ -92,7 +92,7 @@ hankel3d
 Parameters
 ----------
 a : 3d_matrix input
-win_l : int, length of rolling window, the window size of first dimention   
+win_l : int, length of rolling window, the window size of first dimention
 win_h : int, height of rolling window, the window size of second dimention
 win_w : int, weight of rolling window, the window size of third dimention
 
@@ -113,12 +113,12 @@ def hankel3d( a, win_l, win_h, win_w, step_l=1, step_h=1, step_w=1 ):
     # define shape of block hankel matrix
     # dims          : num_moving_l, num_moving_h,  num_moving_w, win_size_l , win_size_h , win_size_w
     bh_shape = ( ((l-win_l)//step_l + 1), ((h-win_h)//step_h + 1)  , ((w-win_w)//step_w + 1), win_l, win_h, win_w )
-    # each move step: step* w*h   , step_h * w  ,  step_w      ,  w*h       , w          , 1 
+    # each move step: step* w*h   , step_h * w  ,  step_w      ,  w*h       , w          , 1
     bh_strides = ( step_l * w * h * a.itemsize, step_h * w * a.itemsize, step_w * a.itemsize, w * h * a.itemsize, w * a.itemsize, a.itemsize )
 
     return np.lib.stride_tricks.as_strided(a, shape=bh_shape, strides=bh_strides)
 
-#window dimentions first, reversed the order of dims in output
+#window dimentions first, reverse the order of window dims and rolling/repeating dims in output
 def hankel3d_r(a,win_l,win_h,win_w,step_l,step_h,step_w):
     return hankel3d(a,win_l,win_h,win_w,step_l,step_h,step_w).transpose((3,4,5,0,1,2))
 
@@ -128,7 +128,7 @@ more general hankel function
 
 Parameters
 ----------
-a : ndim tensor 
+a : ndim tensor
 win_shape : the size of hankel matrix, match the dim with a
 win_strides : int, strides for moving the rolling window, default should be all one
 
@@ -156,14 +156,14 @@ def hankelnd( a, win_shape, win_strides = None ):
     a_shape = np.array(a.shape)
     a_strides = np.array(a.strides)
     #define shape of block hankel matrix, half is num_movements of hankel matrix, half is num_movements inside window
-    bh_shape = np.concatenate((np.divide(a_shape - win_shape, win_strides).astype(int) + 1,win_shape)) 
+    bh_shape = np.concatenate((np.divide(a_shape - win_shape, win_strides).astype(int) + 1,win_shape))
     #define each move/strides in a hankel window, match bh_shape
     # half is strides of hankel matrix, half is strides of movements inside window
     bh_strides = np.concatenate((np.multiply(win_strides,a_strides),a_strides))
 
     return np.lib.stride_tricks.as_strided(a, shape=bh_shape, strides=bh_strides)
 
-#invert hankel operator
+#invert hankel operator, input is h, hankel matrix, output is original data
 def invhankelnd( h, a, win_shape, win_strides = None ):
     if win_strides is None:
         win_strides = np.ones(win_shape.__len__()).astype(int)
@@ -176,7 +176,7 @@ def invhankelnd( h, a, win_shape, win_strides = None ):
     a_shape = np.array(a.shape)
     a_strides = np.array(a.strides)
     #define shape of block hankel matrix, half is num_movements of hankel matrix, half is num_movements inside window
-    bh_shape = np.concatenate((np.divide(a_shape - win_shape, win_strides).astype(int) + 1,win_shape)) 
+    bh_shape = np.concatenate((np.divide(a_shape - win_shape, win_strides).astype(int) + 1,win_shape))
     #define each move/strides in a hankel window, match bh_shape
     # half is strides of hankel matrix, half is strides of movements inside window
     bh_strides = np.concatenate((np.multiply(win_strides,a_strides),a_strides))
@@ -185,8 +185,8 @@ def invhankelnd( h, a, win_shape, win_strides = None ):
     return a
 
 
-# the first half dimentions are window dimentions, 
-# the second half dimentions are rolling/repeating dimentions 
+# the first half dimentions are window dimentions,
+# the second half dimentions are rolling/repeating dimentions
 def hankelnd_r( a, win_shape, win_strides = None ):
     if win_strides is None:
         win_strides = np.ones(win_shape.__len__()).astype(int)
@@ -199,7 +199,7 @@ def hankelnd_r( a, win_shape, win_strides = None ):
     a_shape = np.array(a.shape)
     a_strides = np.array(a.strides)
     #define shape of block hankel matrix, half is num_movements of hankel matrix, half is num_movements inside window
-    bh_shape = np.concatenate((win_shape, np.divide(a_shape - win_shape, win_strides).astype(int) + 1)) 
+    bh_shape = np.concatenate((win_shape, np.divide(a_shape - win_shape, win_strides).astype(int) + 1))
     #define each move/strides in a hankel window, match bh_shape
     # half is strides of hankel matrix, half is strides of movements inside window
     bh_strides = np.concatenate((a_strides, np.multiply(win_strides,a_strides)))
@@ -207,11 +207,10 @@ def hankelnd_r( a, win_shape, win_strides = None ):
     return np.lib.stride_tricks.as_strided(a, shape=bh_shape, strides=bh_strides)
 
 """
-
+test function
 """
-
-if __name__ == "__main__":
-    #test hankel1d    
+def test():
+    #test hankel1d
     #a = np.arange(10)
     #print a
     #print hankel1d(a, 3)
@@ -237,3 +236,6 @@ if __name__ == "__main__":
     h = hankelnd(a, (2, 3, 4))
     invh = np.zeros(a.shape)
     print invhankelnd(h,invh,(2,3,4))
+
+#if __name__ == "__main__":
+    #test()

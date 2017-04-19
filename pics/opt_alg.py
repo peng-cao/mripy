@@ -19,7 +19,7 @@ def BacktrackingLineSearch(f, df, x, p,c = 0.0001,rho = 0.5):
     alphak = 1.0
     i = 0
 
-    #Loop 
+    #Loop
     while i < 20 and f(x + alphak * p) > f(x) + c * alphak * derphi:
         alphak = alphak * rho
         i += 1
@@ -30,7 +30,7 @@ def BacktrackingLineSearch(f, df, x, p,c = 0.0001,rho = 0.5):
 """
 back tracking line search from
 wiki version
-and miki's implementation
+and sparse MRI's implementation
 """
 
 def BacktrackingLineSearch2(f, df, x, p,c = 0.0001,rho = 0.5):
@@ -46,7 +46,7 @@ def BacktrackingLineSearch2(f, df, x, p,c = 0.0001,rho = 0.5):
     alphak = 1.0
     i = 0
 
-    #Loop 
+    #Loop
     while i < 20 and f(x + alphak * p) - f0 >  - c * alphak * derphi:
         alphak = alphak * rho
         i += 1

@@ -1,7 +1,7 @@
 import numpy as np
 """
 define total variation gradient and divergense functions
-this class is for 2d tv minimization 
+this class is for 2d tv minimization
 prox function is from
 Chambolle, An algorithm for total variation minimizations and applications, 2004
 and a pdf file
@@ -9,7 +9,7 @@ Total Variation Regularization with Chambolle Algorihtm.pdf
 """
 class totalvariation2d:
     "this define functions related to totalvariation minimization"
-    def grad( self, x ):
+    def grad( self, x ): #gradient of x
         sx, sy = x.shape
         Dx = x[np.r_[1:sx, sx-1],:] - x
         Dy = x[:,np.r_[1:sy, sy-1]] - x
@@ -19,29 +19,29 @@ class totalvariation2d:
         res[:,:,1] = Dy
         return res
 
-    def adjDy( self, x ):
+    def adjDy( self, x ): #used in computing divergense of x
         sx,sy = x.shape
         res = x[:,np.r_[0, 0:sy-1]] - x
         res[:,0] = -x[:,0]
         res[:,-1] = x[:,-2]
         return res
 
-    def adjDx( self, x ):
+    def adjDx( self, x ): #used in computing divergense of x
         sx,sy = x.shape
         res = x[np.r_[0, 0:sx-1],:] - x
         res[0,:] = -x[0,:]
         res[-1,:] = x[-2,:]
         return res
-   
-    def Div( self, y ):
+
+    def Div( self, y ):  #divergense of x
         #res = np.zeros(y.shape)
         res = self.adjDx(y[:,:,0]) + self.adjDy(y[:,:,1])
         return res
 
-    # this define the 3d tv operator including gradient and divergense functions
-class totalvariation2d:
+# this define the 3d tv operator including gradient and divergense functions
+class totalvariation3d:
     "this define functions related to totalvariation minimization"
-    def grad( self, x ):
+    def grad( self, x ):  #gradient of x
         sx, sy, sz = x.shape
         Dx = x[np.r_[1:sx, sx-1],:,:] - x
         Dy = x[:,np.r_[1:sy, sy-1],:] - x
@@ -53,19 +53,19 @@ class totalvariation2d:
         res[:,:,:,2] = Dz
         return res
 
-    def adjDx( self, x ):
+    def adjDx( self, x ):  #used in computing divergense of x
         sx, sy, sz = x.shape
         res = x[np.r_[0, 0:sx-1],:,:] - x
         res[ 0, :, :] = -x[ 0, :, :]
         res[-1, :, :] =  x[-2, :, :]
         return res
 
-    def adjDy( self, x ):
+    def adjDy( self, x ): #use
         sx, sy, sz = x.shape
         res = x[:,np.r_[0, 0:sy-1],:] - x
         res[ :, 0, :] = -x[ :, 0, :]
         res[ :,-1, :] =  x[ :,-2, :]
-        return res 
+        return res
 
     def adjDz( self, x ):
         sx, sy, sz = x.shape
@@ -77,8 +77,8 @@ class totalvariation2d:
     def Div( self, y ):
         #res = np.zeros(y.shape)
         res = self.adjDx(y[:,:,:,0]) + self.adjDy(y[:,:,:,1]) + self.adjDz(y[:,:,:,3])
-        return res    
-    
+        return res
+
     # import tv operator
     def prox( self, y, lambda_tv, step = 0.1 ):
         #lambda_tv = 2/rho
@@ -87,7 +87,7 @@ class totalvariation2d:
         G = np.zeros(sizeg)#intial gradient tensor
         #G = self.initial_grad_tensor(y.shape)
         i = 0
-    
+
         amp = lambda u : np.sqrt(np.sum(u ** 2,axis=2))#nomalize u along the third dimension
 
         while i < 40:
@@ -99,4 +99,4 @@ class totalvariation2d:
             #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
             #print np.linalg.norm(G)
         f = y - lambda_tv * tv.Div(G)
-        return f 
+        return f

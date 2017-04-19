@@ -18,8 +18,6 @@ def prox_l1_soft_thresh( x0, th ):
 """
 softthreshold for proximal transformed l1 norm, th = lambda/rho
 argmin_x (lambda)*||Tfunc(x)||_1 + (rho/2)*||x-x0||_2^2 
-Tfunc can be total variation, wavelet, singular values of Hankel etc.
-
 """
 def prox_l1_Tf_soft_thresh( Tfunc, invTfunc, x0, th ):
     Tfx0 = Tfunc(x0)
@@ -34,7 +32,7 @@ total variation minimization
 2d input
 argmin_f ||f-y||_2^2 + lambda*J(y), where J(y) is ||y||_TV
 
-the proximal function shold have the form of 
+the proximal function shold have the form of
 argmin_f ||y||_TV + (rho/2)*||f-y||_2^2
 
 so the lambda shall be set as 2*tv_r/rho, tv_r is regularization parameter
@@ -50,7 +48,7 @@ def prox_tv2d( y, lambda_tv, step = 0.1 ):
     sizeg = (nx,ny,2) #size of gradient tensor
     G = np.zeros(sizeg)#intial gradient tensor
     i = 0
-    
+
     amp = lambda u : np.sqrt(np.sum(u ** 2,axis=2))#nomalize u along the third dimension
 
     while i < 40:
@@ -63,8 +61,8 @@ def prox_tv2d( y, lambda_tv, step = 0.1 ):
         #print np.linalg.norm(G)
     f = y - lambda_tv * tv.Div(G)
 
-    return f 
-    
+    return f
+
 """
 project on the set C, from set C find a vector that is closest to input x0
 C can be a dictionary
@@ -102,7 +100,7 @@ def prox_l2_Axnb_precomputpart( A, b, rho ):
     na,nb = A.shape
     A_T_A = A.T.dot(A)
     A_T_b = A.T.dot(b)
-    Q = A_T_A + rho*np.identity(na) 
+    Q = A_T_A + rho*np.identity(na)
     Q = np.lingalg.inv(Q)
     Q_dot = Q.dot
     return Q_dot, A_T_b
