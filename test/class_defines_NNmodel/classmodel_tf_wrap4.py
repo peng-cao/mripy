@@ -61,3 +61,4 @@ def test2():
     model.test(mnist.test.images, mnist.test.labels)
 #if __name__ == '__main__':
     #test1()
+    #test2()

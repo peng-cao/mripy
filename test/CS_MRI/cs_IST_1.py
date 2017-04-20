@@ -35,7 +35,7 @@ def plotim2(im):
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('sim_2dmri.mat');
+    mat_contents = sio.loadmat('data/sim_2dmri.mat');
     xorig = mat_contents["sim_2dmri"]
     x = spimg.zoom(xorig, 0.4)
     #plotim2(x)

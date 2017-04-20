@@ -145,12 +145,21 @@ def ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, l1_r, rho ):
 def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho ):
     z = invAfunc(b) #np.zeros(x.shape)
     u = np.zeros(z.shape)
+    # 2d or 3d, use different proximal funcitons
+    if b.ndim is 2:
+        tvprox = pf.prox_tv2d
+    elif b.ndim is 3:
+        tvprox = pf.prox_tv3d
+    else:
+        print('dimension imcompatiable in ADMM_l2Afxnb_tvx')
+        pf.prox_l1_soft_thresh
+
     # iteration
     for _ in range(Nite):
         # soft threshold
         #x = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u,rho,10,0.1)
         x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, 3 )
-        z = pf.prox_tv2d(x+u,2*tv_r/rho)
+        z = tvprox(x+u,2*tv_r/rho)#pf.prox_tv2d(x+u,2*tv_r/rho)
         u = u + step*(x-z)
         print np.linalg.norm(x-z)
     return x

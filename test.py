@@ -1,5 +1,5 @@
-import nufft.nufft_func_cuda as nufft_func_cuda
-nufft_func_cuda.test()
+#import nufft.nufft_func_cuda as nufft_func_cuda
+#nufft_func_cuda.test()
 
 #import test.MRI_recon.test_uterecon as test_uterecon
 #test_uterecon.test()
@@ -18,6 +18,10 @@ nufft_func_cuda.test()
 
 #import test.CS_MRI.cs_TV_ADMM as cs_TV_ADMM
 #cs_TV_ADMM.test()
+
+import test.CS_MRI.cs_TV_ADMM3 as cs_TV_ADMM
+cs_TV_ADMM.test()
+
 
 #import block_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
 #MRF_irssfp_cuda.test()

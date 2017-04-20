@@ -33,21 +33,10 @@ def plotim2(im):
     ax.axis('off')
     plt.show()
 
-# define A and invA fuctions, i.e. A(x) = b, invA(b) = x
-def Afunc(im):
-    ksp = np.fft.fft2(im)
-    ksp = np.fft.fftshift(ksp,(0,1))
-    return np.multiply(ksp,mask)
-
-def invAfunc(ksp):
-    ksp = np.multiply(ksp,mask)
-    ksp = np.fft.ifftshift(ksp,(0,1))
-    im = np.fft.ifft2(ksp)
-    return im
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('sim_2dmri.mat');
+    mat_contents = sio.loadmat('data/sim_2dmri.mat');
     x = mat_contents["sim_2dmri"]
     #x = spimg.zoom(xorig, 0.4)
     #plotim2(x)
@@ -60,6 +49,17 @@ def test():
     ma = np.zeros(nx*ny) #initialize an all zero vector
     ma[ri] = 1 #set sampled data points to 1
     mask = ma.reshape((nx,ny))
+
+    # define A and invA fuctions, i.e. A(x) = b, invA(b) = x
+    def Afunc(im):
+        ksp = np.fft.fft2(im)
+        ksp = np.fft.fftshift(ksp,(0,1))
+        return np.multiply(ksp,mask)
+
+    def invAfunc(ksp):
+        ksp = np.fft.ifftshift(ksp,(0,1))
+        im = np.fft.ifft2(ksp)
+        return im
 
     cx = np.int(nx/2)
     cy = np.int(ny/2)

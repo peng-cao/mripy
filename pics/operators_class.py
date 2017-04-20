@@ -25,15 +25,14 @@ class FFT2d_kmask:
         self.mask = mask #save the k-space mask
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im0 = np.fft.ifftshift(im,(0,1))
-        ksp = np.fft.ifft2(im0,s=None,axes=(0,1))
+        ksp = np.fft.fft2(im)
+        ksp = np.fft.fftshift(ksp,(0,1))
         return np.multiply(ksp,self.mask)#apply mask
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp0 = np.multiply(ksp,self.mask)#apply mask
-        im = np.fft.fft2(ksp0,s=None,axes=(0,1))
-        im = np.fft.fftshift(im,(0,1))
+        ksp = np.fft.ifftshift(ksp,(0,1))
+        im = np.fft.ifft2(ksp)
         return im
 
 
@@ -44,14 +43,14 @@ class FFT2d:
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im0 = np.fft.ifftshift(im,(0,1))
-        ksp = np.fft.ifft2(im0,s=None,axes=(0,1))
+        ksp = np.fft.fft2(im)
+        ksp = np.fft.fftshift(ksp,(0,1))
         return ksp
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        im = np.fft.fft2(ksp,s=None,axes=(0,1))
-        im = np.fft.fftshift(im,(0,1))
+        ksp = np.fft.ifftshift(ksp,(0,1))
+        im = np.fft.ifft2(ksp)
         return im
 
 """
@@ -65,14 +64,14 @@ class FFTnd:
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im0 = np.fft.ifftshift(im,self.axes)
-        ksp = np.fft.ifftn(im0,s=None,axes=self.axes)
+        ksp = np.fft.fftn(im,s=None,axes=self.axes)
+        ksp = np.fft.fftshift(ksp,self.axes)        
         return ksp
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        im = np.fft.fftn(ksp,s=None,axes=self.axes)
-        im = np.fft.fftshift(im,self.axes)
+        ksp = np.fft.ifftshift(ksp,self.axes)
+        im = np.fft.ifft2(ksp,s=None,axes=self.axes)        
         return im
 
 class FFTnd_kmask:
@@ -83,15 +82,14 @@ class FFTnd_kmask:
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        im0 = np.fft.ifftshift(im,self.axes)
-        ksp = np.fft.ifftn(im0,s=None,axes=self.axes)
+        ksp = np.fft.fftn(im,s=None,axes=self.axes)
+        ksp = np.fft.fftshift(ksp,self.axes)
         return np.multiply(ksp,self.mask)
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp0 = np.multiply(ksp,self.mask)
-        im = np.fft.fftn(ksp0,s=None,axes=self.axes)
-        im = np.fft.fftshift(im,self.axes)
+        ksp = np.fft.ifftshift(ksp,self.axes)
+        im = np.fft.ifft2(ksp,s=None,axes=self.axes)
         return im
 
 """

@@ -1,7 +1,7 @@
 import numpy as np
 from opt_alg import BacktrackingLineSearch2
 import tvop_func as tv
-
+import tvop_class as tv_class
 """
 softthreshold/proximal for l1 norm, th = lambda/rho
 argmin_x (lambda)*||x||_1 + (rho/2)*||x-x0||_2^2
@@ -60,6 +60,27 @@ def prox_tv2d( y, lambda_tv, step = 0.1 ):
         #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
         #print np.linalg.norm(G)
     f = y - lambda_tv * tv.Div(G)
+
+    return f
+
+def prox_tv3d( y, lambda_tv, step = 0.1 ):
+    #lambda_tv = 2/rho
+    #nx, ny, nz = y.shape
+    sizeg = y.shape+(y.ndim,) #size of gradient tensor
+    G = np.zeros(sizeg)#intial gradient tensor
+    i = 0
+    tvopt = tv_class.TV3d()
+    #amp = lambda u : np.sqrt(np.sum(u ** 2,axis=3))#nomalize u along the third dimension
+
+    while i < 40:
+        dG = tvopt.grad(tvopt.Div(G)-y/lambda_tv)#gradient of G
+        G = G - step*dG#gradient desent, tested to work with negative sign for gradient update
+        d = tvopt.amp(G)#np.tile(amp(G)[:,:,np.newaxis], (1,1,1,2))#.reshape(sizeg)
+        G = G/np.maximum(d,1.0*np.ones(sizeg))#normalize to ensure the |G|<1
+        i = i + 1
+        #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
+        #print np.linalg.norm(G)
+    f = y - lambda_tv * tvopt.Div(G)
 
     return f
 

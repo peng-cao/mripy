@@ -110,11 +110,12 @@ def loadmat( matfile, var ):
 nx: kx dimention size
 ny: ky dimention size
 center_r: full sampling center area is (2*r)**2
+undersampling: undersampling rate, 1 for full sampling
 """
 
-def mask2d( nx, ny, center_r = 15 ):
+def mask2d( nx, ny, center_r = 15, undersampling = 0.5 ):
     #create undersampling mask
-    k = int(round(nx*ny*0.5)) #undersampling
+    k = int(round(nx*ny*undersampling)) #undersampling
     ri = np.random.choice(nx*ny,k,replace=False) #index for undersampling
     ma = np.zeros(nx*ny) #initialize an all zero vector
     ma[ri] = 1 #set sampled data points to 1
@@ -124,10 +125,57 @@ def mask2d( nx, ny, center_r = 15 ):
     if center_r > 0:
         cx = np.int(nx/2)
         cy = np.int(ny/2)
-        cxr = np.arange(round(cx-15),round(cx+15+1))
-        cyr = np.arange(round(cy-15),round(cy+15+1))
+        cxr = np.arange(round(cx-center_r),round(cx+center_r+1))
+        cyr = np.arange(round(cy-center_r),round(cy+center_r+1))
         mask[np.ix_(map(int,cxr),map(int,cyr))] = np.ones((cxr.shape[0],cyr.shape[0])) #center k-space is fully sampled
 
+    return mask 
+
+"""
+#generate 3d k-space mask
+nx: kx dimention size
+ny: ky dimention size
+center_r: full sampling center area is (2*r)**2
+undersampling: undersampling rate, 1 for full sampling
+"""
+
+def mask3d( nx, ny, nz, center_r = [15, 15, 0], undersampling = 0.5 ):
+    #create undersampling mask
+    mask_shape = np.array([nx, ny, nz])
+    Npts       = mask_shape.prod()#total number of data points
+    k          = int(round(Npts * undersampling)) #undersampling
+    ri         = np.random.choice(Npts,k,replace=False) #index for undersampling
+    ma         = np.zeros(Npts) #initialize an all zero vector
+    ma[ri]     = 1              #set sampled data points to 1
+    mask       = ma.reshape(mask_shape)
+
+    flag_centerfull = 1
+    # x center, k-space index range
+    if center_r[0] > 0:
+        cxr = np.arange(-center_r[0], center_r[0] + 1) + mask_shape[0]//2
+    elif center_r[0] is 0:
+        cxr = np.arange(mask_shape[0])
+    else:
+        flag_centerfull = 0
+    # y center, k-space index range
+    if center_r[1] > 0:
+        cyr = np.arange(-center_r[1], center_r[1] + 1) + mask_shape[1]//2
+    elif center_r[1] is 0:
+        cyr = np.arange(mask_shape[1])
+    else:
+        flag_centerfull = 0
+     # z center, k-space index range
+    if center_r[2] > 0:
+        czr = np.arange(-center_r[2], center_r[2] + 1) + mask_shape[2]//2
+    elif center_r[2] is 0:
+        czr = np.arange(mask_shape[2])
+    else:
+        flag_centerfull = 0
+
+    #full sampling in the center kspace
+    if flag_centerfull is not 0:
+        mask[np.ix_(map(int,cxr),map(int,cyr),map(int,czr))] = \
+        np.ones((cxr.shape[0],cyr.shape[0],czr.shape[0])) #center k-space is fully sampled
     return mask 
 
 """

@@ -33,16 +33,6 @@ def plotim2(im):
     ax.axis('off')
     plt.show()
 
-# define A and invA fuctions, i.e. A(x) = b, invA(b) = x
-def Afunc(im):
-    ksp = np.fft.fft2(im)
-    ksp = np.fft.fftshift(ksp,(0,1))
-    return np.multiply(ksp,mask)
-
-def invAfunc(ksp):
-    ksp = np.fft.ifftshift(ksp,(0,1))
-    im = np.fft.ifft2(ksp)
-    return im
 
 def test():
     # simulated image
@@ -67,6 +57,17 @@ def test():
     cyr = np.arange(round(cy-15),round(cy+15+1))
 
     mask[np.ix_(map(int,cxr),map(int,cyr))] = np.ones((cxr.shape[0],cyr.shape[0])) #center k-space is fully sampled
+
+    # define A and invA fuctions, i.e. A(x) = b, invA(b) = x
+    def Afunc(im):
+        ksp = np.fft.fft2(im)
+        ksp = np.fft.fftshift(ksp,(0,1))
+        return np.multiply(ksp,mask)
+
+    def invAfunc(ksp):
+        ksp = np.fft.ifftshift(ksp,(0,1))
+        im = np.fft.ifft2(ksp)
+        return im
 
     plotim1(np.absolute(mask))
 
