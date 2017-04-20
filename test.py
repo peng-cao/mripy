@@ -19,9 +19,11 @@
 #import test.CS_MRI.cs_TV_ADMM as cs_TV_ADMM
 #cs_TV_ADMM.test()
 
-import test.CS_MRI.cs_TV_ADMM3 as cs_TV_ADMM
-cs_TV_ADMM.test()
+#import test.CS_MRI.cs_TV_ADMM3 as cs_TV_ADMM3
+#cs_TV_ADMM3.test()
 
+import test.CS_MRI.cs_TV_ADMM3_cuda as cs_TV_ADMM3_cuda
+cs_TV_ADMM3_cuda.test()
 
 #import block_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
 #MRF_irssfp_cuda.test()

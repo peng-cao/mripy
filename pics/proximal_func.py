@@ -71,7 +71,8 @@ def prox_tv3d( y, lambda_tv, step = 0.1 ):
     i = 0
     tvopt = tv_class.TV3d()
     #amp = lambda u : np.sqrt(np.sum(u ** 2,axis=3))#nomalize u along the third dimension
-
+    #norm_g0 = np.linalg.norm(tvopt.grad(y))
+    #norm_g = norm_g0
     while i < 40:
         dG = tvopt.grad(tvopt.Div(G)-y/lambda_tv)#gradient of G
         G = G - step*dG#gradient desent, tested to work with negative sign for gradient update
@@ -79,7 +80,7 @@ def prox_tv3d( y, lambda_tv, step = 0.1 ):
         G = G/np.maximum(d,1.0*np.ones(sizeg))#normalize to ensure the |G|<1
         i = i + 1
         #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
-        #print np.linalg.norm(G)
+        #norm_g = np.linalg.norm(G)
     f = y - lambda_tv * tvopt.Div(G)
 
     return f

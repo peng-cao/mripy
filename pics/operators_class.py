@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.optimize as spopt
 import scipy.fftpack as spfft
+from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
 
 class data_class:
     def __init__( self, data, dims_name ):
@@ -71,7 +72,7 @@ class FFTnd:
     # let's call image <- k-space as backward
     def backward( self, ksp ):
         ksp = np.fft.ifftshift(ksp,self.axes)
-        im = np.fft.ifft2(ksp,s=None,axes=self.axes)        
+        im = np.fft.ifftn(ksp,s=None,axes=self.axes)        
         return im
 
 class FFTnd_kmask:
@@ -89,7 +90,26 @@ class FFTnd_kmask:
     # let's call image <- k-space as backward
     def backward( self, ksp ):
         ksp = np.fft.ifftshift(ksp,self.axes)
-        im = np.fft.ifft2(ksp,s=None,axes=self.axes)
+        im = np.fft.ifftn(ksp,s=None,axes=self.axes)
+        return im
+
+class FFTnd_cuda_kmask:
+    "this is ndim FFT_cuda with k-space mask for CS MRI recon"
+    def __init__( self, mask, axes = (0,1,2)):
+        self.mask = mask #save the k-space mask
+        self.axes = axes
+
+    # let's call k-space <- image as forward
+    def forward( self, im ):
+        #print(im.shape)
+        ksp = fftnc2c_cuda(im)
+        ksp = np.fft.fftshift(ksp,self.axes)
+        return np.multiply(ksp,self.mask)
+
+    # let's call image <- k-space as backward
+    def backward( self, ksp ):
+        ksp = np.fft.ifftshift(ksp,self.axes)
+        im = ifftnc2c_cuda(ksp)
         return im
 
 """

@@ -804,7 +804,7 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps)
     #try to override nspread
-    nspread = min(3, nspread)
+    #nspread = min(3, nspread)
 
     # Construct the convolved grid
     if gridfast is 0:
@@ -872,17 +872,17 @@ def test():
     #test nufft type1
     #nufft_func.time_nufft1d1(nufft1d1_gaussker_cuda,64,5120,5)
     #nufft_func.time_nufft2d1(nufft2d1_gaussker_cuda,64,64,5120)
-    #nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,32,32,16,2048)
+    #nufft_func.time_nufft3d1(nufft3d1_gaussker_cuda,256,256,128,20480000,1)
 
     #test nufft type2
     #nufft_func.time_nufft1d2(nufft1d1_gaussker_cuda,nufft1d2_gaussker_cuda,32,102400,5)
     #nufft_func.time_nufft2d2(nufft2d1_gaussker_cuda,nufft2d2_gaussker_cuda,32,32,25000,5)
-    #nufft_func.time_nufft3d2(nufft3d1_gaussker_cuda,nufft3d2_gaussker_cuda,8,8,8,204800,1)
+    #nufft_func.time_nufft3d2(nufft3d1_gaussker_cuda,nufft3d2_gaussker_cuda,128,128,128,2048000,1)
 
     #compare
-    nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,32000)
+    #nufft_func.compare_nufft1d1(nufft1d1_gaussker_cuda,32,32000)
     #nufft_func.compare_nufft2d1(nufft2d1_gaussker_cuda, 64, 64,2500)
-    #nufft_func.compare_nufft3d1(nufft3d1_gaussker_cuda, 32, 32,16,20480)
+    nufft_func.compare_nufft3d1(nufft3d1_gaussker_cuda, 16, 16,16,20480)
 
 #if __name__ == "__main__":
     #test()

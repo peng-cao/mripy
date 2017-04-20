@@ -2,6 +2,7 @@ import pycuda.autoinit
 import pycuda.gpuarray as gpuarray
 import numpy as np
 from skcuda.fft import fft, ifft, Plan
+
 #wrap for fft in cufft
 def fftnc2c_cuda( x ):
     x = np.array(x).astype(np.complex64)

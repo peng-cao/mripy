@@ -94,9 +94,9 @@ def test():
     #do cs mri recon
     Nite = 20 #number of iterations
     step = 1 #step size
-    th = 1000 # theshold level
-    xopt = solvers.IST_2(Afunc,invAfunc,b, Nite, step,th) #soft thresholding
-    #xopt = solvers.ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, 10, 1 )
+    #th = 1000 # theshold level
+    #xopt = solvers.IST_2(Afunc,invAfunc,b, Nite, step,th) #soft thresholding
+    xopt = solvers.ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, 10, 1 )
     #xopt = solvers.ADMM_l2Afxnb_l1x_2( Afunc, invAfunc, b, Nite, step, 100, 1 )
 
     plotim1(np.absolute(xopt))

@@ -20,7 +20,7 @@ def BacktrackingLineSearch(f, df, x, p,c = 0.0001,rho = 0.5):
     i = 0
 
     #Loop
-    while i < 5 and f(x + alphak * p) > f(x) + c * alphak * derphi:
+    while i < 20 and f(x + alphak * p) > f(x) + c * alphak * derphi:
         alphak = alphak * rho
         i += 1
     if alphak < 0.1:
@@ -47,7 +47,7 @@ def BacktrackingLineSearch2(f, df, x, p,c = 0.0001,rho = 0.5):
     i = 0
 
     #Loop
-    while i < 5 and f(x + alphak * p) - f0 >  - c * alphak * derphi:
+    while i < 20 and f(x + alphak * p) - f0 >  - c * alphak * derphi:
         alphak = alphak * rho
         i += 1
     #if i > 1:
