@@ -220,7 +220,7 @@ zero pad the 3d k-space in kx and ky dimentions
 def pad3d( data, nx, ny, nz ):
     #create undersampling mask
     datsize = data.shape
-    ndata = 1j*np.zeros((nx,ny,nz,datsize[3],datsize[4]))
+    ndata = np.zeros((nx,ny,nz,datsize[3],datsize[4]),dtype = data.dtype)
 
     # center k-space index range
     datrx = np.int(datsize[0]/2)
@@ -243,7 +243,7 @@ zero pad the 2d k-space in kx and ky dimentions
 def pad2d( data, nx, ny ):
     #create undersampling mask
     datsize = data.shape
-    ndata = 1j*np.zeros((nx,ny,datsize[2],datsize[3]))
+    ndata = np.zeros((nx,ny,datsize[2],datsize[3]),dtype = data.dtype)
 
     # center k-space index range
     datrx = np.int(datsize[0]/2)

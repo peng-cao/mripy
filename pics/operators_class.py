@@ -22,36 +22,43 @@ imhat = fft2dm.backward(ksp)
 """
 class FFT2d_kmask:
     "this is 2d FFT with k-space mask for CS MRI recon"
-    def __init__( self, mask ):
+    def __init__( self, mask, axes=(0,1) ):
         self.mask = mask #save the k-space mask
+        self.axes = axes        
     # let's call k-space <- image as forward
     def forward( self, im ):
-        ksp = np.fft.fft2(im)
-        ksp = np.fft.fftshift(ksp,(0,1))
+        im = np.fft.fftshift(im,self.axes)         
+        ksp = np.fft.fft2(im,s=None,axes=self.axes)
+        ksp = np.fft.ifftshift(ksp,self.axes)
         return np.multiply(ksp,self.mask)#apply mask
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.ifftshift(ksp,(0,1))
-        im = np.fft.ifft2(ksp)
+        ksp = np.fft.fftshift(ksp,self.axes)
+        im = np.fft.ifft2(ksp,s=None,axes=self.axes)
+        #im = np.fft.ifft2(ksp,s=None,axes=self.axes)
+        im = np.fft.ifftshift(im,self.axes)
         return im
 
 
 class FFT2d:
     "this is 2d FFT without k-space mask for CS MRI recon"
-    #def __init__( self ):
+    def __init__( self, axes = (0,1)):
         #self.mask = mask #save the k-space mask
-
+        self.axes = axes    
     # let's call k-space <- image as forward
     def forward( self, im ):
-        ksp = np.fft.fft2(im)
-        ksp = np.fft.fftshift(ksp,(0,1))
+        im = np.fft.fftshift(im,self.axes)        
+        ksp = np.fft.fft2(im,s=None,axes=self.axes)
+        ksp = np.fft.ifftshift(ksp,self.axes)
         return ksp
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.ifftshift(ksp,(0,1))
-        im = np.fft.ifft2(ksp)
+        ksp = np.fft.fftshift(ksp,self.axes)
+        #im = np.fft.ifft2(ksp,s=None,axes=(0,1))#noted that numpy.fft by default applies to last two dims
+        im = np.fft.ifft2(ksp,s=None,axes=self.axes)
+        im = np.fft.ifftshift(im,self.axes)
         return im
 
 """
@@ -65,14 +72,17 @@ class FFTnd:
 
     # let's call k-space <- image as forward
     def forward( self, im ):
+        im  = np.fft.fftshift(im,self.axes)                
         ksp = np.fft.fftn(im,s=None,axes=self.axes)
-        ksp = np.fft.fftshift(ksp,self.axes)        
+        ksp = np.fft.ifftshift(ksp,self.axes)        
         return ksp
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.ifftshift(ksp,self.axes)
-        im = np.fft.ifftn(ksp,s=None,axes=self.axes)        
+        ksp = np.fft.fftshift(ksp,self.axes)
+        #im = np.fft.ifftn(ksp,s=None,axes=self.axes) 
+        im = np.fft.ifftn(ksp,s=None,axes=self.axes)
+        im = np.fft.ifftshift(im,self.axes)               
         return im
 
 class FFTnd_kmask:
@@ -83,14 +93,17 @@ class FFTnd_kmask:
 
     # let's call k-space <- image as forward
     def forward( self, im ):
+        im  = np.fft.fftshift(im,self.axes)         
         ksp = np.fft.fftn(im,s=None,axes=self.axes)
-        ksp = np.fft.fftshift(ksp,self.axes)
+        ksp = np.fft.ifftshift(ksp,self.axes)
         return np.multiply(ksp,self.mask)
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.ifftshift(ksp,self.axes)
-        im = np.fft.ifftn(ksp,s=None,axes=self.axes)
+        ksp = np.fft.fftshift(ksp,self.axes)
+        #im = np.fft.ifftn(ksp,s=None,axes=self.axes)
+        im  = np.fft.ifftn(ksp,s=None,axes=self.axes)
+        im  = np.fft.ifftshift(im,self.axes)          
         return im
 
 class FFTnd_cuda_kmask:
@@ -101,15 +114,17 @@ class FFTnd_cuda_kmask:
 
     # let's call k-space <- image as forward
     def forward( self, im ):
-        #print(im.shape)
+        im  = np.fft.fftshift(im,self.axes)    
         ksp = fftnc2c_cuda(im)
-        ksp = np.fft.fftshift(ksp,self.axes)
+        ksp = np.fft.ifftshift(ksp,self.axes)
         return np.multiply(ksp,self.mask)
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.ifftshift(ksp,self.axes)
+        ksp = np.fft.fftshift(ksp,self.axes)
+        #im = ifftnc2c_cuda(ksp)
         im = ifftnc2c_cuda(ksp)
+        im = np.fft.ifftshift(im,self.axes)  
         return im
 
 """

@@ -16,14 +16,17 @@
 #import test.CS_MRI.cs_TV as cs_TV
 #cs_TV.test()
 
-#import test.CS_MRI.cs_TV_ADMM as cs_TV_ADMM
-#cs_TV_ADMM.test()
+#import test.CS_MRI.cs_TV_ADMM_2d as cs_TV_ADMM_2d
+#cs_TV_ADMM_2d.test()
 
-#import test.CS_MRI.cs_TV_ADMM3 as cs_TV_ADMM3
-#cs_TV_ADMM3.test()
+#import test.CS_MRI.cs_TV_ADMM_2d_uselib as cs_TV_ADMM_2d_uselib
+#cs_TV_ADMM_2d_uselib.test()
 
-import test.CS_MRI.cs_TV_ADMM3_cuda as cs_TV_ADMM3_cuda
-cs_TV_ADMM3_cuda.test()
+#import test.CS_MRI.cs_TV_ADMM_3d as cs_TV_ADMM_3d
+#cs_TV_ADMM_3d.test()
+
+#import test.CS_MRI.cs_TV_ADMM_3d_cuda as cs_TV_ADMM_3d_cuda
+#cs_TV_ADMM_3d_cuda.test()
 
 #import block_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
 #MRF_irssfp_cuda.test()
@@ -34,3 +37,12 @@ cs_TV_ADMM3_cuda.test()
 
 #import test.numbaCUDA_GPU.test_cufft as test_cufft
 #test_cufft.test4()
+
+#import test.espirit.espirit_2d as espirit_2d
+#espirit_2d.test()
+
+#import test.espirit.espirit_2d_uselib as espirit_2d_uselib
+#espirit_2d_uselib.test()
+
+import test.espirit.espirit_3d_uselib as espirit_3d_uselib
+espirit_3d_uselib.test()
