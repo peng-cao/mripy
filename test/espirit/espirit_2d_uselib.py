@@ -22,7 +22,8 @@ def test():
     #crop k-space
     xcrop = ut.crop2d( x, 30 )  
     #do espirit2d  
-    Vim, sim = espirit_2d(xcrop, x.shape)
+    Vim, sim = espirit_2d(xcrop, x.shape,\
+     nsingularv = 150, hkwin_shape = (16,16,16), pad_before_espirit = 0, pad_fact = 2 )
 
 if __name__ == "__main__":
     test()

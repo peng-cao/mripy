@@ -18,7 +18,7 @@ Vim the sensitivity map
 sim the singular value map
 
 """
-def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16) ):
+def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_before_espirit = 0, pad_fact = 1 ):
     ft = op.FFT2d()#2d fft operator
     #timing = utc.timing()
     #multidimention tensor as the block hankel matrix
@@ -35,23 +35,33 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16) ):
     #timing.stop().display('Reshape Hankel ').start()
     #svd, could try other approaches
     # V has the coil information since the second dim of hmtx has coil data    
-    U, s, V = np.linalg.svd(hmtx, full_matrices=False)
+    #U, s, V = np.linalg.svd(hmtx, full_matrices=False)
+    U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )   
+    #U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )
     #timing.stop().display('SVD ')
     #S = np.diag(s)
     #ut.plotim1(np.absolute(V[:,0:150]).T)#plot V singular vectors
-    ut.plot(s)#plot singular values
+    #ut.plot(s)#plot singular values
     #invh = np.zeros(x.shape,complex)
     #print h.shape
     #hk.invhankelnd(h,invh,(2,3,1))
-
+    
     #reshape vn to generate k-space vn tensor
-
     vn = V[0:nsingularv,:].reshape((nsingularv,dimh[3],dimh[4],dimh[5])).transpose((1,2,0,3))
 
     #zero pad vn, vn matrix of reshaped singular vectors,
     #dims of vn: nx,ny,nsingularv,ncoil
-    nx = x_shape[0]
-    ny = x_shape[1]
+    #nx = x_shape[0]
+    #ny = x_shape[1]
+
+    # do pading before espirit
+    if pad_before_espirit is 0:
+        nx = min(pad_fact * xcrop.shape[0], x_shape[0])
+        ny = min(pad_fact * xcrop.shape[1], x_shape[1])  
+    else:
+        nx = x_shape[0]
+        ny = x_shape[1]      
+
     nc = x_shape[2]
     vn = ut.pad2d(vn,nx,ny)
     #plot first singular vecctor Vn[0]
@@ -68,7 +78,11 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16) ):
             U, s, V = np.linalg.svd(vvH, full_matrices=False)
             sim[ix,iy] = s[0]
             Vim[ix,iy,:] = V[0,:].squeeze()
-
+    
+    if pad_before_espirit is 0:
+        Vim = ft.backward(ut.pad2d(ft.forward(Vim),x_shape[0],x_shape[1]))
+        sim = ft.backward(ut.pad2d(ft.forward(sim),x_shape[0],x_shape[1]))
+   
     #plot first eigen vector, eigen value
     ut.plotim3(np.absolute(Vim))
     ut.plotim1(np.absolute(sim))
@@ -86,7 +100,7 @@ Vim the sensitivity map
 sim the singular value map
 
 """
-def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16,16) ):
+def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16), pad_before_espirit = 0, pad_fact = 1 ):
     ft = op.FFTnd((0,1,2))#3d fft operator
     timing = utc.timing()
     #multidimention tensor as the block hankel matrix
@@ -105,13 +119,14 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16,16) ):
     #svd, could try other approaches
     # V has the coil information since the second dim of hmtx has coil data
     
-    U, s, V = np.linalg.svd(hmtx, full_matrices=False)
-    #U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )
-    #V = V.transpose()
+    #U, s, V = np.linalg.svd(hmtx, full_matrices=False)
+    U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )
+
     timing.stop().display('SVD ').start()
+
     #S = np.diag(s)
     #ut.plotim1(np.absolute(V[:,0:150]).T)#plot V singular vectors
-    ut.plot(s)#plot singular values
+    #ut.plot(s)#plot singular values
     #invh = np.zeros(x.shape,complex)
     #print h.shape
     #hk.invhankelnd(h,invh,(2,3,1))
@@ -122,9 +137,16 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16,16) ):
 
     #zero pad vn, vn matrix of reshaped singular vectors,
     #dims of vn: nx,ny,nsingularv,ncoil
-    nx = 2*xcrop.shape[0]#x_shape[0]
-    ny = 2*xcrop.shape[1]#x_shape[1]
-    nz = 2*xcrop.shape[2]#x_shape[2]
+    #do pading before espirit, reduce the memory requirement
+    if pad_before_espirit is 0:
+        nx = min(pad_fact * xcrop.shape[0], x_shape[0])
+        ny = min(pad_fact * xcrop.shape[1], x_shape[1])  
+        nz = min(pad_fact * xcrop.shape[2], x_shape[2])
+    else:
+        nx = x_shape[0]
+        ny = x_shape[1]
+        nz = x_shape[2]  
+
     nc = x_shape[3]  
     vn = ut.pad3d(vn,nx,ny,nz)
     #plot first singular vecctor Vn[0]
@@ -136,16 +158,26 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape=(16,16,16) ):
     for ix in range(nx):
         for iy in range(ny):
             for iz in range (nz):
-                vpix = imvn[ix,iy,iz,:,:].squeeze()
-                vpix = np.matrix(vpix).transpose()
-                vvH = vpix.dot(vpix.getH())
-                U, s, V = np.linalg.svd(vvH, full_matrices=False)
-                sim[ix,iy,iz] = s[0]
+                vpix    = imvn[ix,iy,iz,:,:].squeeze()
+                vpix    = np.matrix(vpix).transpose()
+                vvH     = vpix.dot(vpix.getH())
+                #U, s, V = np.linalg.svd(vvH, full_matrices=False)
+                s, V = numpy.linalg.eig(vvH)
+                print(V)
+                print(s)
+                sim[ix,iy,iz]   = s[0]
                 Vim[ix,iy,iz,:] = V[0,:].squeeze()
+    
+    timing.stop().display('ESPIRIT ')
+    #pad the image after espirit
+    if pad_before_espirit is 0:
+        Vim = ft.backward(ut.pad3d(ft.forward(Vim),x_shape[0],x_shape[1],x_shape[2]))
+        sim = ft.backward(ut.pad3d(ft.forward(sim),x_shape[0],x_shape[1],x_shape[2]))
+
 
     #plot first eigen vector, which is coil sensitvity map, and eigen value
-    ut.plotim3(np.absolute(Vim[:,:,1,:].squeeze()))
-    ut.plotim1(np.absolute(sim[:,:,1].squeeze()))
+    ut.plotim3(np.absolute(Vim[Vim.shape[0]//2,:,:,:].squeeze()))
+    ut.plotim1(np.absolute(sim[Vim.shape[0]//2,:,:].squeeze()))
     #Vim_dims_name = ['x', 'y', 'z', 'coil']
     #sim_dims_name = ['x', 'y', 'z']
     return Vim, sim #, Vim_dims_name, sim_dims_name

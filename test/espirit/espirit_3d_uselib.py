@@ -20,9 +20,11 @@ def test():
     im = ft.backward(x)
     ut.plotim3(np.absolute(im[:,:,:,0]))
     #crop k-space
-    xcrop = ut.crop3d( x, 20 )  
+    xcrop = ut.crop3d( x, 24 )  
     #do espirit2d  
-    Vim, sim = espirit_3d(xcrop, x.shape, 50, (10,10,10))
+    Vim, sim = espirit_3d(xcrop, x.shape, 150, hkwin_shape = (12,12,12),\
+     pad_before_espirit = 0, pad_fact = 2)
+    return Vim, sim, ft
 
 if __name__ == "__main__":
     test()

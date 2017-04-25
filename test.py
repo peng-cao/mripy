@@ -45,4 +45,4 @@
 #espirit_2d_uselib.test()
 
 import test.espirit.espirit_3d_uselib as espirit_3d_uselib
-espirit_3d_uselib.test()
+Vim, sim, ft = espirit_3d_uselib.test()
