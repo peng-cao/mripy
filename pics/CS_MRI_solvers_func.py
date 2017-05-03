@@ -30,7 +30,7 @@ def IST_2( Afunc, invAfunc, b, Nite, step, th ):
     # iteration
     for _ in range(Nite):
         # soft threshold
-        x = pf.prox_l1_soft_thresh(x_acc, th)
+        x = pf.prox_l1_soft_thresh2(x_acc, th)
         #residual
         r = Afunc(x) - b
         x_acc = x_acc - step*invAfunc(r)
@@ -42,16 +42,46 @@ iterative soft-thresholding
 argmin ||A(x)-b|||_2^2+(th/2)*||Tfunc(x)||_1
 function A() input
 Tfunc can be wavelet, singular values of Hankel etc.
+proximal gradient method which is
+x^k = prox_tkh(x^k-1 - tk * grad(x^k-1))
 """
-def IST_3( Afunc, invAfunc, Tfunc, invTfunc, mask, b, Nite, step, th ):
+def IST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
     x_acc = step*invAfunc(b) #np.zeros(x.shape)
     # iteration
     for _ in range(Nite):
         # soft threshold
-        x = pf.prox_l1_Tf_soft_thresh(Tfunc,invTfunc,x_acc, th)
+        x = pf.prox_l1_Tf_soft_thresh2(Tfunc,invTfunc,x_acc, th)
         #residual
-        r = Afunc(x,mask) - b
+        r = Afunc(x) - b
         x_acc = x_acc - step*invAfunc(r)
+        print np.linalg.norm(r)
+    return x
+
+"""
+fast iterative soft-thresholding
+argmin ||A(x)-b|||_2^2+(th/2)*||Tfunc(x)||_1
+function A() input
+Tfunc can be wavelet, singular values of Hankel etc.
+proximal gradient method which is
+y^0 = x^0
+x^k = prox_tkh(y^k-1 - tk * grad(y^k-1))
+y^k = x^k + (k-1)/(k+2) (x^k - x^k-1)
+""" 
+def FIST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
+    y     = step*invAfunc(b) #np.zeros(x.shape)
+    y_acc = np.zeros(y.shape,dtype=b.dtype)
+    x_pre = y
+    k     = 1
+    # iteration
+    for _ in range(Nite):
+        #residual
+        r = Afunc(y) - b
+        y_acc = y_acc - step*invAfunc(r)
+        # soft threshold
+        x = pf.prox_l1_Tf_soft_thresh2(Tfunc,invTfunc,y_acc, th)        
+        y = x + np.multiply((k-1)/(k+2), (x - x_pre))
+        x_pre = x
+        k += 1
         print np.linalg.norm(r)
     return x
 

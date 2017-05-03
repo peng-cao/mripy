@@ -10,6 +10,9 @@
 #import test.CS_MRI.cs_IST_2 as cs_IST_2
 #cs_IST_2.test()
 
+#import test.CS_MRI.cs_IST_3 as cs_IST_3
+#cs_IST_3.test()
+
 #import test.CS_MRI.cs_ADMM as cs_ADMM
 #cs_ADMM.test()
 
@@ -28,8 +31,11 @@
 #import test.CS_MRI.cs_TV_ADMM_3d_cuda as cs_TV_ADMM_3d_cuda
 #cs_TV_ADMM_3d_cuda.test()
 
-#import block_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
+#import bloch_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
 #MRF_irssfp_cuda.test()
+
+import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
+cs_MRF_CNN_IST_cuda.test()
 
 #import test.class_defines_NNmodel.classmodel_tf_wrap4 as tfmodel
 #tfmodel.test1()
@@ -44,5 +50,8 @@
 #import test.espirit.espirit_2d_uselib as espirit_2d_uselib
 #espirit_2d_uselib.test()
 
-import test.espirit.espirit_3d_uselib as espirit_3d_uselib
-Vim, sim, ft = espirit_3d_uselib.test()
+#import test.espirit.espirit_3d_uselib as espirit_3d_uselib
+#Vim, sim, ft = espirit_3d_uselib.test()
+
+#import dwi.dwi_func as dwi_func
+#dwi_func.test()

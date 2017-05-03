@@ -232,9 +232,9 @@ def test_cuda(M0):
     M    = cuda.local.array(shape=3,      dtype=numba.float64)    
     Rth  = cuda.local.array(shape=(3, 3), dtype=numba.float64)
     Rtho = cuda.local.array(shape=(3, 3), dtype=numba.float64)
-    Em   = cuda.local.array(shape=(3, 3), dtype=numba.float32)
-    Afp  = cuda.local.array(shape=(3, 3), dtype=numba.float32)
-    Bfp  = cuda.local.array(shape=3,      dtype=numba.float32)  
+    Em   = cuda.local.array(shape=(3, 3), dtype=numba.float64)#float32
+    Afp  = cuda.local.array(shape=(3, 3), dtype=numba.float64)#float32
+    Bfp  = cuda.local.array(shape=3,      dtype=numba.float64)#float32
  
 
     #simple test    

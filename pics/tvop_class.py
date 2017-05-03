@@ -21,7 +21,7 @@ class TV2d:
         Dx = x[np.r_[1:sx, sx-1],:] - x
         Dy = x[:,np.r_[1:sy, sy-1]] - x
         #res = np.concatenate((Dx,Dy),2)
-        res = (1j)*np.zeros((sx,sy,2))
+        res = np.zeros((sx,sy,2), dtype=x.dtype)
         res[:,:,0] = Dx
         res[:,:,1] = Dy
         return res

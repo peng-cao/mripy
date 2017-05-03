@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.optimize as spopt
 import scipy.fftpack as spfft
+import dwt.dwt_func as dwt_func
 #from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
 
 class data_class:
@@ -106,6 +107,53 @@ class FFTnd_kmask:
         im  = np.fft.ifftshift(im,self.axes)          
         return im
 
+class DWT2d:
+    "this is 2d wavelet transform for CS MRI recon"
+    def __init__( self, wavelet = 'db2', level = 2, axes = (0, 1) ):
+        self.wavelet      = wavelet
+        self.level        = level
+        self.coeff_slices = []
+        self.axes         = axes 
+        self.shape        = None       
+    # wavelet domain --> image, forward
+    def forward( self, arr_coeff ):
+        im  = dwt_func.idwt2d(arr_coeff, self.coeff_slices, self.wavelet, self.axes)
+        if self.shape is not None:       
+            for i in range(len(self.axes)):
+                if self.shape[i] < im.shape[i]:#if shape mismatch, delete the last line 
+                    im = np.delete(im,(im.shape[i]-1),axis=i)        
+        return im
+    # image --> wavelet domain, backward
+    def backward( self, im ):
+        if self.shape is None:
+            self.shape = im.shape
+        arr_coeff, self.coeff_slices  = dwt_func.dwt2d(im, self.wavelet, self.level, self.axes)
+        #ut.plotim1(arr_coeff)
+        return arr_coeff
+
+class DWTnd:
+    "this is nd wavelet transform for CS MRI recon"
+    def __init__( self, wavelet = 'db2', level = 2, axes = (0, 1, 2) ):
+        self.wavelet      = wavelet
+        self.level        = level
+        self.coeff_slices = []
+        self.axes         = axes
+        self.shape        = None
+    # wavelet domain --> image, forward
+    def forward( self, arr_coeff ):
+        im         = dwt_func.idwtnd(arr_coeff, self.coeff_slices, self.wavelet, self.axes)
+        if self.shape is not None:
+            for i in range(len(self.axes)):
+                if self.shape[i] < im.shape[i]:#if shape mismatch, delete the last line 
+                    im = np.delete(im,(im.shape[i]-1),axis=i)
+        return im
+    # image --> wavelet domain, backward
+    def backward( self, im ):
+        if self.shape is None:
+            self.shape = im.shape     
+        arr_coeff, self.coeff_slices  = dwt_func.dwtnd(im, self.wavelet, self.level, self.axes)
+        #ut.plotim1(arr_coeff)
+        return arr_coeff
 
 """
 this class appy coil conbation for 2d image

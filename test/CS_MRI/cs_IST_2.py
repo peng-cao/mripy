@@ -75,12 +75,12 @@ def test():
     plotim1(np.absolute(invAfunc(b)))
 
     #do soft thresholding
-    Nite = 150 #number of iterations
-    step = 0.5 #step size
+    Nite = 200 #number of iterations
+    step = 1 #step size
     th = 1000 # theshold level
     xopt = solvers.IST_2(Afunc,invAfunc,b, Nite, step,th)
 
     plotim1(np.absolute(xopt))
 
-#if __name__ == "__main__":
-    #test()
+if __name__ == "__main__":
+    test()

@@ -190,8 +190,8 @@ def crop2d( data, center_r = 15 ):
     if center_r > 0:
         cx = np.int(nx/2)
         cy = np.int(ny/2)
-        cxr = np.arange(round(cx-15),round(cx+15))
-        cyr = np.arange(round(cy-15),round(cy+15))
+        cxr = np.arange(round(cx-center_r),round(cx+center_r))
+        cyr = np.arange(round(cy-center_r),round(cy+center_r))
         
     return data[np.ix_(map(int,cxr),map(int,cyr))]
 
@@ -208,9 +208,9 @@ def crop3d( data, center_r = 15 ):
         cx = np.int(nx/2)
         cy = np.int(ny/2)
         cz = np.int(nz/2)
-        cxr = np.arange(round(cx-15),round(cx+15))
-        cyr = np.arange(round(cy-15),round(cy+15))
-        czr = np.arange(round(cz-15),round(cz+15))
+        cxr = np.arange(round(cx-center_r),round(cx+center_r))
+        cyr = np.arange(round(cy-center_r),round(cy+center_r))
+        czr = np.arange(round(cz-center_r),round(cz+center_r))
         
     return data[np.ix_(map(int,cxr),map(int,cyr),map(int,czr))]
 

@@ -26,6 +26,7 @@ from cmath import phase
 #from time import time
 import sim_spin_cuda as ss_cu
 import utilities.utilities_class as utc
+import tensorflow as tf
 
 def set_par( t1t2dfpdr ):
     T1 = 5000.0 * np.array(t1t2dfpdr[:,0].squeeze()) #ms
@@ -112,19 +113,31 @@ def bloch_sim_batch_cuda( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr,
     return sim_out
 
 # apply CNN model, x->y,
-def batch_apply_tf_cuda( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, test_outy ):
+def batch_apply_tf_cuda( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, test_outy, keep_prob ):
     for nb in range(Nexample//batch_size):
         #print('Doing batch %d/%d for applying CNN' % (nb+1,Nexample//batch_size))
         bstart = nb*batch_size      #batch start index
         bstop = bstart + batch_size #batch stop inex
-        test_outy[bstart:bstop,:] = sess_run(y_conv, feed_dict={x: data_x_acc[bstart:bstop,:], keep_prob: 1.0});
+        test_outy[bstart:bstop,:] = sess_run(y_conv, feed_dict={x: data_x_acc[bstart:bstop,:], keep_prob: 1.0})
     return test_outy
 
-def sep_complex_realimag(data_x_c):
+def seqdata_complex_2realimag(data_x_c):
     #seperate real/imag parts or abs/angle parts
+    Nk            = data_x_c.shape[1]
+    data_shape    = np.array(data_x_c.shape)
+    data_shape[1] = Nk*2
+    data_x_ri     = np.zeros(tuple(data_shape),np.float64)
     data_x_ri[:, 0:Nk  ] = np.real(data_x_c)
     data_x_ri[:,Nk:2*Nk] = np.imag(data_x_c)
     return data_x_ri
+
+def seqdata_realimag_2complex(data_x0):    
+    Nk            = data_x0.shape[1]//2  
+    data_shape    = np.array(data_x0.shape)
+    data_shape[1] = Nk
+    data_x0_c     = np.zeros(tuple(data_shape),np.complex128)      
+    data_x0_c = data_x0[:,0:Nk]+1j*data_x0[:,Nk:2*Nk]
+    return data_x0_c
 
 """
 project MRF data on to CNN and transform back into MRF data space
@@ -146,7 +159,7 @@ def batch_apply_tf_bloch_cuda( Nexample, batch_size, trr, far, ti, sess_run, x, 
 def test():
     # restore tensorflow model
     pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
-    pathexe = '/working/larson/UTE_GRE_shuffling_recon/python_test/'
+    pathexe = '/home/pcao/git/mripy/'
     os.chdir(pathdat)
     execfile('load_cnn_t1t2b0_1dcov.py')#restore model
     os.chdir(pathexe)
@@ -200,7 +213,7 @@ def test():
 
         # apply CNN model, x->y, data_x_acc->CNN->test_outy
         # 2*f'(x)*(f(x)-y)
-        batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy )
+        batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy, keep_prob )
         # d||x-x0||_2^2/dx = 2* -x0 * (x-x0)
         dtest_outy = test_outy -0.1*test_outy0
 

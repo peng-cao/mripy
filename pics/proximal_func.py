@@ -15,6 +15,18 @@ def prox_l1_soft_thresh( x0, th ):
     a_angle = np.angle(x0)
     return np.multiply(np.exp(1j*a_angle), a_th)
 
+def prox_l1_soft_thresh2( x0, th ):
+    a_th = np.abs(x0) - th
+    a_th[a_th<0] = 0
+    a_dir = np.divide(x0,np.abs(x0)+1e-6)
+    return np.multiply(a_dir, a_th)
+
+def prox_l0_hard_thresh( x0, th ):
+    a_th = np.abs(x0) #- th
+    a_th[a_th<th] = 0
+    a_dir = np.divide(x0,np.abs(x0)+1e-6)
+    return np.multiply(a_dir, a_th)
+
 """
 softthreshold for proximal transformed l1 norm, th = lambda/rho
 argmin_x (lambda)*||Tfunc(x)||_1 + (rho/2)*||x-x0||_2^2 
@@ -25,6 +37,14 @@ def prox_l1_Tf_soft_thresh( Tfunc, invTfunc, x0, th ):
     a_th[a_th<0] = 0
     a_angle = np.angle(Tfx0)
     Tfx = np.multiply(np.exp(1j*a_angle), a_th)
+    return invTfunc(Tfx)
+
+def prox_l1_Tf_soft_thresh2( Tfunc, invTfunc, x0, th ):
+    Tfx0 = Tfunc(x0)
+    a_th = np.abs(Tfx0) - th
+    a_th[a_th<0] = 0
+    a_dir = np.divide(Tfx0,np.abs(Tfx0)+1e-6)
+    Tfx = np.multiply(a_dir, a_th)
     return invTfunc(Tfx)
 
 """
