@@ -4,7 +4,7 @@ import utilities.utilities_func as ut
 
 def dwt2d( im, wavelet = 'db2', level = 2, axes = (0, 1) ):
     coeffs             = pywt.wavedec2(im, wavelet, level=level, axes=axes)
-    arr, coeff_slices  = pywt.coeffs_to_array(coeffs)
+    arr, coeff_slices  = pywt.coeffs_to_array(coeffs, padding=0, axes=axes)
     return arr, coeff_slices
 
 def idwt2d( arr, coeff_slices, wavelet = 'db2', axes = (0,1) ):
@@ -14,7 +14,7 @@ def idwt2d( arr, coeff_slices, wavelet = 'db2', axes = (0,1) ):
 
 def dwtnd( im, wavelet = 'db2', level = 2, axes = (0, 1, 2) ):
     coeffs             = pywt.wavedecn(im, wavelet, level=level, axes = axes)
-    arr, coeff_slices  = pywt.coeffs_to_array(coeffs)
+    arr, coeff_slices  = pywt.coeffs_to_array(coeffs, padding=0, axes=axes)
     return arr, coeff_slices
 
 def idwtnd( arr, coeff_slices, wavelet = 'db2', axes = (0, 1, 2) ):

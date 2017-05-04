@@ -22,10 +22,10 @@ import scipy.io as sio
 import os
 import pics.proximal_func as pf
 import utilities.utilities_func as ut
-
+import bloch_sim.sim_seq_MRF_irssfp_cuda as ssmrf
 # restore tensorflow model
 pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
-pathexe = '/working/larson/UTE_GRE_shuffling_recon/python_test/'
+pathexe = '/home/pcao/git/mripy/'
 os.chdir(pathdat)
 execfile('load_cnn_t1t2b0_1dcov.py')
 #execfile('load_cnn_t1t2b0_1dcov.py')#I figured out that currently I have to do this twice to get the model restured correctly
@@ -85,6 +85,10 @@ for _ in range(20):
     Njobs = 16 #number of parallel tasks
     num_cores = multiprocessing.cpu_count()
     test_outxhat = Parallel(n_jobs=Njobs, verbose=5)(delayed(processFunc)(i) for i in inputs)
+
+    print(np.linalg.norm(test_outxhat - ssmrf.seqdata_realimag_2complex(data_x_acc)))
+    print(np.linalg.norm(test_outxhat))
+
     
     test_outxhat = pf.prox_l1_soft_thresh(test_outxhat,0.1) 
     # x_acc += step*(x0-x), later should use the A^H A (x0-x)

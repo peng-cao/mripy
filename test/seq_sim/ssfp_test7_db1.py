@@ -25,7 +25,7 @@ import utilities.utilities_func as ut
 
 # restore tensorflow model
 pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
-pathexe = '/working/larson/UTE_GRE_shuffling_recon/python_test/'
+pathexe = '/home/pcao/git/mripy/'
 os.chdir(pathdat)
 execfile('load_cnn_t1t2b0_1dcov.py')
 #execfile('load_cnn_t1t2b0_1dcov.py')#I figured out that currently I have to do this twice to get the model restured correctly

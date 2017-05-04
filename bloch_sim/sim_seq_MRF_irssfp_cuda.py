@@ -27,7 +27,7 @@ from cmath import phase
 import sim_spin_cuda as ss_cu
 import utilities.utilities_class as utc
 import tensorflow as tf
-
+import sim_seq_MRF_irssfp_cuda as ssmrf
 def set_par( t1t2dfpdr ):
     T1 = 5000.0 * np.array(t1t2dfpdr[:,0].squeeze()) #ms
     T2 = 500.0 * np.array(t1t2dfpdr[:,1].squeeze()) #ms
@@ -83,7 +83,8 @@ def bloch_sim_irssfp_cuda( Nexample, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti, S
             ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, tr/2.0, T1, T2, df, PD )
             ss_cu.veccopy_cuda(M, Mtmp)
     else:
-        S[i, k]=1j*0.
+        for k in range(Nk):
+            S[i, k]=1j*0.0
 
 # do griding with cuda acceleration
 def bloch_sim_batch_cuda( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti ):
@@ -148,7 +149,7 @@ def batch_apply_tf_bloch_cuda( Nexample, batch_size, trr, far, ti, sess_run, x, 
     Nk       = far.shape[0]
     M0 = np.array([0.0,0.0,1.0]).astype(np.float32)
      # apply CNN model, x->y, data_x_acc->CNN->test_outy
-    batch_apply_tf_cuda( Nexample, batch_size, sess.run, x, sep_complex_realimag(data_x), y_conv, test_outy )
+    batch_apply_tf_cuda( Nexample, batch_size, sess_run, x, sep_complex_realimag(data_x), y_conv, test_outy )
     #cuda simulate bloch for each pixel
     T1r, T2r, dfr, PDr = set_par( test_outy )
     timing.start()
@@ -202,6 +203,8 @@ def test():
         timing.start()
         test_outxhat = bloch_sim_batch_cuda( Nexample, 7*ny, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
         timing.stop().display()
+        print(np.linalg.norm(test_outxhat - ssmrf.seqdata_realimag_2complex(data_x_acc)))
+        print(np.linalg.norm(test_outxhat))
 
         #d||f(x)-y||_2^2/dx = 2*f'(x)*(f(x)-y)
         #f(x) - y
@@ -214,6 +217,7 @@ def test():
         # apply CNN model, x->y, data_x_acc->CNN->test_outy
         # 2*f'(x)*(f(x)-y)
         batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy, keep_prob )
+
         # d||x-x0||_2^2/dx = 2* -x0 * (x-x0)
         dtest_outy = test_outy -0.1*test_outy0
 

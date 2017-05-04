@@ -31,11 +31,28 @@
 #import test.CS_MRI.cs_TV_ADMM_3d_cuda as cs_TV_ADMM_3d_cuda
 #cs_TV_ADMM_3d_cuda.test()
 
+
+#import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
+#cs_MRF_CNN_IST_cuda.test()
+
+#import test.CS_MRI.cs_MRF_CNN_IST_1p5_cuda as cs_MRF_CNN_IST_1p5_cuda
+#cs_MRF_CNN_IST_1p5_cuda.test()
+
+import test.CS_MRI.cs_MRF_CNN_IST_2_cuda as cs_MRF_CNN_IST_2_cuda
+cs_MRF_CNN_IST_2_cuda.test()
+
+
+#import test.seq_sim.MRF_test_cuda as MRF_test_cuda
+#MRF_test_cuda.test()
+
+
 #import bloch_sim.sim_seq_MRF_irssfp_cuda as MRF_irssfp_cuda
 #MRF_irssfp_cuda.test()
 
-import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
-cs_MRF_CNN_IST_cuda.test()
+#import test.seq_sim.ssfp_test7_db2 as ssfp_test7_db2
+#ssfp_test7_db2.test()
+
+
 
 #import test.class_defines_NNmodel.classmodel_tf_wrap4 as tfmodel
 #tfmodel.test1()
