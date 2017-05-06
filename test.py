@@ -1,6 +1,12 @@
 #import nufft.nufft_func_cuda as nufft_func_cuda
 #nufft_func_cuda.test()
 
+import nufft.nufft_func as nufft_func
+nufft_func.test()
+
+#import fft.cufft as cufft
+#cufft.test5()
+
 #import test.MRI_recon.test_uterecon as test_uterecon
 #test_uterecon.test()
 
@@ -38,8 +44,8 @@
 #import test.CS_MRI.cs_MRF_CNN_IST_1p5_cuda as cs_MRF_CNN_IST_1p5_cuda
 #cs_MRF_CNN_IST_1p5_cuda.test()
 
-import test.CS_MRI.cs_MRF_CNN_IST_2_cuda as cs_MRF_CNN_IST_2_cuda
-cs_MRF_CNN_IST_2_cuda.test()
+#import test.CS_MRI.cs_MRF_CNN_IST_2_cuda as cs_MRF_CNN_IST_2_cuda
+#cs_MRF_CNN_IST_2_cuda.test()
 
 
 #import test.seq_sim.MRF_test_cuda as MRF_test_cuda
@@ -72,3 +78,6 @@ cs_MRF_CNN_IST_2_cuda.test()
 
 #import dwi.dwi_func as dwi_func
 #dwi_func.test()
+
+#import low_rank.low_rank_tensor_func as low_rank_tensor_func
+#low_rank_tensor_func.test()

@@ -6,176 +6,11 @@ from time import time
 from math import exp
 import utilities.utilities_func as ut
 import matplotlib.pyplot as plt
+import nufft_test_func
 
-"""
-this is a test code from
-https://jakevdp.github.io/blog/2015/02/24/optimizing-python-with-numpy-and-numba/
-it compare the input nufft_func with the nudft1d1
-"""
-def compare_nufft1d1( nufft_func, ms=1000, mc=100000 ):
-    # Test vs the direct method
-    print(30 * '-')
-    #name = {'nufft1':'nufft_fortran'}.get(nufft_func.__name__,
-    #                                      nufft_func.__name__)
-    #print("testing {0}".format(name))
-    rng = np.random.RandomState(0)
-    x = 100 * rng.rand(mc)
-    c = 1j*np.sin(x) + 1j*np.sin(10*x)
-    for df in [1, 2.0]:
-        for iflag in [1, -1]:
-            print ("testing df=%f, iflag=%f"% (df,iflag))
-            F1 = nudft1d1(x, c, ms, df=df, iflag=iflag)
-            F2 = nufft_func(x, c, ms, df=df, iflag=iflag)
-            ut.plot(np.absolute(F1))
-            ut.plot(np.absolute(F2))
-            assert np.allclose(F1, F2, rtol=1e-02, atol=1e-02)
-    print("- Results match the DFT")
-
-def compare_nufft2d1( nufft_func, ms=1000, mt=1000, mc=100000 ):
-    # Test vs the direct method
-    print(30 * '-')
-    rng = np.random.RandomState(0)
-    x = 100 * rng.rand(mc)
-    y = 100 * rng.rand(mc)
-    c = np.sin(2*x) + 1j*np.cos(2*y)#np.ones(x.shape)#
-    for df in [1.0, 2.0]:
-        for iflag in [1, -1]:
-            print ("testing df=%f, iflag=%f"% (df,iflag))
-            F1 = nudft2d1(x, y, c, ms, mt, df=df, iflag=iflag)
-            F2 = nufft_func(x, y, c, ms, mt, df=df, iflag=iflag)
-            ut.plotim1(np.absolute(F1), colormap = None, title = None, bar = True)
-            ut.plotim1(np.absolute(F2), colormap = None, title = None, bar = True)
-            ut.plotim1(np.absolute(F1-F2), colormap = None, title = None, bar = True)
-            assert np.allclose(F1, F2, rtol=1e-02, atol=1e-02)
-    print("- Results match the DFT")
-
-def compare_nufft3d1( nufft_func, ms=1000, mt=1000, mu=1000, mc=100000 ):
-    # Test vs the direct method
-    print(30 * '-')
-    rng = np.random.RandomState(0)
-    x = 100 * rng.rand(mc)
-    y = 100 * rng.rand(mc)
-    z = 100 * rng.rand(mc)
-    c = np.sin(2*x) + 1j*np.cos(2*y)
-    for df in [1, 2.0]:
-        for iflag in [1, -1]:
-            print ("testing df=%f, iflag=%f"% (df,iflag))
-            F1 = nudft3d1(x, y, z, c, ms, mt, mu, df=df, iflag=iflag)
-            F2 = nufft_func(x, y, z, c, ms, mt, mu, df=df, iflag=iflag)
-            ut.plotim1(np.absolute(F1[:,:,mu//2]), colormap = None, title = None, bar = True)
-            ut.plotim1(np.absolute(F2[:,:,mu//2]), colormap = None, title = None, bar = True)
-            ut.plotim1(np.absolute(F1[:,:,mu//2]-F2[:,:,mu//2]), colormap = None, title = None, bar = True)
-            assert np.allclose(F1, F2, rtol=1e-02, atol=1e-02)
-    print("- Results match the DFT")
-
-# timing for the input nufft_func, the nufft_func should be 1d nufft function type 1
-def time_nufft1d1( nufft_func, ms=1000, mc=100000, Reptime=5 ):
-    rng = np.random.RandomState(0)
-    # Time the nufft function
-    x = 100 * rng.rand(mc)
-    c = np.sin(2*x)
-    times = []
-    for i in range(Reptime):
-        t0 = time()
-        F = nufft_func(x, c, ms)
-        t1 = time()
-        times.append(t1 - t0)
-    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
-
-# timing for the input nufft_func, the nufft_func should be 1d nufft function type 2
-def time_nufft1d2( nufft_func1, nufft_func2, ms=1000, mc=100000, Reptime=5 ):
-    rng = np.random.RandomState(0)
-    # Time the nufft function
-    x = 100 * rng.rand(mc)
-    c0 = np.sin(x)
-    F = nufft_func1(x, c0, ms)
-    times = []
-    for i in range(Reptime):
-        t0 = time()
-        c = nufft_func2(x, F, ms)
-        t1 = time()
-        times.append(t1 - t0)
-    ut.plot(x,np.real(c0),'o')
-    ut.plot(x,np.real(c),'o')
-    ut.plot(np.real(c0),np.real(c),'o')
-    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
-
-# time for nufft_func, the nufft_func should be a 2d nufft function type 1
-def time_nufft2d1( nufft_func, ms=1000, mt=1000, mc=1000, Reptime=5 ):
-    rng = np.random.RandomState(0)
-    # Time the nufft function
-    x = 100 * rng.rand(mc)
-    y = 100 * rng.rand(mc)
-    #c = np.sin(x) #two peaks in transformed space along x
-    c = np.sin(y) #two peaks in transformed space along y
-    #c = np.ones(x.shape) #one peak in the center of transformed space
-    times = []
-    for i in range(Reptime):
-        t0 = time()
-        F = nufft_func(x, y, c, ms, mt)
-        t1 = time()
-        times.append(t1 - t0)
-        ut.plotim1(np.absolute(F), colormap = None, title = None, bar = True)
-    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
-
-# timing for the input nufft_func, the nufft_func should be 2d nufft function type 2
-def time_nufft2d2( nufft_func1, nufft_func2, ms=1000, mt=1000, mc=100000, Reptime=5 ):
-    rng = np.random.RandomState(0)
-    # Time the nufft function
-    x = 100 * rng.rand(mc)
-    y = 100 * rng.rand(mc)
-    c0 = np.sin(x)
-    F = nufft_func1(x, y, c0, ms, mt)
-    times = []
-    for i in range(Reptime):
-        t0 = time()
-        c = nufft_func2(x, y, F, ms, mt)
-        t1 = time()
-        times.append(t1 - t0)
-    ut.plot(x,np.real(c0),'o')
-    ut.plot(x,np.real(c),'o')
-    ut.plot(np.real(c0),np.real(c),'o')
-    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
-
-# time for nufft_func, the nufft_func should be a 3d nufft function type 1
-def time_nufft3d1( nufft_func, ms=1000, mt=1000, mu=1000, mc=1000, Reptime=5 ):
-    rng = np.random.RandomState(0)
-    # Time the nufft function
-    x = 100 * rng.rand(mc)
-    y = 100 * rng.rand(mc)
-    z = 100 * rng.rand(mc)
-    #c = np.sin(x) #two peaks in transformed space along x
-    c = np.sin(y) #two peaks in transformed space along y
-    #c = np.ones(x.shape) #one peak in the center of transformed space
-    times = []
-    for i in range(Reptime):
-        t0 = time()
-        F = nufft_func(x, y, z, c, ms, mt, mu)
-        t1 = time()
-        times.append(t1 - t0)
-        ut.plotim1(np.absolute(F[:,:,mu//2]), colormap = None, title = None, bar = True)
-    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
-
-# timing for the input nufft_func, the nufft_func should be 3d nufft function type 2
-def time_nufft3d2( nufft_func1, nufft_func2, ms=1000, mt=1000, mu=1000, mc=100000, Reptime=5 ):
-    rng = np.random.RandomState(0)
-    # Time the nufft function
-    x = 100 * rng.rand(mc)
-    y = 100 * rng.rand(mc)
-    z = 100 * rng.rand(mc)
-    c0 = np.sin(x)
-    F = nufft_func1(x, y, z, c0, ms, mt, mu)
-    times = []
-    for i in range(Reptime):
-        t0 = time()
-        c = nufft_func2(x, y, z, F, ms, mt, mu)
-        t1 = time()
-        times.append(t1 - t0)
-    ut.plot(x,np.real(c0),'o')
-    ut.plot(x,np.real(c),'o')
-    ut.plot(np.real(c0),np.real(c),'o')
-    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
-
+#####################################################################################################
+#ft direct calculation, 1d,2d,3d, type1
+#####################################################################################################
 
 """
 this is code modified based on examples from
@@ -406,6 +241,11 @@ def _compute_3d_grid_params( ms, mt, mu, eps ):
     tau =  np.pi * lambda_ / ms ** 2
     return nspread, nf1, nf2, nf3, tau
 
+
+#####################################################################################################
+#unfft 1d, type1, type2 and type2&type1 (AHA)
+#####################################################################################################
+
 """
 this is code modified based on examples on
 https://jakevdp.github.io/blog/2015/02/24/optimizing-python-with-numpy-and-numba/
@@ -510,6 +350,149 @@ def build_grid_1d2_fast( x, fntau, tau, nspread, E3 ):
             E2mm *= E2
             c[i] += fntau[(m - mm - 1) % nf1] * E1 / E2mm * E3[mm + 1]
     return c/nf1
+
+#1d grid type 2 & type 1
+@numba.jit(nopython=True)
+def build_grid_1d21( x, fntau, tau, nspread ):
+    # had problem when ftau is used for both input and output, current version seperate it as fntau/ftau
+    nf1  = fntau.shape[0]
+    hx   = 2 * np.pi / nf1
+    Em   = np.zeros(2*nspread + 1, dtype=fntau.dtype)#will reuse this exponential
+    ftau = np.zeros(fntau.shape,   dtype=fntau.dtype)
+    for i in range(x.shape[0]):
+        c  = 0.0 #coefficient, saved temporarily
+        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
+        m  = 1 + int(xi // hx) #index for the closest grid point
+        #grid once
+        for mm in range(-nspread, nspread): #mm index for all the spreading points
+            Em[mm] = np.exp(-0.25 * (xi - hx * (m + mm)) ** 2 / tau)
+            c  += fntau[(m + mm) % nf1] * Em[mm]#griding with g(x) = exp(-x^2 / 4*tau)
+        #grid again
+        c  = c/nf1
+        for mm in range(-nspread, nspread): #mm index for all the spreading points
+            ftau[(m + mm) % nf1]  += c * Em[mm]
+            #griding with g(x) = exp(-x^2 / 4*tau)
+    return ftau
+
+"""
+main function of nufft1d, fast algrithm used FFT, convolution and decovolution
+for mri recon, y is k-space data, x is the k-space trajectory, and output is image data
+this is from https://jakevdp.github.io/blog/2015/02/24/optimizing-python-with-numpy-and-numba/
+demo for using numba to accelerate the nufft
+
+The Gaussian used for convolution is:
+g(x) = exp(-x^2 / 4*tau)
+Fourier transform of g(x) is
+G(k1) = exp(-k1^2*tau)
+
+this is  computation of equation below
+                  1  nj
+     fk(k1,k2) = -- SUM cj(j) exp(+/-i k1*xj(j))
+                 nj j=1
+
+     for -ms/2 <= k1 <= (ms-1)/2,
+inputs:
+x is xj
+c is coefficients
+ms is the length of output k1
+df scaling factor on the k1 and k2; default is 1.0
+iflag determine whether -1 or 1 sign for
+exp(+/- i*k1*x); default is 1
+
+output:
+the nufft, output dim is ms X 1
+
+"""
+#1d nufft type 1
+def nufft1d1_gaussker( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
+
+    if gridfast is 0:
+        # Construct the convolved grid
+        Ftau = build_grid_1d1(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
+    else:#fast griding with precomputing of some expoentials
+        Ftau = build_grid_1d1_fast(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype),\
+                           np.zeros(nspread + 1, dtype=c.dtype))
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = (1 / nf1) * np.fft.fft(Ftau)
+    else:
+        Ftau = np.fft.ifft(Ftau)
+    #truncate the Ftau to match the size of output, alias are removed
+    Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1 = nufftfreqs1d(ms)
+    return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
+
+#1d nufft type 2
+def nufft1d2_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1 = nufftfreqs1d(ms)
+    Fk = np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Fk
+
+    #reshape Fk and fftshift to match the size Fntau or Ftau
+    Fntau = np.zeros(nf1, dtype=Fk.dtype)
+    Fntau[-(ms//2):] = Fk[0:ms//2]
+    Fntau[:ms//2 + ms % 2] = Fk[ms//2:ms]
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Fntau = nf1 * np.fft.ifft(Fntau)
+    else:
+        Fntau = np.fft.fft(Fntau)
+
+    # Construct the convolved grid
+    if gridfast is not 1:
+        fx = build_grid_1d2(x*df, Fntau, tau, nspread)
+    else:
+        fx = build_grid_1d2_fast(x*df, Fntau, tau, nspread, np.zeros(nspread + 1, dtype=Fk.dtype))
+    return fx
+
+#1d nufft type 2 & type 1
+def nufft1d21_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1 = nufftfreqs1d(ms)
+    Fk = np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Fk
+
+    #reshape Fk and fftshift to match the size Ftau or Ftau
+    Ftau = np.zeros(nf1, dtype=Fk.dtype)
+    Ftau[-(ms//2):] = Fk[0:ms//2]
+    Ftau[:ms//2 + ms % 2] = Fk[ms//2:ms]
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = nf1 * np.fft.ifft(Ftau)
+    else:
+        Ftau = np.fft.fft(Ftau)
+
+    # Construct the convolved grid
+    if 1:#gridfast is not 1:
+        Ftau = build_grid_1d21(x*df, Ftau, tau, nspread)
+    #else:
+        #Ftau = build_grid_1d21_fast(x/df, Ftau, tau, nspread, np.zeros(nspread + 1, dtype=Fk.dtype))
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = (1 / nf1) * np.fft.fft(Ftau)
+    else:
+        Ftau = np.fft.ifft(Ftau)
+    #truncate the Ftau to match the size of output, alias are removed
+    Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1 = nufftfreqs1d(ms)
+    return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
+
+#####################################################################################################
+#unfft 2d, type1, type2 and type2&type1 (AHA)
+#####################################################################################################
 
 #2d grid type 1
 @numba.jit(nopython=True)
@@ -624,6 +607,168 @@ def build_grid_2d2_fast( x, y, fntau, tau, nspread, E3 ):
             E2mmx *= E2x
     return c/(nf1*nf2)
 
+#2d type 2
+@numba.jit(nopython=True)
+def build_grid_2d21( x, y, fntau, tau, nspread ):
+    nf1  = fntau.shape[0]
+    nf2  = fntau.shape[1]
+    hx   = 2 * np.pi / nf1
+    hy   = 2 * np.pi / nf2
+    Em   = np.zeros((2*nspread+1, 2*nspread+1), dytpe = fntau.dtype)#will reuse this exponential
+    ftau = np.zeros(fntau.shape, dtype = fntau.dtype)
+    for i in range(x.shape[0]):
+        c  = 0.0 #coefficient, saved temporarily
+        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
+        yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
+        m1 = 1 + int(xi // hx) #index for the closest grid point
+        m2 = 1 + int(yi // hy) #index for the closest grid point
+        #grid once
+        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+            for mm2 in range(-nspread,nspread):
+                #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
+                Em[mm1, mm2] =  np.exp(-0.25 * (\
+                (xi - hx * (m1 + mm1)) ** 2 + \
+                (yi - hy * (m2 + mm2)) ** 2 ) / tau)
+                c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] * Em[mm1, mm2]
+        #grid again
+        c = c/(nf1*nf2)
+        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+            for mm2 in range(-nspread,nspread):
+                #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
+                ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] += c * Em[mm1, mm2]
+    return ftau
+"""
+main function of nufft2d 
+The Gaussian used for convolution is:
+g(x,y) = exp(-( x^2 + y^2 ) / 4*tau)
+Fourier transform of g(x) is
+G(k1,k2) = exp(-( k1^2 + k2^2 )*tau)
+
+this is computation of equation below
+                  1  nj
+     fk(k1,k2) = -- SUM cj(j) exp(+/-i*k1*xj(j)) exp(+/-i*k2*yj(j))
+                 nj j=1
+
+     for -ms/2 <= k1 <= (ms-1)/2,
+         -mt/2 <= k2 <= (mt-1)/2
+inputs:
+x is xj
+y is yj
+c is coefficients
+ms is the length of output k1
+mt is the length of output k2
+df scaling factor on the k1 and k2; default is 1.0
+iflag determine whether -1 or 1 sign for
+exp(+/- i*k1*x) and  exp(+/- i*k2*y); default is 1
+
+output:
+the nufft, output dim is ms X mt
+
+"""
+#2d nufft type 1
+def nufft2d1_gaussker( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, nf2, tau = _compute_2d_grid_params(ms, mt, eps)
+    # Construct the convolved grid
+    #Ftau = build_grid_2d1(x * df, y * df, c, tau, nspread,
+    #                  np.zeros((nf1, nf2), dtype = c.dtype))
+    if gridfast is 0:
+        Ftau = build_grid_2d1(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype))
+    else:#griding with precomputing of some exponentials
+        Ftau = build_grid_2d1_fast(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype),\
+                           np.zeros((nspread + 1, nspread + 1), dtype=c.dtype))
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(Ftau)
+    else:
+        Ftau = np.fft.ifft2(Ftau) #1/(nf1*nf2) in ifft2 function when norm = None
+
+    #truncate the Ftau to match the size of output, alias are removed
+    Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
+    Ftau = np.concatenate([Ftau[:,-(mt//2):], Ftau[:,:mt//2 + mt % 2]],1)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2)^-1
+    k1,k2 = nufftfreqs2d(ms, mt)
+    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
+    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
+
+#2d nufft type 2
+def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, nf2, tau = _compute_2d_grid_params(ms, mt, eps)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1, k2 = nufftfreqs2d(ms, mt)
+    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
+    Fk = np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Fk #np.sqrt(np.pi / tau) *
+
+    #reshape Fk and fftshift to match the size Fntau or Ftau
+    Fntau = np.zeros((nf1, nf2), dtype=Fk.dtype)
+    Fntau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
+    Fntau[ :ms//2 + ms % 2 , :mt//2 + mt % 2 ] = Fk[ ms//2:ms , mt//2:mt ]#2 2
+    Fntau[ :ms//2 + ms % 2 ,       -(mt//2): ] = Fk[ ms//2:ms ,  0:mt//2 ]#2 1
+    Fntau[ -(ms//2):       , :mt//2 + mt % 2 ] = Fk[ 0:ms//2  , mt//2:mt ]#1 2
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Fntau = nf1 * nf2 * np.fft.ifft2(Fntau)
+    else:
+        Fntau = np.fft.fft2(Fntau)
+    # Construct the convolved grid
+    if gridfast is not 1:
+        fx = build_grid_2d2(x*df, y*df, Fntau, tau, nspread)
+    else:
+        fx = build_grid_2d2_fast(x*df, y*df, Fntau, tau, nspread,\
+            np.zeros((nspread + 1, nspread + 1), dtype=Fk.dtype))
+    return fx
+
+#2d nufft type 2 & type 1
+def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, nf2, tau = _compute_2d_grid_params(ms, mt, eps)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1, k2 = nufftfreqs2d(ms, mt)
+    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
+    #Fk = np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Fk #np.sqrt(np.pi / tau) *
+
+    #reshape Fk and fftshift to match the size Ftau or Ftau
+    Ftau = np.zeros((nf1, nf2), dtype=Fk.dtype)
+    Ftau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
+    Ftau[ :ms//2 + ms % 2 , :mt//2 + mt % 2 ] = Fk[ ms//2:ms , mt//2:mt ]#2 2
+    Ftau[ :ms//2 + ms % 2 ,       -(mt//2): ] = Fk[ ms//2:ms ,  0:mt//2 ]#2 1
+    Ftau[ -(ms//2):       , :mt//2 + mt % 2 ] = Fk[ 0:ms//2  , mt//2:mt ]#1 2
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = nf1 * nf2 * np.fft.ifft2(Ftau)
+    else:
+        Ftau = np.fft.fft2(Ftau)
+    # Construct the convolved grid
+    if 1:#gridfast is not 1:
+        Ftau = build_grid_2d21(x*df, y*df, Ftau, tau, nspread)
+    #else:
+    #    Ftau = build_grid_2d21_fast(x/df, y/df, Ftau, tau, nspread,\
+    #        np.zeros((nspread + 1, nspread + 1), dtype=Fk.dtype))
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(Ftau)
+    else:
+        Ftau = np.fft.ifft2(Ftau) #1/(nf1*nf2) in ifft2 function when norm = None
+
+    #truncate the Ftau to match the size of output, alias are removed
+    Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
+    Ftau = np.concatenate([Ftau[:,-(mt//2):], Ftau[:,:mt//2 + mt % 2]],1)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2)^-1
+    k1,k2 = nufftfreqs2d(ms, mt)
+    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
+    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
+#####################################################################################################
+#unfft 3d, type1, type2 and type2&type1 (AHA)
+#####################################################################################################
 
 #3d grid type 1
 @numba.jit(nopython=True)
@@ -779,171 +924,47 @@ def build_grid_3d2_fast( x, y, z, fntau, tau, nspread, E3 ):
             E2mmx *= E2x
     return c/(nf1*nf2*nf3)
 
-"""
-nufft1d type1, fast algrithm used FFT, convolution and decovolution
-for mri recon, y is k-space data, x is the k-space trajectory, and output is image data
-this is from https://jakevdp.github.io/blog/2015/02/24/optimizing-python-with-numpy-and-numba/
-demo for using numba to accelerate the nufft
-
-The Gaussian used for convolution is:
-g(x) = exp(-x^2 / 4*tau)
-Fourier transform of g(x) is
-G(k1) = exp(-k1^2*tau)
-
-this is  computation of equation below
-                  1  nj
-     fk(k1,k2) = -- SUM cj(j) exp(+/-i k1*xj(j))
-                 nj j=1
-
-     for -ms/2 <= k1 <= (ms-1)/2,
-inputs:
-x is xj
-c is coefficients
-ms is the length of output k1
-df scaling factor on the k1 and k2; default is 1.0
-iflag determine whether -1 or 1 sign for
-exp(+/- i*k1*x); default is 1
-
-output:
-the nufft, output dim is ms X 1
-
-"""
-def nufft1d1_gaussker( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
-    """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
-
-    if gridfast is 0:
-        # Construct the convolved grid
-        ftau = build_grid_1d1(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
-    else:#fast griding with precomputing of some expoentials
-        ftau = build_grid_1d1_fast(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype),\
-                           np.zeros(nspread + 1, dtype=c.dtype))
-
-    # Compute the FFT on the convolved grid
-    if iflag < 0:
-        Ftau = (1 / nf1) * np.fft.fft(ftau)
-    else:
-        Ftau = np.fft.ifft(ftau)
-    #truncate the Ftau to match the size of output, alias are removed
-    Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
-    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
-    k1 = nufftfreqs1d(ms)
-    return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
-
-#1d nufft type 2
-def nufft1d2_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
-    """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
-
-    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
-    k1 = nufftfreqs1d(ms)
-    Fk = np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Fk
-
-    #reshape Fk and fftshift to match the size Fntau or Ftau
-    Fntau = np.zeros(nf1, dtype=Fk.dtype)
-    Fntau[-(ms//2):] = Fk[0:ms//2]
-    Fntau[:ms//2 + ms % 2] = Fk[ms//2:ms]
-
-    # Compute the FFT on the convolved grid
-    if iflag < 0:
-        fntau = nf1 * np.fft.ifft(Fntau)
-    else:
-        fntau = np.fft.fft(Fntau)
-
-    # Construct the convolved grid
-    if gridfast is not 1:
-        fx = build_grid_1d2(x/df, fntau, tau, nspread)
-    else:
-        fx = build_grid_1d2_fast(x/df, fntau, tau, nspread, np.zeros(nspread + 1, dtype=Fk.dtype))
-    return fx
-
+#3d grid type 2 & type 1
+@numba.jit(nopython=True)
+def build_grid_3d21( x, y, z, fntau, tau, nspread ):
+    nf1   = fntau.shape[0]
+    nf2   = fntau.shape[1]
+    nf3   = fntau.shape[2]
+    hx    = 2 * np.pi / nf1
+    hy    = 2 * np.pi / nf2
+    hz    = 2 * np.pi / nf3
+    Em    = np.zeros((2*nspread+1,2*nspread+1,2*nspread+1),dtype = fntau.dtype) #will reuse this exponential
+    ftau  = np.zeros(fntau.shape, dtype = fntau.dtype)
+    for i in range(x.shape[0]):
+        c  = 0.0 #coefficient, saved temporarily
+        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
+        yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
+        zi = z[i] % (2 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
+        m1 = 1 + int(xi // hx) #index for the closest grid point
+        m2 = 1 + int(yi // hy) #index for the closest grid point
+        m3 = 1 + int(zi // hz) #index for the closest grid point
+        #grid once
+        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+            for mm2 in range(-nspread,nspread):
+                for mm3 in range(-nspread,nspread):
+                    #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
+                    Em[mm1,mm2,mm3] = np.exp(-0.25 * (\
+                    (xi - hx * (m1 + mm1)) ** 2 + \
+                    (yi - hy * (m2 + mm2)) ** 2 + \
+                    (zi - hz * (m3 + mm3)) ** 2 ) / tau)
+                    c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] * Em[mm1,mm2,mm3]
+        #grid again
+        c = c/(nf1*nf2*nf3)
+        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+            for mm2 in range(-nspread,nspread):
+                for mm3 in range(-nspread,nspread):
+                    #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
+                    ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
+                    += c * Em[mm1,mm2,mm3]
+    return ftau
 
 """
-nufft2d type 1
-The Gaussian used for convolution is:
-g(x,y) = exp(-( x^2 + y^2 ) / 4*tau)
-Fourier transform of g(x) is
-G(k1,k2) = exp(-( k1^2 + k2^2 )*tau)
-
-this is computation of equation below
-                  1  nj
-     fk(k1,k2) = -- SUM cj(j) exp(+/-i*k1*xj(j)) exp(+/-i*k2*yj(j))
-                 nj j=1
-
-     for -ms/2 <= k1 <= (ms-1)/2,
-         -mt/2 <= k2 <= (mt-1)/2
-inputs:
-x is xj
-y is yj
-c is coefficients
-ms is the length of output k1
-mt is the length of output k2
-df scaling factor on the k1 and k2; default is 1.0
-iflag determine whether -1 or 1 sign for
-exp(+/- i*k1*x) and  exp(+/- i*k2*y); default is 1
-
-output:
-the nufft, output dim is ms X mt
-
-"""
-def nufft2d1_gaussker( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
-    """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, tau = _compute_2d_grid_params(ms, mt, eps)
-    # Construct the convolved grid
-    #ftau = build_grid_2d1(x * df, y * df, c, tau, nspread,
-    #                  np.zeros((nf1, nf2), dtype = c.dtype))
-    if gridfast is 0:
-        ftau = build_grid_2d1(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype))
-    else:#griding with precomputing of some exponentials
-        ftau = build_grid_2d1_fast(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype),\
-                           np.zeros((nspread + 1, nspread + 1), dtype=c.dtype))
-
-    # Compute the FFT on the convolved grid
-    if iflag < 0:
-        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(ftau)
-    else:
-        Ftau = np.fft.ifft2(ftau) #1/(nf1*nf2) in ifft2 function when norm = None
-
-    #truncate the Ftau to match the size of output, alias are removed
-    Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
-    Ftau = np.concatenate([Ftau[:,-(mt//2):], Ftau[:,:mt//2 + mt % 2]],1)
-
-    # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2)^-1
-    k1,k2 = nufftfreqs2d(ms, mt)
-    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
-    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
-
-#2d nufft type 2
-def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
-    """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, tau = _compute_2d_grid_params(ms, mt, eps)
-
-    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
-    k1, k2 = nufftfreqs2d(ms, mt)
-    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
-    Fk = np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Fk #np.sqrt(np.pi / tau) *
-
-    #reshape Fk and fftshift to match the size Fntau or Ftau
-    Fntau = np.zeros((nf1, nf2), dtype=Fk.dtype)
-    Fntau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
-    Fntau[ :ms//2 + ms % 2 , :mt//2 + mt % 2 ] = Fk[ ms//2:ms , mt//2:mt ]#2 2
-    Fntau[ :ms//2 + ms % 2 ,       -(mt//2): ] = Fk[ ms//2:ms ,  0:mt//2 ]#2 1
-    Fntau[ -(ms//2):       , :mt//2 + mt % 2 ] = Fk[ 0:ms//2  , mt//2:mt ]#1 2
-
-    # Compute the FFT on the convolved grid
-    if iflag < 0:
-        fntau = nf1 * nf2 * np.fft.ifft2(Fntau)
-    else:
-        fntau = np.fft.fft2(Fntau)
-    # Construct the convolved grid
-    if gridfast is not 1:
-        fx = build_grid_2d2(x/df, y/df, fntau, tau, nspread)
-    else:
-        fx = build_grid_2d2_fast(x/df, y/df, fntau, tau, nspread,\
-            np.zeros((nspread + 1, nspread + 1), dtype=Fk.dtype))
-    return fx
-"""
-nufft3d type 1
+main function of nufft3d 
 The Gaussian used for convolution is:
 g(x,y,z) = exp(-( x^2 + y^2 + z^2 ) / 4*tau)
 Fourier transform of g(x) is
@@ -972,6 +993,7 @@ exp(+/- i k2 y) and exp(+/- i k3 z); default is negative
 output:
 the nufft result, output dim is ms X mt X mu
 """
+# 3d nufft type 1
 def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
@@ -980,18 +1002,18 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
 
     # Construct the convolved grid
     if gridfast is 0:
-        ftau = build_grid_3d1(x * df, y * df, z *df, c, tau, nspread,\
+        Ftau = build_grid_3d1(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros((nf1, nf2, nf3), dtype=c.dtype))
     else:#precompute some exponentials, not working
-        ftau = build_grid_3d1_fast(x * df, y * df, z *df, c, tau, nspread,\
+        Ftau = build_grid_3d1_fast(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros((nf1, nf2, nf3), dtype=c.dtype), \
                       np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype))
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(ftau,s=None,axes=(0,1,2))
+        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(Ftau,s=None,axes=(0,1,2))
     else:
-        Ftau = np.fft.ifftn(ftau,s=None,axes=(0,1,2))
+        Ftau = np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:,:], Ftau[:ms//2 + ms % 2,:,:]],0)
@@ -1026,38 +1048,91 @@ def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, grid
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        fntau = (nf1 * nf2 * nf3) * np.fft.ifftn(Fntau,s=None,axes=(0,1,2))
+        Fntau = (nf1 * nf2 * nf3) * np.fft.ifftn(Fntau,s=None,axes=(0,1,2))
     else:
-        fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))
+        Fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))
 
     # Construct the convolved grid
     if gridfast is not 1:
-        fx = build_grid_3d2(x/df, y/df, z/df, fntau, tau, nspread)
+        fx = build_grid_3d2(x*df, y*df, z*df, Fntau, tau, nspread)
     else:
-        fx = build_grid_3d2_fast(x/df, y/df, z/df, fntau, tau, nspread,\
+        fx = build_grid_3d2_fast(x*df, y*df, z*df, Fntau, tau, nspread,\
          np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
     return fx
 
+#3d unfft type 2
+def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+    """Fast Non-Uniform Fourier Transform with Numba"""
+    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
+
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
+    k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
+    # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
+    Fk = np.sqrt(np.pi / tau)**3 * np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Fk
+
+    #reshape Fk and fftshift to match the size Ftau or Ftau
+    Ftau = np.zeros((nf1, nf2, nf3), dtype=Fk.dtype)
+    Ftau[-(ms//2):      ,       -(mt//2):,       -(mu//2):] = Fk[0:ms//2 , 0:mt//2 , 0:mu//2]# 1 1 1
+    Ftau[:ms//2 + ms % 2,       -(mt//2):,       -(mu//2):] = Fk[ms//2:ms, 0:mt//2 , 0:mu//2]# 2 1 1
+    Ftau[-(ms//2):      ,       -(mt//2):, :mu//2 + mu % 2] = Fk[0:ms//2 , 0:mt//2 ,mu//2:mu]# 1 1 2
+    Ftau[-(ms//2):      , :mt//2 + mt % 2,       -(mu//2):] = Fk[0:ms//2 ,mt//2:mt , 0:mu//2]# 1 2 1
+    Ftau[:ms//2 + ms % 2, :mt//2 + mt % 2,       -(mu//2):] = Fk[ms//2:ms,mt//2:mt , 0:mu//2]# 2 2 1
+    Ftau[:ms//2 + ms % 2, :mt//2 + mt % 2, :mu//2 + mu % 2] = Fk[ms//2:ms,mt//2:mt ,mu//2:mu]# 2 2 2
+    Ftau[:ms//2 + ms % 2,       -(mt//2):, :mu//2 + mu % 2] = Fk[ms//2:ms, 0:mt//2 ,mu//2:mu]# 2 1 2
+    Ftau[-(ms//2):      , :mt//2 + mt % 2, :mu//2 + mu % 2] = Fk[0:ms//2 ,mt//2:mt ,mu//2:mu]# 1 2 2
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = (nf1 * nf2 * nf3) * np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
+    else:
+        Ftau = np.fft.fftn(Ftau,s=None,axes=(0,1,2))
+
+    # Construct the convolved grid
+    if 1:# gridfast is not 1:
+        Ftau = build_grid_3d21(x*df, y*df, z*df, Ftau, tau, nspread)
+    #else:
+    #    fx = build_grid_3d21_fast(x/df, y/df, z/df, fntau, tau, nspread,\
+    #     np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
+
+    # Compute the FFT on the convolved grid
+    if iflag < 0:
+        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(Ftau,s=None,axes=(0,1,2))
+    else:
+        Ftau = np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
+    #ut.plotim3(np.absolute(Ftau[:,:,:]))
+    #truncate the Ftau to match the size of output, alias are removed
+    Ftau = np.concatenate([Ftau[-(ms//2):,:,:], Ftau[:ms//2 + ms % 2,:,:]],0)
+    Ftau = np.concatenate([Ftau[:,-(mt//2):,:], Ftau[:,:mt//2 + mt % 2,:]],1)
+    Ftau = np.concatenate([Ftau[:,:,-(mu//2):], Ftau[:,:,:mu//2 + mu % 2]],2)
+    # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2,k3)^-1
+    k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
+    # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
+    return (1 / len(x)) * np.sqrt(np.pi / tau)**3 * \
+    np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Ftau
+
+
 def test():
     #test nudft
-    #time_nufft1d1(nufft1d1_gaussker)
-    #time_nufft2d1(nudft2d1,64,64,5120)
-    #time_nufft3d1(nudft3d1,32,32,16,2048)
+    #nufft_test_func.time_nufft1d1(nufft1d1_gaussker)
+    #nufft_test_func.time_nufft2d1(nudft2d1,64,64,5120)
+    #nufft_test_func.time_nufft3d1(nudft3d1,32,32,16,2048)
 
     #test nufft type1
-    time_nufft1d1(nufft1d1_gaussker,64,512000,5)
-    #time_nufft2d1(nufft2d1_gaussker,64,64,5120)
-    #time_nufft3d1(nufft3d1_gaussker,32,32,16,2048)
+    #nufft_test_func.time_nufft1d1(nufft1d1_gaussker,64,512000,5)
+    #nufft_test_func.time_nufft2d1(nufft2d1_gaussker,64,64,5120)
+    #nufft_test_func.time_nufft3d1(nufft3d1_gaussker,32,32,16,2048)
 
     #test nufft type2
-    #time_nufft1d2(nufft1d1_gaussker,nufft1d2_gaussker,32,102400,10)
-    #time_nufft2d2(nufft2d1_gaussker,nufft2d2_gaussker,16,16,25000,1)
-    #time_nufft3d2(nufft3d1_gaussker,nufft3d2_gaussker,16,16,8,20480,1)
+    #nufft_test_func.time_nufft1d2(nufft1d1_gaussker,nufft1d2_gaussker,32,102400,10)
+    #nufft_test_func.time_nufft2d2(nufft2d1_gaussker,nufft2d2_gaussker,16,16,25000,1)
+    #nufft_test_func.time_nufft3d2(nufft3d1_gaussker,nufft3d2_gaussker,16,16,8,20480,1)
 
     #compare
-    #compare_nufft1d1(nufft1d1_gaussker,32,12800)
-    #compare_nufft2d1(nufft2d1_gaussker, 64, 64,2500)
-    #compare_nufft3d1(nufft3d1_gaussker, 32, 32,16,2048)
+    #nufft_test_func.compare_nufft1d1(nudft1d1, nufft1d1_gaussker, 32, 12800)
+    #nufft_test_func.compare_nufft2d1(nudft2d1, nufft2d1_gaussker, 16, 16,25000)
+    #nufft_test_func.compare_nufft3d1(nudft3d1, nufft3d1_gaussker, 32, 32,16,20480)
 
-#if __name__ == "__main__":
-    #test()
+    #compare type 2& typ1
+    nufft_test_func.compare_nufft1d21( nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000 )
+if __name__ == "__main__":
+    test()

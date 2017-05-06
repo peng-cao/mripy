@@ -61,9 +61,9 @@ def test():
     ny            = 181
 
     # for loop start here
-    for _ in range(1):
+    for _ in range(10):
          # apply CNN model, x-->parameters
-        #test_outy = ssmrf.batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy, keep_prob )        
+        test_outy = ssmrf.batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy, keep_prob )        
         #cuda bloch simulation for each pixel, parameters-->x
         T1r, T2r, dfr, PDr = ssmrf.set_par(test_outy)
         #timing.start()
@@ -73,7 +73,7 @@ def test():
         sio.savemat(pathdat +'cnn_cs_testouty.mat', {'test_outy': test_outy})
         sio.savemat(pathdat +'cnn_cs_testouty1.mat', {'data_x_c': data_x_c})
         sio.savemat(pathdat +'cnn_cs_testouty2.mat', {'data_x_acc':  ssmrf.seqdata_realimag_2complex(data_x_acc)})        
-        #data_x_acc = ssmrf.seqdata_complex_2realimag(data_x_c)
+        data_x_acc = ssmrf.seqdata_complex_2realimag(data_x_c)
 
 if __name__ == "__main__":
     test()

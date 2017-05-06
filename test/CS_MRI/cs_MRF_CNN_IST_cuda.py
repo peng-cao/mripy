@@ -34,8 +34,12 @@ import pics.operators_class as opts
 pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
 pathexe = '/home/pcao/git/mripy/'
 os.chdir(pathdat)
-execfile('load_cnn_t1t2b0_1dcov.py')#restore model
+# tensorflow release some unused gpu memory
+execfile('load_cnn_t1t2b0_1dcov_gpumomgrow.py')#restore model
 os.chdir(pathexe)
+
+import pics.operators_cuda_class as cuopts
+
 
 def tv_par( nx, ny, test_outy ):
     # tv regularization
@@ -72,8 +76,8 @@ def constraints( test_outy, th = 0.001 ):
     test_outy[test_outy < th]  = 0.0
     test_outy[test_outy > 1.0] = 1.0    
     for i in range(test_outy.shape[0]):
-        if test_outy[i,3] < 0.15:
-            test_outy[i,:] = 0.1*test_outy[i,:]#np.zeros(4, np.float64)
+        if test_outy[i,3] < 0.2:
+            test_outy[i,:] = np.array([0.0,0.0,0.5,0.0])#0.1*test_outy[i,:]#np.zeros(4, np.float64)
     return test_outy
 
 def mask_ksp3d( nx, ny, nz, FTm, x ):
@@ -101,8 +105,8 @@ def test():
     ny            = 181
     # mask in ksp
     mask          = ut.mask3d( nx, ny, Nk, [15,15,0], 0.4)
-    FTm           = opts.FFT2d_kmask(mask) 
-    #cuFTm         = cuopts.FFT2d_cuda_kmask(mask)
+    #FTm           = opts.FFT2d_kmask(mask) 
+    FTm           = cuopts.FFT2d_cuda_kmask(mask)
     
     #intial timing
     timing        = utc.timing()
@@ -148,8 +152,8 @@ def test():
         #print('test_outy: %g' % np.linalg.norm(test_outy))
         acctest_outy  = constraints( acctest_outy )
         #could do soft thresholding on test_outy here, i.e. test_outy = threshold(test_outy)
-        test_outy     = wavel1_par(nx, ny, acctest_outy) #  
-        test_outy     = tv_par(nx, ny, test_outy)
+        #test_outy     = l0_par(nx, ny, acctest_outy) #  
+        test_outy     = tv_par(nx, ny, acctest_outy)
 
         sio.savemat(pathdat +'cnn_cs_testouty.mat', {'test_outy': test_outy})
 

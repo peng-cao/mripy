@@ -2,6 +2,7 @@ import pycuda.autoinit
 import pycuda.gpuarray as gpuarray
 import numpy as np
 from skcuda.fft import fft, ifft, Plan
+import utilities.utilities_class as utc
 
 #wrap for fft in cufft
 def fftnc2c_cuda( x ):
@@ -24,32 +25,39 @@ def ifftnc2c_cuda( x ):
 
 #wrap for fft in cufft
 def fft2c2c_cuda( x, axes = (0, 1) ):
-    rank = len(axes)
+    rank = len(axes) 
     x = np.array(x).astype(np.complex64)
     x_gpu  = gpuarray.to_gpu(x)
-    xf_gpu = gpuarray.empty(x.shape, np.complex64)
-    plan   = Plan(x.shape, np.complex64, np.complex64, \
-        batch, None, 1, x.shape[0:rank], 1, np.prod(x.shape[0:rank]), \
-        batch, None, 1, x.shape[0:rank], 1, np.prod(x.shape[0:rank]) )
+    xf_gpu = gpuarray.empty(x.shape, np.complex64)     
+    if len(x.shape) > rank:       
+        batch = np.prod(x.shape[rank:len(x.shape)])
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64, batch, None, 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1 )        
+    else:      
+        batch = 1
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64 )        
     fft(x_gpu, xf_gpu, plan)
-    return xf_gpu.get()
+    xf = xf_gpu.get()
+    return xf
 
 #wrap for ifft in cufft, noted that the cufft functions are not normalized
 #here I normalize ifft by 1/N
 def ifft2c2c_cuda( x, axes = (0, 1) ):
     rank = len(axes)
-    if rank < len(x.shape)
-        batch =  np.prod(x.shape[rank:len(x.shape)])
-    else
-        batch = 1
     x = np.array(x).astype(np.complex64)
     x_gpu  = gpuarray.to_gpu(x)
     xf_gpu = gpuarray.empty(x.shape, np.complex64)
-    plan   = Plan(x.shape, np.complex64, np.complex64,\
-        batch, None, 1, x.shape[0:rank], 1, np.prod(x.shape[0:rank]), \
-        batch, None, 1, x.shape[0:rank], 1, np.prod(x.shape[0:rank]) )
+    if len(x.shape) > rank:       
+        batch = np.prod(x.shape[rank:len(x.shape)])
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64, batch, None, 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1 )        
+    else:      
+        batch = 1
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64 )        
     ifft(x_gpu, xf_gpu, plan)
-    return xf_gpu.get()/np.prod(x.shape)
+    return xf_gpu.get()/np.prod(x.shape[0:rank])
 
 
 #test 1d fft
@@ -93,7 +101,13 @@ def test4():
 
 #test 3d fft3
 def test5():
-    N = 128
-    x = np.asarray(np.random.rand(N,N,N), np.complex64)
-    xf = np.fft.fftn(x, s=None, axes=(0,1))
-    print(np.allclose(xf, fft2c2c_cuda(x), atol=1e-2))
+    N = 512
+    #x = np.asarray(np.random.rand(N,N,N), np.complex64)
+    x = np.ones((N,N,N),np.complex64)
+    timing = utc.timing()
+    timing.start()
+    xf = np.fft.fft2(x, s=None, axes=(0,1,2))
+    timing.stop().display('numpy fft ').start()
+    xf2 = fft2c2c_cuda(x, axes=(0,1,2))
+    timing.stop().display('cuda fft ')
+    print(np.allclose(np.absolute(xf), np.absolute(xf2), atol=1e-2))
