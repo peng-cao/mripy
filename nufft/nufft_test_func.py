@@ -66,7 +66,7 @@ def compare_nufft3d1( nufft_func1, nufft_func2, ms=1000, mt=1000, mu=1000, mc=10
     print("- Results match the 3d DFT")
 
 
-def compare_nufft1d21( nufft_func1, nufft_func2, ms=1000, mc=100000, Reptime=1 ):
+def compare_nufft1d21( nufft_func1, nufft_func2, ms=1000, mc=100000, Reptime=5 ):
     rng = np.random.RandomState(0)
     # Time the nufft function
     x = 100 * rng.rand(mc)
@@ -82,6 +82,46 @@ def compare_nufft1d21( nufft_func1, nufft_func2, ms=1000, mc=100000, Reptime=1 )
         ut.plot(np.absolute(F2))
         #ut.plot(np.real(F1),np.real(F2),'o')
     print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
+
+
+def compare_nufft2d21( nufft_func1, nufft_func2, ms=1000, mt=1000, mc=100000, Reptime=5 ):
+    rng = np.random.RandomState(0)
+    # Time the nufft function
+    x = 100 * rng.rand(mc)
+    y = 100 * rng.rand(mc)
+    c0 = np.sin(x)
+    F1 = nufft_func1(x, y, c0, ms, mt)
+    times = []
+    for i in range(Reptime):
+        t0 = time()
+        F2 = nufft_func2(x, y, F1, ms, mt)
+        t1 = time()
+        times.append(t1 - t0)
+        ut.plotim1(np.absolute(F1), colormap = None, title = None, bar = True)
+        ut.plotim1(np.absolute(F2), colormap = None, title = None, bar = True)
+        ut.plotim1(np.absolute(F1-F2), colormap = None, title = None, bar = True)
+    print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
+
+
+def compare_nufft3d21( nufft_func1, nufft_func2, ms=1000, mt=1000, mu=1000, mc=100000, Reptime=5 ):
+    rng = np.random.RandomState(0)
+    # Time the nufft function
+    x = 100 * rng.rand(mc)
+    y = 100 * rng.rand(mc)
+    z = 100 * rng.rand(mc)
+    c0 = np.sin(x)
+    F1 = nufft_func1(x, y, z, c0, ms, mt, mu)
+    times = []
+    for i in range(Reptime):
+        t0 = time()
+        F2 = nufft_func2(x, y, z, F1, ms, mt, mu)
+        t1 = time()
+        times.append(t1 - t0)
+        ut.plotim1(np.absolute(F1[:,:,mu//2]), colormap = None, title = None, bar = True)
+        ut.plotim1(np.absolute(F2[:,:,mu//2]), colormap = None, title = None, bar = True)
+        ut.plotim1(np.absolute(F1[:,:,mu//2]-F2[:,:,mu//2]), colormap = None, title = None, bar = True)
+        print("- Execution time (M={0}): {1:.2g} sec".format(mc, np.median(times)))
+
 
 # timing for the input nufft_func, the nufft_func should be 1d nufft function type 1
 def time_nufft1d1( nufft_func, ms=1000, mc=100000, Reptime=5 ):

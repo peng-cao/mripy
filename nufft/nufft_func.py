@@ -607,14 +607,14 @@ def build_grid_2d2_fast( x, y, fntau, tau, nspread, E3 ):
             E2mmx *= E2x
     return c/(nf1*nf2)
 
-#2d type 2
+#2d type 2 & type 1
 @numba.jit(nopython=True)
 def build_grid_2d21( x, y, fntau, tau, nspread ):
     nf1  = fntau.shape[0]
     nf2  = fntau.shape[1]
     hx   = 2 * np.pi / nf1
     hy   = 2 * np.pi / nf2
-    Em   = np.zeros((2*nspread+1, 2*nspread+1), dytpe = fntau.dtype)#will reuse this exponential
+    Em   = np.zeros((2*nspread+1, 2*nspread+1), dtype = fntau.dtype)#will reuse this exponential
     ftau = np.zeros(fntau.shape, dtype = fntau.dtype)
     for i in range(x.shape[0]):
         c  = 0.0 #coefficient, saved temporarily
@@ -1133,6 +1133,8 @@ def test():
     #nufft_test_func.compare_nufft3d1(nudft3d1, nufft3d1_gaussker, 32, 32,16,20480)
 
     #compare type 2& typ1
-    nufft_test_func.compare_nufft1d21( nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000 )
+    nufft_test_func.compare_nufft1d21(nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000,1)
+    nufft_test_func.compare_nufft2d21(nufft2d1_gaussker, nufft2d21_gaussker,16,16,25000,1)
+    nufft_test_func.compare_nufft3d21(nufft3d1_gaussker, nufft3d21_gaussker,16,16,8,20480,1)    
 if __name__ == "__main__":
     test()

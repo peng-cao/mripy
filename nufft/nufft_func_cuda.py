@@ -1163,7 +1163,12 @@ def test():
     #compare
     #nufft_test_func.compare_nufft1d1(nufft_func.nudft1d1, nufft1d1_gaussker_cuda,32,32000)
     #nufft_test_func.compare_nufft2d1(nufft_func.nudft2d1, nufft2d1_gaussker_cuda, 64, 64,5120)
-    nufft_test_func.compare_nufft3d1(nufft_func.nudft3d1, nufft3d1_gaussker_cuda, 16, 16,16,20480)
+    #nufft_test_func.compare_nufft3d1(nufft_func.nudft3d1, nufft3d1_gaussker_cuda, 16, 16,16,20480)
+
+    #compare type 2& typ1
+    nufft_test_func.compare_nufft1d21(nufft1d1_gaussker_cuda, nufft1d21_gaussker_cuda, 128, 100000,1)
+    nufft_test_func.compare_nufft2d21(nufft2d1_gaussker_cuda, nufft2d21_gaussker_cuda,16,16,25000,1)
+    nufft_test_func.compare_nufft3d21(nufft3d1_gaussker_cuda, nufft3d21_gaussker_cuda,18,16,16,204800,1)    
 
 if __name__ == "__main__":
     test()

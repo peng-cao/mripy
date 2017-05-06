@@ -1,8 +1,8 @@
 #import nufft.nufft_func_cuda as nufft_func_cuda
 #nufft_func_cuda.test()
 
-import nufft.nufft_func as nufft_func
-nufft_func.test()
+#import nufft.nufft_func as nufft_func
+#nufft_func.test()
 
 #import fft.cufft as cufft
 #cufft.test5()
