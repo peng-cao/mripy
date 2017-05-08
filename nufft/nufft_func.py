@@ -102,6 +102,7 @@ def nufftfreqs2d( ms, mt, df=1.0 ):
     """Compute the frequency range used in nufft for ms frequency bins"""
     return df * np.mgrid[-(ms // 2): ms - (ms // 2), -(mt // 2): mt - (mt // 2)]
 
+
 """
 this is direct computation of nonuniform FFT 3d type 1
 
@@ -1114,7 +1115,7 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gri
 def test():
     #test nudft
     #nufft_test_func.time_nufft1d1(nufft1d1_gaussker)
-    #nufft_test_func.time_nufft2d1(nudft2d1,64,64,5120)
+    nufft_test_func.time_nufft2d1(nudft2d1,64,64,5120)
     #nufft_test_func.time_nufft3d1(nudft3d1,32,32,16,2048)
 
     #test nufft type1
@@ -1133,8 +1134,8 @@ def test():
     #nufft_test_func.compare_nufft3d1(nudft3d1, nufft3d1_gaussker, 32, 32,16,20480)
 
     #compare type 2& typ1
-    nufft_test_func.compare_nufft1d21(nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000,1)
-    nufft_test_func.compare_nufft2d21(nufft2d1_gaussker, nufft2d21_gaussker,16,16,25000,1)
-    nufft_test_func.compare_nufft3d21(nufft3d1_gaussker, nufft3d21_gaussker,16,16,8,20480,1)    
+    #nufft_test_func.compare_nufft1d21(nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000,1)
+    #nufft_test_func.compare_nufft2d21(nufft2d1_gaussker, nufft2d21_gaussker,16,16,25000,1)
+    #nufft_test_func.compare_nufft3d21(nufft3d1_gaussker, nufft3d21_gaussker,16,16,8,20480,1)    
 if __name__ == "__main__":
     test()

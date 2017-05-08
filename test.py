@@ -76,8 +76,23 @@
 #import test.espirit.espirit_3d_uselib as espirit_3d_uselib
 #Vim, sim, ft = espirit_3d_uselib.test()
 
+#import espirit.espirit_func as espirit_func
+#espirit_func.test1()
+#espirit_func.test2()
+
 #import dwi.dwi_func as dwi_func
 #dwi_func.test()
 
 #import low_rank.low_rank_tensor_func as low_rank_tensor_func
 #low_rank_tensor_func.test()
+
+#import test.neural_network_training.enc_decoder_t1t2b0 as enc_decoder_t1t2b0
+#enc_decoder_t1t2b0.test()
+
+#import test.neural_network_training.fc_decoder_t1t2b0 as fc_decoder_t1t2b0
+#fc_decoder_t1t2b0.test()
+
+import test.neural_network_training.fc_encoder_t1t2b0 as fc_encoder_t1t2b0
+fc_encoder_t1t2b0.test()
+
+

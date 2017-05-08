@@ -75,7 +75,7 @@ def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
 """
 def plotgray( im ):
     fig, ax = plt.subplots()
-    ax.imshow(im, cmap=cm.gray)
+    ax.imshow(im, cmap=cm.gray, origin='lower', interpolation='none')
     ax.axis('off')
     plt.show()
     return

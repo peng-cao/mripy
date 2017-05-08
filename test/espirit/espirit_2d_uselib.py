@@ -20,7 +20,7 @@ def test():
     im = ft.backward(x[:,:,:])
     ut.plotim3(np.absolute(im[:,:,:]))
     #crop k-space
-    xcrop = ut.crop2d( x, 30 )  
+    xcrop = ut.crop2d( x, 16 )  
     #do espirit2d  
     Vim, sim = espirit_2d(xcrop, x.shape,\
      nsingularv = 150, hkwin_shape = (16,16,16), pad_before_espirit = 0, pad_fact = 2 )

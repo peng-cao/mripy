@@ -173,19 +173,46 @@ class SENSE2d:
 """
 this class appy coil conbation for 2d image
 """
-"""
-class ESPIRiT:
+
+class ESPIRiT2d:
     "this is coil sensitivity operator"
-    def __intial__( self, sensitivity ):
-        self.s = sensitivity
+    def __intial__( self, sensitivity, coil_axis = None ):
+        self.sens = sensitivity
+        if coil_axis is None:
+            # last dim of sensitivity map is coil axis
+            self.coil_axis = len(sensitivity.shape)-1
+        else:
+            self.coil_axis = coil_axis
 
     def forward( self, im_coils ):
-    #  apply coil conbination
-    #np.inner
+        #  apply coil combination
+        sens_out_shape         = self.sens.shape
+        im_out_shape           = im_coils.shape   
+        # match the shapes of sens and im_coil by adding 1    
+        if   len(self.sens.shape) < len(im_coils.shape):            
+            for _ in range(len(self.sens.shape),len(im_coils.shape)):
+                sens_out_shape += (1,)
+        elif len(self.sens.shape) > len(im_coils.shape):
+            for _ in range(len(im_coils.shape,len(self.sens.shape))):
+                im_out_shape   += (1,)
+        # coil combination is sum(conj(sens)*im)
+        return sum(np.multiply(im_coils.reshape(im_out_shape),\
+                     np.conj(self.sens).reshape(sens_out_shape))\
+                    ,axis=self.coil_axis)
 
     def backward( self, im_sos ):
-    # multiply image with coil sensitivity profile
-"""
+        # multiply image with coil sensitivity profile
+        im_out_shape                 = im_sos.shape
+        sens_out_shape               = self.sens.shape                
+        if   len(im_sos.shape) < len(self.sens.shape):
+            for _ in range(len(im_sos.shape),len(self.sens.shape)):
+                im_out_shape         += (1,)
+        elif len(im_sos.shape) > len(self.sens.shape):
+            for _ in range(len(self.sens.shape),len(out_shape)):
+                sens_out_shape       += (1,)
+        #appying sensitivity profile is sens*im
+        return np.multiply(im_sos.reshape(im_out_shape),\
+                        self.sens.reshape(sens_out_shape))
 
 """
 this class combine two operators together, this is usefull for parallel imaging

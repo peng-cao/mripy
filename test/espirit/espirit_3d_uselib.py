@@ -18,9 +18,9 @@ def test():
     x = mat_contents["DATA"]    
     #ut.plotim3(np.absolute(x[:,:,:,0]))
     im = ft.backward(x)
-    ut.plotim3(np.absolute(im[:,:,:,0]))
+    ut.plotim3(np.absolute(im[:,:,im.shape[2]//2,:]))
     #crop k-space
-    xcrop = ut.crop3d( x, 24 )  
+    xcrop = ut.crop3d( x, 12 )  
     #do espirit2d  
     Vim, sim = espirit_3d(xcrop, x.shape, 150, hkwin_shape = (12,12,12),\
      pad_before_espirit = 0, pad_fact = 2)
