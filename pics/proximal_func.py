@@ -7,20 +7,21 @@ softthreshold/proximal for l1 norm, th = lambda/rho
 argmin_x (lambda)*||x||_1 + (rho/2)*||x-x0||_2^2
 
 """
-
-
+# output always complex data type
 def prox_l1_soft_thresh( x0, th ):
     a_th = np.abs(x0) - th
     a_th[a_th<0] = 0
     a_angle = np.angle(x0)
     return np.multiply(np.exp(1j*a_angle), a_th)
 
+#modified, input float type, output float type
 def prox_l1_soft_thresh2( x0, th ):
     a_th = np.abs(x0) - th
     a_th[a_th<0] = 0
     a_dir = np.divide(x0,np.abs(x0)+1e-6)
     return np.multiply(a_dir, a_th)
 
+# hard threshold
 def prox_l0_hard_thresh( x0, th ):
     a_th = np.abs(x0) #- th
     a_th[a_th<th] = 0
@@ -31,6 +32,7 @@ def prox_l0_hard_thresh( x0, th ):
 softthreshold for proximal transformed l1 norm, th = lambda/rho
 argmin_x (lambda)*||Tfunc(x)||_1 + (rho/2)*||x-x0||_2^2 
 """
+# output is always complex type
 def prox_l1_Tf_soft_thresh( Tfunc, invTfunc, x0, th ):
     Tfx0 = Tfunc(x0)
     a_th = np.abs(Tfx0) - th
@@ -38,7 +40,7 @@ def prox_l1_Tf_soft_thresh( Tfunc, invTfunc, x0, th ):
     a_angle = np.angle(Tfx0)
     Tfx = np.multiply(np.exp(1j*a_angle), a_th)
     return invTfunc(Tfx)
-
+#input float type, output float type
 def prox_l1_Tf_soft_thresh2( Tfunc, invTfunc, x0, th ):
     Tfx0 = Tfunc(x0)
     a_th = np.abs(Tfx0) - th
@@ -62,6 +64,7 @@ Chambolle, An algorithm for total variation minimizations and applications, 2004
 and a pdf file
 Total Variation Regularization with Chambolle Algorihtm.pdf
 """
+#for 2d input data
 def prox_tv2d( y, lambda_tv, step = 0.1 ):
     #lambda_tv = 2/rho
     nx, ny = y.shape
@@ -83,6 +86,7 @@ def prox_tv2d( y, lambda_tv, step = 0.1 ):
 
     return f
 
+#for 3d input data
 def prox_tv3d( y, lambda_tv, step = 0.1 ):
     #lambda_tv = 2/rho
     #nx, ny, nz = y.shape
@@ -102,7 +106,6 @@ def prox_tv3d( y, lambda_tv, step = 0.1 ):
         #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
         #norm_g = np.linalg.norm(G)
     f = y - lambda_tv * tvopt.Div(G)
-
     return f
 
 """
@@ -157,7 +160,6 @@ def prox_l2_Axnb_iterpart( Q_dot, A_T_b, x0, rho ):
 
 """
 gradient of f(x) = ||Afunc(x)-b||_2^2+(rho/2)*||x-x0||_2^2
-
 """
 def grad_prox_l2_Afxnb(Afunc,invAfunc, b,x, x0,rho):
     df = 2*invAfunc(Afnc(x)-b)+rho*(x-x0)

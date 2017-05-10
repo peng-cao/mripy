@@ -172,19 +172,19 @@ def ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, l1_r, rho ):
         print np.linalg.norm(x-z)
     return x
 
-
+#tv minimization
+#tv_r, regularization parameter for tv term
 def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho ):
-    z = invAfunc(b) #np.zeros(x.shape)
+    z = invAfunc(b) #np.zeros(x.shape), z=AH(b)
     u = np.zeros(z.shape)
     # 2d or 3d, use different proximal funcitons
-    if b.ndim is 2:
+    if z.ndim is 2:
         tvprox = pf.prox_tv2d
-    elif b.ndim is 3:
+    elif z.ndim is 3:
         tvprox = pf.prox_tv3d
     else:
         print('dimension imcompatiable in ADMM_l2Afxnb_tvx')
-        pf.prox_l1_soft_thresh
-
+        return None
     # iteration
     for _ in range(Nite):
         # soft threshold
@@ -195,6 +195,7 @@ def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho ):
         print np.linalg.norm(x-z)
     return x
 
+#l1 with tranform function Tf, which can be wavelet transform
 def ADMM_l2Afxnb_l1Tfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, l1_r, rho ):
     z = invAfunc(b)#np.zeros(x.shape)
     u = np.zeros(z.shape)
@@ -206,6 +207,7 @@ def ADMM_l2Afxnb_l1Tfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, l1_r, r
         u = u + step*(x-z)
         print np.linalg.norm(x-z)
     return x
+
 """
 ADMM for argmin ||Afunc(x_1)-b|||_2^2+lambda1*||x_2||_1 + lambda2*||Tfunc(x_3)||_1
 Lagrangian is L(x,z,y) = f_1(x_1) + f_2(x_2) + f_3(x_3) + g(z) + sum_i=1,2,3_[y^H(x_i-z) + (rho/2)*||x_i-z||_2^2 ]

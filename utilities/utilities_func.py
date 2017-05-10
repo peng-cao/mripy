@@ -26,11 +26,10 @@ def plotim1( im, colormap = None, title = None, bar = None ):
 # color image plot, 3d input
 # concatenate image along the third dim
 """
-def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
-    #im = np.matrix(im)
+def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
     nx,ny,nz = im.shape
-    #concatenate image in 1d, along the third dim
 
+    #concatenate image in 1d, along the third dim
     if catdim[0] >= nz :
         imcat = im[:,:,0]        
         for i in range(nz)[1:nz-1]:
@@ -68,6 +67,14 @@ def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
     if bar is not None:
         cbar = fig.colorbar(cax)
     plt.show()
+    return
+
+def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
+    #im = np.matrix(im)
+    if len(im.shape)   == 3:
+        catplotim(im, catdim = catdim , colormap = colormap, title = title, bar = bar)
+    elif len(im.shape) == 2:
+        plotim1(im, colormap = colormap, title = title, bar = bar )
     return
 
 """
@@ -262,3 +269,16 @@ def pad2d( data, nx, ny ):
     #print cxr,cyr
     ndata[np.ix_(map(int,cxr),map(int,cyr))] = data
     return ndata
+
+"""
+return the scaling of data (ksp), computed as the max in image space
+"""
+def optscaling( FT, b ):
+    x0 = np.absolute(FT.backward(b))
+    return max(x0.flatten())
+
+"""
+return the scaling of data (b)
+"""
+def scaling( b ):
+    return max(b.flatten())

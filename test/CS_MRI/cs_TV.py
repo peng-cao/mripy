@@ -1,15 +1,7 @@
 """
 tv denoising, using gradient descent
 this is testing code, the implemented tv minimization lib can be find in pics tvop_func and tvop_class
-usage:
-python test.py
-#in test.py
-import test.CS_MRI.cs_TV as cs_TV
-cs_TV.test()
 """
-
-
-# make sure you've got the following packages installed
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt

@@ -12,10 +12,10 @@ import scipy.io as sio
 import os
 import tensorflow as tf
 import bloch_sim.sim_seq_MRF_irssfp_cuda as ssmrf
-pathdat = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
-pathexe = '/home/pcao/git/mripy/test/neural_network_training/'
+pathdat  = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
+pathexe  = '/home/pcao/git/mripy/test/neural_network_training/'
+pathsave = '/home/pcao/git/nn_checkpoint/'
 def test():
-    
     sess = tf.InteractiveSession()    
 
     #define x and y_
@@ -163,9 +163,9 @@ def test():
         if i%1000 == 0:
             #save the model into file
             saver = tf.train.Saver()
-            saver.save(sess,pathexe + 'check_point/fc_encoder_w800_t1t2b0-mrf-ir-ssfp-noise0p01-20170316')    
+            saver.save(sess,pathsave + 'fc_encoder_w800_t1t2b0-mrf-ir-ssfp-noise0p01-20170316')    
     
 
     #save the model into file
     saver = tf.train.Saver()
-    saver.save(sess,pathexe + 'check_point/fc_encoder_w800_t1t2b0-mrf-ir-ssfp-noise0p01-20170316')
+    saver.save(sess,pathsave + 'fc_encoder_w800_t1t2b0-mrf-ir-ssfp-noise0p01-20170316')

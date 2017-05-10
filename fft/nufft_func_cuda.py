@@ -1,13 +1,12 @@
 from __future__ import print_function, division
 import numpy as np
 import numba
-from numba import cuda
-from time import time
-from math import exp
 import utilities.utilities_func as ut
 import nufft_func
 import nufft_test_func
-#import matplotlib.pyplot as plt
+from numba import cuda
+from time import time
+from math import exp
 from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
 
 
@@ -305,7 +304,6 @@ def nufft1d21_gaussker_cuda( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 )
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
-    k1 = nufft_func.nufftfreqs1d(ms)
     return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
 
 #####################################################################################################
@@ -670,7 +668,6 @@ def nufft2d21_gaussker_cuda( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridf
     Ftau = np.concatenate([Ftau[:,-(mt//2):], Ftau[:,:mt//2 + mt % 2]],1)
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2)^-1
-    k1,k2 = nufft_func.nufftfreqs2d(ms, mt)
     # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
     return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
 
@@ -1143,7 +1140,6 @@ def nufft3d21_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1
     Ftau = np.concatenate([Ftau[:,-(mt//2):,:], Ftau[:,:mt//2 + mt % 2,:]],1)
     Ftau = np.concatenate([Ftau[:,:,-(mu//2):], Ftau[:,:,:mu//2 + mu % 2]],2)
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2,k3)^-1
-    k1, k2, k3 = nufft_func.nufftfreqs3d(ms, mt, mu)
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
     return (1 / len(x)) * np.sqrt(np.pi / tau)**3 * \
     np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Ftau

@@ -1,21 +1,11 @@
 """
 test tv denoising and CS recon, algrithm using ADMM
-
-usage:
-python test.py
-#in test.py
-import test.CS_MRI.cs_TV_ADMM as cs_TV_ADMM
-cs_TV_ADMM.test()
 """
-
-
-# make sure you've got the following packages installed
 import numpy as np
 import pics.CS_MRI_solvers_func as solvers
 import utilities.utilities_func as ut
 import pics.operators_cuda_class as cuopts
 import pics.operators_class as opts
-
 import scipy.io as sio
 from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
 

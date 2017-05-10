@@ -1,11 +1,20 @@
-#import nufft.nufft_func_cuda as nufft_func_cuda
+#import fft.nufft_func_cuda as nufft_func_cuda
 #nufft_func_cuda.test()
 
-#import nufft.nufft_func as nufft_func
+#import fft.nufft_func as nufft_func
 #nufft_func.test()
 
 #import fft.cufft as cufft
 #cufft.test5()
+
+#import fft.dft_func as dft_func
+#dft_func.test1()
+#dft_func.test2()
+
+#import fft.fftw_func as fftw_func
+#fftw_func.test1()
+#fftw_func.test2()
+#fftw_func.test3()
 
 #import test.MRI_recon.test_uterecon as test_uterecon
 #test_uterecon.test()
@@ -16,8 +25,14 @@
 #import test.CS_MRI.cs_IST_2 as cs_IST_2
 #cs_IST_2.test()
 
-#import test.CS_MRI.cs_IST_3 as cs_IST_3
-#cs_IST_3.test()
+#import test.CS_MRI.cs_IST_wavelet_L1 as cs_IST_wavelet_L1
+#cs_IST_wavelet_L1.test()
+
+import test.CS_MRI.pics_IST_3d_wavelet_L1 as pics_IST_3d_wavelet_L1
+pics_IST_3d_wavelet_L1.test()
+
+#import test.CS_MRI.pics_IST_2d_wavelet_L1 as pics_IST_2d_wavelet_L1
+#pics_IST_2d_wavelet_L1.test()
 
 #import test.CS_MRI.cs_ADMM as cs_ADMM
 #cs_ADMM.test()
@@ -30,6 +45,12 @@
 
 #import test.CS_MRI.cs_TV_ADMM_2d_uselib as cs_TV_ADMM_2d_uselib
 #cs_TV_ADMM_2d_uselib.test()
+
+#import test.CS_MRI.pics_TV_ADMM_2d_uselib as pics_TV_ADMM_2d_uselib
+#pics_TV_ADMM_2d_uselib.test()
+
+#import test.CS_MRI.pics_TV_ADMM_3d_uselib as pics_TV_ADMM_3d_uselib
+#pics_TV_ADMM_3d_uselib.test()
 
 #import test.CS_MRI.cs_TV_ADMM_3d as cs_TV_ADMM_3d
 #cs_TV_ADMM_3d.test()
@@ -74,11 +95,7 @@
 #espirit_2d_uselib.test()
 
 #import test.espirit.espirit_3d_uselib as espirit_3d_uselib
-#Vim, sim, ft = espirit_3d_uselib.test()
-
-#import espirit.espirit_func as espirit_func
-#espirit_func.test1()
-#espirit_func.test2()
+#espirit_3d_uselib.test()
 
 #import dwi.dwi_func as dwi_func
 #dwi_func.test()
@@ -92,7 +109,7 @@
 #import test.neural_network_training.fc_decoder_t1t2b0 as fc_decoder_t1t2b0
 #fc_decoder_t1t2b0.test()
 
-import test.neural_network_training.fc_encoder_t1t2b0 as fc_encoder_t1t2b0
-fc_encoder_t1t2b0.test()
+#import test.neural_network_training.fc_encoder_t1t2b0 as fc_encoder_t1t2b0
+#fc_encoder_t1t2b0.test()
 
 

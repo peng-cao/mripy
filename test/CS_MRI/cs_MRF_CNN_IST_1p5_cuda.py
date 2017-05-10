@@ -6,15 +6,9 @@ for cnn model, the input is x (raw mrf data, i) and output is y (parameters, p  
 for bloch sim, the input is y (parameters, p  ) and output is x (raw mrf data, i)
 
 in this code, we minimize the cost funciton 
-||M*FT(x)-b||_2^2 + ||cnn(x)||_1_TV
+||M*FT(x)-b||_2^2 + ||x||_1_TV
 using IST
-where p = cnn(x) is cnn model, inv_cnn is bloch sim
-
-usage:
-python test.py
-# in test.py
-import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
-cs_MRF_CNN_IST_cuda.test()
+and output p = cnn(x) is cnn model, #inv_cnn is bloch sim, but not used in current version
 """
 import numpy as np
 import scipy.io as sio

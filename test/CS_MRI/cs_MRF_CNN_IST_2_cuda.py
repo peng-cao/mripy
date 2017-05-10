@@ -9,12 +9,6 @@ in this code, we minimize the cost funciton
 ||M*FT(x)-b||_2^2 + ||cnn(x)||_1_TV
 using IST
 where p = cnn(x) is cnn model, inv_cnn is bloch sim
-
-usage:
-python test.py
-# in test.py
-import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
-cs_MRF_CNN_IST_cuda.test()
 """
 import numpy as np
 import scipy.io as sio

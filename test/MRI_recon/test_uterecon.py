@@ -1,5 +1,5 @@
-import nufft.nufft_func as nft
-import nufft.nufft_func_cuda as nft_cuda
+import fft.nufft_func as nft
+import fft.nufft_func_cuda as nft_cuda
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt

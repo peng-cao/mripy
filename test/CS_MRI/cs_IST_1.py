@@ -1,14 +1,6 @@
 """
 test soft thresholding algrithom, IST_1
-usage:
-python test.py
-#in test.py
-import test.CS_MRI.cs_IST1 as cs_IST_1
-cs_IST_1.test()
 """
-
-
-# make sure you've got the following packages installed
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -37,10 +29,10 @@ def test():
     # simulated image
     mat_contents = sio.loadmat('data/sim_2dmri.mat');
     xorig = mat_contents["sim_2dmri"]
-    x = spimg.zoom(xorig, 0.4)
+    im = spimg.zoom(xorig, 0.4)
     #plotim2(x)
 
-    nx,ny = x.shape
+    nx,ny = im.shape
 
     #create undersampling mask
     k = int(round(nx*ny*0.5)) #undersampling

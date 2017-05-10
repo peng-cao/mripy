@@ -1,14 +1,6 @@
 """
 test soft thresholding algrithom, IST_2
-usage:
-python test.py
-#in test.py
-import test.CS_MRI.cs_IST_2 as cs_IST_2
-cs_IST_2.test()
 """
-
-
-# make sure you've got the following packages installed
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -20,6 +12,7 @@ import importlib
 import matplotlib.cm as cm
 import pics.proximal_func as pf
 import pics.CS_MRI_solvers_func as solvers
+import utilities.utilities_func as ut
 
 def plotim1(im):
     fig, ax = plt.subplots()
@@ -37,11 +30,10 @@ def plotim2(im):
 def test():
     # simulated image
     mat_contents = sio.loadmat('data/sim_2dmri.mat');
-    x = mat_contents["sim_2dmri"]
-    #x = spimg.zoom(xorig, 0.4)
-    #plotim2(x)
+    im = mat_contents["sim_2dmri"]
+    #plotim2(im)
 
-    nx,ny = x.shape
+    nx,ny = im.shape
 
     #create undersampling mask
     k = int(round(nx*ny*0.5)) #undersampling
@@ -51,8 +43,8 @@ def test():
     mask = ma.reshape((nx,ny))
 
     # define A and invA fuctions, i.e. A(x) = b, invA(b) = x
-    def Afunc(im):
-        ksp = np.fft.fft2(im)
+    def Afunc(image):
+        ksp = np.fft.fft2(image)
         ksp = np.fft.fftshift(ksp,(0,1))
         return np.multiply(ksp,mask)
 
@@ -70,14 +62,16 @@ def test():
 
     plotim1(np.absolute(mask))
 
-    b = Afunc(x)
+    b = Afunc(im)
+    scaling = ut.scaling(invAfunc(b))
+    b = b/scaling    
     plotim1(np.absolute(b))
     plotim1(np.absolute(invAfunc(b)))
 
     #do soft thresholding
-    Nite = 200 #number of iterations
+    Nite = 100 #number of iterations
     step = 1 #step size
-    th = 1000 # theshold level
+    th = 1.5 # theshold level
     xopt = solvers.IST_2(Afunc,invAfunc,b, Nite, step,th)
 
     plotim1(np.absolute(xopt))

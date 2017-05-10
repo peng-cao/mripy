@@ -9,12 +9,6 @@ in this code, we minimize the cost funciton
 ||M*f(p)-b||_2^2 + ||p||_1
 using IST
 where f(p) is cnn model, f'(i) is bloch sim
-
-usage:
-python test.py
-# in test.py
-import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
-cs_MRF_CNN_IST_cuda.test()
 """
 import numpy as np
 import scipy.io as sio

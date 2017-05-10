@@ -1,14 +1,6 @@
 """
 test ADMM algrithom
-usage:
-python test.py
-#in test.py
-import test.CS_MRI.cs_ADMM as cs_ADMM
-cs_ADMM.test()
 """
-
-
-# make sure you've got the following packages installed
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -37,11 +29,10 @@ def plotim2(im):
 def test():
     # simulated image
     mat_contents = sio.loadmat('data/sim_2dmri.mat');
-    x = mat_contents["sim_2dmri"]
-    #x = spimg.zoom(xorig, 0.4)
-    #plotim2(x)
+    im = mat_contents["sim_2dmri"]
+    #plotim2(im)
 
-    nx,ny = x.shape
+    nx,ny = im.shape
 
     #create undersampling mask
     k = int(round(nx*ny*0.5)) #undersampling
@@ -59,8 +50,8 @@ def test():
     mask[np.ix_(map(int,cxr),map(int,cyr))] = np.ones((cxr.shape[0],cyr.shape[0])) #center k-space is fully sampled
 
     # define A and invA fuctions, i.e. A(x) = b, invA(b) = x
-    def Afunc(im):
-        ksp = np.fft.fft2(im)
+    def Afunc(image):
+        ksp = np.fft.fft2(image)
         ksp = np.fft.fftshift(ksp,(0,1))
         return np.multiply(ksp,mask)
 
@@ -72,7 +63,7 @@ def test():
     plotim1(np.absolute(mask))
 
 
-    b = Afunc(x)
+    b = Afunc(im)
     plotim1(np.absolute(b))
     plotim1(np.absolute(invAfunc(b)))
 
