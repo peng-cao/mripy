@@ -26,12 +26,16 @@ def test():
         #create espirit operator
         esp = opts.espirit(Vim)
         esp.save('../save_data/espirit_data_2d.mat')
+        #esp.save('/working/larson/UTE_GRE_shuffling_recon/python_test/save_data/espirit_data_2d.mat')        
     else:
         esp = opts.espirit()
         esp.restore('../save_data/espirit_data_2d.mat')
+        #esp.restore('/working/larson/UTE_GRE_shuffling_recon/python_test/save_data/espirit_data_2d.mat') 
+
     #create mask
     mask = ut.mask2d( nx, ny, center_r = 15, undersampling = 0.25 )
-    FTm  = opts.FFT2d_kmask(mask)
+    #FTm  = opts.FFT2d_kmask(mask)
+    FTm  = opts.FFTW2d_kmask(mask)
     #ut.plotim1(np.absolute(mask))#plot the mask
     Aopt = opts.joint2operators(esp, FTm)
     #create image

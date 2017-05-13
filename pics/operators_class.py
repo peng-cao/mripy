@@ -73,7 +73,15 @@ class FFT2d_kmask:
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.fftshift(ksp,self.axes)
+        #try to match the dims of ksp and mask
+        if len(ksp.shape) is not len(self.mask.shape):
+            #try to match the dimensions of ksp and mask
+            ksp_out_shape, mask_out_shape = dim_match(ksp.shape, self.mask.shape)
+            mksp = np.multiply(ksp.reshape(ksp_out_shape),\
+                         self.mask.reshape(mask_out_shape))#apply mask
+        else:
+            mksp = np.multiply(ksp,self.mask)#apply mask
+        ksp = np.fft.fftshift(mksp,self.axes)
         im = np.fft.ifft2(ksp,s=None,axes=self.axes)
         #im = np.fft.ifft2(ksp,s=None,axes=self.axes)
         im = np.fft.ifftshift(im,self.axes)
@@ -126,7 +134,16 @@ class FFTnd_kmask:
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.fftshift(ksp,self.axes)
+        #try to match the dims of ksp and mask
+        if len(ksp.shape) is not len(self.mask.shape):
+            #try to match the dimensions of ksp and mask
+            ksp_out_shape, mask_out_shape = dim_match(ksp.shape, self.mask.shape)
+            mksp = np.multiply(ksp.reshape(ksp_out_shape),\
+                         self.mask.reshape(mask_out_shape))#apply mask
+        else:
+            mksp = np.multiply(ksp,self.mask)#apply mask
+
+        ksp = np.fft.fftshift(mksp,self.axes)
         #im = np.fft.ifftn(ksp,s=None,axes=self.axes)
         im  = np.fft.ifftn(ksp,s=None,axes=self.axes)
         im  = np.fft.ifftshift(im,self.axes)          
@@ -182,7 +199,16 @@ class FFTW2d_kmask:
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.fftshift(ksp,self.axes)
+        #try to match the dims of ksp and mask
+        if len(ksp.shape) is not len(self.mask.shape):
+            #try to match the dimensions of ksp and mask
+            ksp_out_shape, mask_out_shape = dim_match(ksp.shape, self.mask.shape)
+            mksp = np.multiply(ksp.reshape(ksp_out_shape),\
+                         self.mask.reshape(mask_out_shape))#apply mask
+        else:
+            mksp = np.multiply(ksp,self.mask)#apply mask
+
+        ksp = np.fft.fftshift(mksp,self.axes)
         im  = fftw.ifftw2d(ksp,axes=self.axes, threads = self.threads)
         im  = np.fft.ifftshift(im,self.axes)          
         return im
@@ -235,7 +261,16 @@ class FFTWnd_kmask:
 
     # let's call image <- k-space as backward
     def backward( self, ksp ):
-        ksp = np.fft.fftshift(ksp,self.axes)
+        #try to match the dims of ksp and mask
+        if len(ksp.shape) is not len(self.mask.shape):
+            #try to match the dimensions of ksp and mask
+            ksp_out_shape, mask_out_shape = dim_match(ksp.shape, self.mask.shape)
+            mksp = np.multiply(ksp.reshape(ksp_out_shape),\
+                         self.mask.reshape(mask_out_shape))#apply mask
+        else:
+            mksp = np.multiply(ksp,self.mask)#apply mask
+
+        ksp = np.fft.fftshift(mksp,self.axes)
         im  = fftw.ifftwnd(ksp,axes=self.axes, threads = self.threads)
         im  = np.fft.ifftshift(im,self.axes)          
         return im

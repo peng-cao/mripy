@@ -1,4 +1,4 @@
-# A concept with a CS MRI class contains ADMM reconstruction algorithm with variable number of reglarizations
+# A concept with a CS MRI class contains ADMM reconstruction algorithm that can have variable number of reglarizations
 class recon:
     def __init__( self ):
         self.reglarization = []

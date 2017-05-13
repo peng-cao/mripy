@@ -28,8 +28,8 @@
 #import test.CS_MRI.cs_IST_wavelet_L1 as cs_IST_wavelet_L1
 #cs_IST_wavelet_L1.test()
 
-import test.CS_MRI.pics_IST_3d_wavelet_L1 as pics_IST_3d_wavelet_L1
-pics_IST_3d_wavelet_L1.test()
+#import test.CS_MRI.pics_IST_3d_wavelet_L1 as pics_IST_3d_wavelet_L1
+#pics_IST_3d_wavelet_L1.test()
 
 #import test.CS_MRI.pics_IST_2d_wavelet_L1 as pics_IST_2d_wavelet_L1
 #pics_IST_2d_wavelet_L1.test()
@@ -68,6 +68,14 @@ pics_IST_3d_wavelet_L1.test()
 #import test.CS_MRI.cs_MRF_CNN_IST_2_cuda as cs_MRF_CNN_IST_2_cuda
 #cs_MRF_CNN_IST_2_cuda.test()
 
+#import test.CS_MRI.CS_IDEAL as CS_IDEAL
+#CS_IDEAL.test()
+
+#import test.CS_MRI.L2_IDEAL_FT as L2_IDEAL_FT
+#L2_IDEAL_FT.test()
+
+import test.CS_MRI.L2_IDEAL_orig as L2_IDEAL_orig
+L2_IDEAL_orig.test()
 
 #import test.seq_sim.MRF_test_cuda as MRF_test_cuda
 #MRF_test_cuda.test()

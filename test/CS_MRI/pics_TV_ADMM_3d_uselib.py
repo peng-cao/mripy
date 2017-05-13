@@ -36,7 +36,8 @@ def test():
         esp.restore('/working/larson/UTE_GRE_shuffling_recon/python_test/save_data/espirit_data_3d.mat')
     #create mask
     mask = ut.mask3d( nx, ny, nz, [15,15,0])
-    FTm  = opts.FFTnd_kmask(mask)
+    #FTm  = opts.FFTnd_kmask(mask)
+    FTm = opts.FFTWnd_kmask(mask, threads = 5)    
     #ut.plotim1(np.absolute(mask))#plot the mask
     Aopt = opts.joint2operators(esp, FTm)
     #create image

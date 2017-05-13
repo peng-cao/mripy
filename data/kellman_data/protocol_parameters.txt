@@ -1,0 +1,271 @@
+------------------------------------------
+Dataset #:             1
+------------------------------------------
+NumberEchoes:          4
+TE (ms):               1550  3820  6090  8360
+Frequency (Hz):        63619941
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             2
+------------------------------------------
+NumberEchoes:          4
+TE (ms):               1550  3820  6090  8360
+Frequency (Hz):        63619941
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             3
+------------------------------------------
+NumberEchoes:          3
+TE (ms):               1550  3820  6090
+Frequency (Hz):        63619941
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             4
+------------------------------------------
+NumberEchoes:          3
+TE (ms):               1550  3820  6090
+Frequency (Hz):        63619941
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             5
+------------------------------------------
+NumberEchoes:          8
+TE (ms):               1550   3820   6090   8360  10630  12900  15170  17440
+Frequency (Hz):        63619941
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             6
+------------------------------------------
+NumberEchoes:          8
+TE (ms):               1550   3820   6090   8360  10630  12900  15170  17440
+Frequency (Hz):        63619941
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             7
+------------------------------------------
+NumberEchoes:          2
+TE (ms):               2380  4760
+Frequency (Hz):        63619955
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             8
+------------------------------------------
+NumberEchoes:          2
+TE (ms):               2380  4760
+Frequency (Hz):        63619956
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             9
+------------------------------------------
+NumberEchoes:          3
+TE (ms):               1530  3760  5990
+Frequency (Hz):        63619956
+BaseResolution:        256
+PhaseEncodingLines:    195
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       360
+PhaseFOV (mm):         360
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             10
+------------------------------------------
+NumberEchoes:          4
+TE (ms):               1530  3760  5990  8220
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    195
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       360
+PhaseFOV (mm):         360
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             11
+------------------------------------------
+NumberEchoes:          8
+TE (ms):               1530   3760   5990   8220  10450  12680  14910  17140
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    195
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       360
+PhaseFOV (mm):         360
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             12
+------------------------------------------
+NumberEchoes:          4
+TE (ms):               1550  3820  6090  8360
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             13
+------------------------------------------
+NumberEchoes:          4
+TE (ms):               1550  3820  6090  8360
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             14
+------------------------------------------
+NumberEchoes:          3
+TE (ms):               1550  3820  6090
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             15
+------------------------------------------
+NumberEchoes:          3
+TE (ms):               1550  3820  6090
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             16
+------------------------------------------
+NumberEchoes:          8
+TE (ms):               1550   3820   6090   8360  10630  12900  15170  17440
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12
+  
+------------------------------------------
+Dataset #:             17
+------------------------------------------
+NumberEchoes:          8
+TE (ms):               1550   3820   6090   8360  10630  12900  15170  17440
+Frequency (Hz):        63619950
+BaseResolution:        256
+PhaseEncodingLines:    150
+PhaseResolution:       0.75
+Segments:              15
+ReadoutFOV (mm):       340
+PhaseFOV (mm):         255
+SliceThickness (mm):   6
+Bandwidth (Hz/pixel):  976.5625
+FlipAngleDegree:       12

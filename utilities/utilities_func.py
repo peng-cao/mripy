@@ -3,10 +3,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scipy.io as sio
+from math import ceil
 """
 # color image plot
 """
 def plotim1( im, colormap = None, title = None, bar = None ):
+    im = np.flip(im,0)
     fig, ax = plt.subplots()
     if colormap is None:
         cax = ax.imshow(im, cmap = cm.gray, origin='lower', interpolation='none')
@@ -27,20 +29,21 @@ def plotim1( im, colormap = None, title = None, bar = None ):
 # concatenate image along the third dim
 """
 def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
+    im = np.flip(im,0)    
     nx,ny,nz = im.shape
 
     #concatenate image in 1d, along the third dim
     if catdim[0] >= nz :
         imcat = im[:,:,0]        
-        for i in range(nz)[1:nz-1]:
-            imcat = np.concatenate([imcat, im[:,:,i]],1)
+        for i in range(nz)[0:nz-1]:
+            imcat = np.concatenate([imcat, im[:,:,i+1]],1)
     else:
         # compute concatenate dim
         nz_catx = min(nz, catdim[0])
         if catdim[1] is not -1:
-            nz_caty = min(nz//nz_catx, catdim[1])
+            nz_caty = min((nz//nz_catx), catdim[1])
         else:
-            nz_caty = nz//nz_catx
+            nz_caty = (nz//nz_catx)
         #intial the cat image
         imcatx = np.zeros((nx*nz_catx, ny))        
         # zero pad im if nz < nz_catx * nz_caty
@@ -49,8 +52,9 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
         #concatenate image in 2d, along x and y
         for j in range(nz_caty):
             imcatx = im[:,:,j*nz_catx]
-            for i in range(nz_catx):
-                imcatx = np.concatenate([imcatx, im[:,:,i + j*nz_catx]],1)#concatenate along x
+            if nz_catx > 1:
+                for i in range(nz_catx):
+                    imcatx = np.concatenate([imcatx, im[:,:,i + 1 + j*nz_catx]],1)#concatenate along x
             if j is 0:
                 imcat = imcatx
             else:
@@ -81,6 +85,7 @@ def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
 #gray image plot
 """
 def plotgray( im ):
+    im = np.flip(im,0)
     fig, ax = plt.subplots()
     ax.imshow(im, cmap=cm.gray, origin='lower', interpolation='none')
     ax.axis('off')
