@@ -11,3 +11,7 @@ spiral.mat
 below datsets are from http://brainweb.bic.mni.mcgill.ca/brainweb/
 sim_2dmri.mat
 sim_3dmri.mat
+
+
+below dataset is from https://www.ismrm.org/workshops/FatWater12/data.htm
+kellman_data
