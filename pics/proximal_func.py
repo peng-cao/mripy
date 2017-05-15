@@ -242,7 +242,7 @@ def prox_l2_Afxnb_CGD( Afunc, invAfunc, b, x0, rho, Nite, ls_Nite = 10 ):
         return 2*invAfunc(Afunc(xi)-b)+rho*(xi-x0)
     dx = -df(x0) # first step is in the steepest gradient
     #alpha linear search argmin_alpha f(x0 + alpha*dx)
-    alpha,nstp = BacktrackingLineSearch(f, df, x0, dx, ls_Nite)
+    alpha,nstp = BacktrackingLineSearch(f, df, x0, dx, ls_Nite = ls_Nite)
     x = x0 + alpha * dx
     s = dx
     delta0 = np.linalg.norm(dx)
@@ -256,7 +256,7 @@ def prox_l2_Afxnb_CGD( Afunc, invAfunc, b, x0, rho, Nite, ls_Nite = 10 ):
         beta = float(deltanew / float(deltaold))
         s = dx + beta * s
         #alpha linear search argmin_alpha f(x + alpha*s)
-        alpha,nstp = BacktrackingLineSearch(f, df, x, s, ls_Nite)
+        alpha,nstp = BacktrackingLineSearch(f, df, x, s, ls_Nite = ls_Nite)
         x = x + alpha * s
         i = i + 1
         #print nstp
@@ -274,7 +274,7 @@ def prox_l2_Afxnb_CGD2( Afunc, invAfunc, b, Nite, ls_Nite = 10 ):
         return 2*invAfunc(Afunc(xi)-b)
     dx = -df(x) # first step is in the steepest gradient
     #alpha linear search argmin_alpha f(x0 + alpha*dx)
-    alpha,nstp = BacktrackingLineSearch(f, df, x, dx, ls_Nite)
+    alpha,nstp = BacktrackingLineSearch(f, df, x, dx, ls_Nite = ls_Nite)
     x = x + alpha * dx
     s = dx
     delta0 = np.linalg.norm(dx)
@@ -288,15 +288,15 @@ def prox_l2_Afxnb_CGD2( Afunc, invAfunc, b, Nite, ls_Nite = 10 ):
         beta = float(deltanew / float(deltaold))
         s = dx + beta * s
         #alpha linear search argmin_alpha f(x + alpha*s)
-        alpha,nstp = BacktrackingLineSearch(f, df, x, s, ls_Nite)
+        alpha,nstp = BacktrackingLineSearch(f, df, x, s, ls_Nite = ls_Nite)
         x = x + alpha * s
         i = i + 1
         #print nstp
     return x
 
 # cost func is f(x) = ||Ax -b ||_2^2 + h(x)
-def prox_l2_Afxnb_CGD3( Afunc, invAfunc, b, h, dh, Nite, ls_Nite = 10 ):
-    x = invAfunc(b)#np.zeros(invAfunc(b).shape)
+def prox_l2_Afxnb_CGD3( Afunc, invAfunc, x, b, h, dh, Nite, ls_Nite = 10 ):
+    #x = invAfunc(b)#np.zeros(invAfunc(b).shape)
     eps = 0.001
     i = 0
     def f(xi):
@@ -306,7 +306,8 @@ def prox_l2_Afxnb_CGD3( Afunc, invAfunc, b, h, dh, Nite, ls_Nite = 10 ):
         return 2*invAfunc(Afunc(xi)-b) + dh(x)
     dx = -df(x) # first step is in the steepest gradient
     #alpha linear search argmin_alpha f(x0 + alpha*dx)
-    alpha,nstp = BacktrackingLineSearch(f, df, x, dx, ls_Nite)
+    alpha,nstp = BacktrackingLineSearch(f, df, x, dx, ls_Nite = ls_Nite)
+    nstp = 0
     x = x + alpha * dx
     s = dx
     delta0 = np.linalg.norm(dx)
@@ -320,7 +321,7 @@ def prox_l2_Afxnb_CGD3( Afunc, invAfunc, b, h, dh, Nite, ls_Nite = 10 ):
         beta = float(deltanew / float(deltaold))
         s = dx + beta * s
         #alpha linear search argmin_alpha f(x + alpha*s)
-        alpha,nstp = BacktrackingLineSearch(f, df, x, s, cgd_Nite)
+        alpha,nstp = BacktrackingLineSearch(f, df, x, s, ls_Nite = ls_Nite)
         x = x + alpha * s
         i = i + 1
         #print nstp

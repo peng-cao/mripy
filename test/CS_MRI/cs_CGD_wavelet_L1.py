@@ -1,5 +1,5 @@
 """
-No working!!!!!!!!!
+gradient descent living in the shell of cojugate gradient algrithm
 test conjugate gradient algrithom, with L1 wavelet minimization and tv minimization
 """
 import numpy as np
@@ -33,11 +33,11 @@ def test():
     b            = b/scaling
     #ut.plotim1(np.absolute(FTm.backward(b))) #undersampled imag
 
-    tvop         = tvopc.TV2d_r()
+    tvop         = tvopc.TV2d()
     #CGD
     Nite         = 20
-    l1_r         = 0.001
-    tv_r         = 0.001
+    l1_r         = 0.1
+    tv_r         = 0.2
     
     #def f(xi):
         #ut.plotim1(np.absolute(FTm.backward(FTm.forward(xi)-b)),bar=1)
@@ -64,7 +64,10 @@ def test():
 
     #xopt   = alg.conjugate_gradient(f, df, FTm.backward(b), Nite )
     #xopt = pf.prox_l2_Afxnb_CGD2( FTm.forward, FTm.backward, b, Nite )
-    xopt = pf.prox_l2_Afxnb_CGD3( FTm.forward, FTm.backward, b, h, dh, Nite )
+    xopt = FTm.backward(b)
+    for _ in range(200):
+        xopt = pf.prox_l2_Afxnb_CGD3( FTm.forward, FTm.backward, xopt, b, h, dh, Nite, 3 )
+        #ut.plotim1(np.absolute(xopt))
     #do soft thresholding
     #Nite = 100 #number of iterations
     #step = 1 #step size

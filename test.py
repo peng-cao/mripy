@@ -28,8 +28,8 @@
 #import test.CS_MRI.cs_IST_wavelet_L1 as cs_IST_wavelet_L1
 #cs_IST_wavelet_L1.test()
 
-#import test.CS_MRI.cs_CGD_wavelet_L1 as cs_CGD_wavelet_L1
-#cs_CGD_wavelet_L1.test()
+import test.CS_MRI.cs_CGD_wavelet_L1 as cs_CGD_wavelet_L1
+cs_CGD_wavelet_L1.test()
 
 
 #import test.CS_MRI.pics_IST_3d_wavelet_L1 as pics_IST_3d_wavelet_L1
