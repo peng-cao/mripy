@@ -46,14 +46,13 @@ def test():
 
     #do L2 cs mri recon
     Nite  = 20 #number of iterations
-    rho   = 1.0   
     ostep = 1.0 
-    for i in range(5):
-        dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, rho, Nite )
-        #if i%5 == 0:
-        ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
-        ut.plotim3(np.real    (xpar + ostep*dxpar)[...,2],bar=1)
-        ut.plotim3(np.angle   (xpar + ostep*dxpar)[...,2],bar=1)
+    for i in range(20):
+        dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, Nite )
+        if i%5 == 0:
+            ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
+            ut.plotim3(np.real    (xpar + ostep*dxpar)[...,2],bar=1)
+            ut.plotim3(np.imag    (xpar + ostep*dxpar)[...,2],bar=1)
         xpar = xpar + ostep * dxpar#.astype(np.float64)   
         #xpar[:,:,2] = np.real(xpar[:,:,2])
 

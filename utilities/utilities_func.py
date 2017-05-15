@@ -53,7 +53,7 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
         for j in range(nz_caty):
             imcatx = im[:,:,j*nz_catx]
             if nz_catx > 1:
-                for i in range(nz_catx):
+                for i in range(nz_catx-1):
                     imcatx = np.concatenate([imcatx, im[:,:,i + 1 + j*nz_catx]],1)#concatenate along x
             if j is 0:
                 imcat = imcatx

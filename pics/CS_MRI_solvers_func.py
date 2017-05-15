@@ -159,14 +159,14 @@ x^k+1 = prox_l2_Afxnb_GD(Afunc, invAfunc, b, x0=z^k-u^k, rho, Nite=100, step=0.0
 z^k+1 = prox_l1_soft_thresh(x0=x^k+u^k,th = lambda/rho)
 u^k+1 = u^k + alphi*(x^k+1-z^k+1)
 """
-def ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, l1_r, rho ):
+def ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, l1_r, rho, cgd_Nite = 3 ):
     z = invAfunc(b) #np.zeros(x.shape)
     u = np.zeros(z.shape)
     # iteration
     for _ in range(Nite):
         # soft threshold
         #x = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u,rho,10,0.1)
-        x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, 3 )
+        x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, cgd_Nite )
         z = pf.prox_l1_soft_thresh(x+u,l1_r/rho)
         u = u + step*(x-z)
         print np.linalg.norm(x-z)
@@ -174,13 +174,13 @@ def ADMM_l2Afxnb_l1x( Afunc, invAfunc, b, Nite, step, l1_r, rho ):
 
 #tv minimization
 #tv_r, regularization parameter for tv term
-def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho ):
+def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho, cgd_Nite = 3, tvndim = 2 ):
     z = invAfunc(b) #np.zeros(x.shape), z=AH(b)
     u = np.zeros(z.shape)
     # 2d or 3d, use different proximal funcitons
-    if z.ndim is 2:
-        tvprox = pf.prox_tv2d
-    elif z.ndim is 3:
+    if tvndim is 2:
+        tvprox = pf.prox_tv2d_r
+    elif tvndim is 3:
         tvprox = pf.prox_tv3d
     else:
         print('dimension imcompatiable in ADMM_l2Afxnb_tvx')
@@ -189,20 +189,21 @@ def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho ):
     for _ in range(Nite):
         # soft threshold
         #x = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u,rho,20,0.1)
-        x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, 3 )
-        z = tvprox(x+u,2*tv_r/rho)#pf.prox_tv2d(x+u,2*tv_r/rho)
-        u = u + step*(x-z)
+        x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, cgd_Nite )
+        z = tvprox(x + u, 2.0 * tv_r/rho)#pf.prox_tv2d(x+u,2*tv_r/rho)
+        u = u + step * (x - z)
         print( 'gradient in ADMM %g' % np.linalg.norm(x-z))
     return x
 
 #l1 with tranform function Tf, which can be wavelet transform
-def ADMM_l2Afxnb_l1Tfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, l1_r, rho ):
+def ADMM_l2Afxnb_l1Tfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, l1_r, rho, cgd_Nite = 3 ):
     z = invAfunc(b)#np.zeros(x.shape)
     u = np.zeros(z.shape)
     # iteration
     for _ in range(Nite):
         # soft threshold
-        x = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u,rho,10,0.1)
+        #x = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u,rho,10,0.1)
+        x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, cgd_Nite )        
         z = pf.prox_l1_Tf_soft_thresh(Tfunc,invTfunc,x+u,l1_r/rho)
         u = u + step*(x-z)
         print( 'gradient in ADMM %g' % np.linalg.norm(x-z))
@@ -251,7 +252,7 @@ def ADMM_l2Afxnb_l1x_l1Tfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, l1_
         print np.linalg.norm(x1-z)
     return x1
 
-def ADMM_l2Afxnb_l1x_2( Afunc, invAfunc, b, Nite, step, l1_r1, rho ):
+def ADMM_l2Afxnb_l1x_2( Afunc, invAfunc, b, Nite, step, l1_r1, rho, cgd_Nite = 3 ):
     z = invAfunc(b)
     u1 = np.zeros(z.shape)
     u2 = np.zeros(z.shape)
@@ -259,7 +260,7 @@ def ADMM_l2Afxnb_l1x_2( Afunc, invAfunc, b, Nite, step, l1_r1, rho ):
     for _ in range(Nite):
         # soft threshold
         #x1 = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u1,rho,10,0.1)
-        x1 = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u1, rho, 3 )
+        x1 = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u1, rho, cgd_Nite )
         x2 = pf.prox_l1_soft_thresh(z-u2,l1_r1/rho)
         z = (x1 + x2)/2.0 + (u1 + u2)/2.0
         u1 = u1 + step*(x1-z)

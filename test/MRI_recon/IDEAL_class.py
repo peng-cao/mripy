@@ -18,8 +18,7 @@ class IDEAL_dataformat:
         x[...,0] = self.water
         x[...,1] = self.fat
         x[...,2] = self.offres
-        #ut.plotim3(np.absolute(x))
-        return x#np.real(x)#.astype(np.float64)
+        return x
 """
 forward based on fwtoolbox_v1_code/doneva/common/@DAMP function dk_data = dforward_op( dx, x, t, f_wf, rel_amp, mask)
 %pc guass t is echo time, f_wf is freq seperation between water and fat, 
@@ -155,9 +154,9 @@ class IDEAL_opt2:
     #     => d_im/d_offres = water*exp(Cte*offres)*Cte+Allfpeak*fat*Cte*exp(Cte*offres)
     #     => d_im*conj(d_im/d_offres) = d_im*conj[exp(Cte*offres)*Cte*(water+Allfpeak*fat)]
     """
-d_water  += conj(exp(1i*2*pi*offres*t(j))).*temp;         
-d_fat    += (np.sum(rel_amp.*exp(-1i*2*pi*t(j)*f_wf))*conj(exp(1i*2*pi*t(j)*offres))).*temp;             
-d_offres += conj(1i*2*pi*t(j)*exp(1i*2*pi*offres*t(j)).*(water +  np.sum(rel_amp.*exp(1i*2*pi*t(j)*f_wf))*fat)).*temp;      
+    d_water  += conj(exp(1i*2*pi*offres*t(j))).*temp;         
+    d_fat    += (np.sum(rel_amp.*exp(-1i*2*pi*t(j)*f_wf))*conj(exp(1i*2*pi*t(j)*offres))).*temp;             
+    d_offres += conj(1i*2*pi*t(j)*exp(1i*2*pi*offres*t(j)).*(water +  np.sum(rel_amp.*exp(1i*2*pi*t(j)*f_wf))*fat)).*temp;      
     """
     def backward( self, d_im ):
         if self.beta_shape is None: #beta_shape is not defined, copy d_im dims
@@ -168,9 +167,10 @@ d_offres += conj(1i*2*pi*t(j)*exp(1i*2*pi*offres*t(j)).*(water +  np.sum(rel_amp
         for j in range(len(self.TEs)):#loop through TEs
             Cte       = 1j * 2.0 * np.pi * self.TEs[j] #precompute a complex constant
             Allfpeak  = np.sum(np.multiply(self.rel_amp, np.exp(Cte * self.freq_wf))) #precompute np.sum of complex weights of all fat peaks
-            d_beta.water  += np.multiply(np.conj(np.exp(Cte * beta.offres)), d_im[...,j]) #d_im * exp(-Cte * offres)
-            d_beta.fat    += np.multiply(np.conj(Allfpeak *np.exp(Cte * beta.offres)), d_im[...,j])
-            d_beta.offres += np.multiply(np.conj(np.multiply(Cte * np.exp(Cte * beta.offres),\
+            Eoffres   = np.exp(Cte * beta.offres) #precompute exponential
+            d_beta.water  += np.multiply(np.conj(Eoffres), d_im[...,j]) #d_im * exp(-Cte * offres)
+            d_beta.fat    += np.multiply(np.conj(Allfpeak * Eoffres), d_im[...,j])
+            d_beta.offres += np.multiply(np.conj(np.multiply(Cte * Eoffres,\
             	             (beta.water+Allfpeak*beta.fat))),d_im[...,j])
         return d_beta.beta2x()#convert to x format
 
@@ -222,20 +222,29 @@ d_offres += conj(1i*2*pi*t(j)*exp(1i*2*pi*offres*t(j)).*(water +  np.sum(rel_amp
 class x_add_dx:
     def __init__( self, x = None ):
         self.x = x
+        #self.w = w
 
     #define x
     def set_x( self, x ):
         self.x = x
+        #if self.w is None:
+        #    self.w = np.ones(self.x.shape[-1])
         return self
+
+    #def set_w( self, w ):
+    #    self.w = w
     
     # x_hat-->d_x, d_x = x_hat - x, 
     def forward( self, x_hat ):
-        #d_x = x_hat - self.x
-        #d_x[:,:,2] = 0.0001*d_x[:,:,2]
-        return x_hat - self.x
+        #for i in range(x_hat.shape[-1]):
+        #    x_hat[:,:,i] = (1/self.w[i]) * x_hat[:,:,i]        
+        d_x = x_hat - self.x
+        #d_x[:,:,2] = d_x[:,:,2]
+        return d_x#x_hat - self.x
     
     # d_x-->x_hat, x_hat = x + d_x ,i.e. ||x_hat||_1 = ||x + d_x||_1
     def backward( self, d_x ):
-        #x_hat = d_x + self.x
-        #x_hat[:,:,2] = 10000*x_hat[:,:,2]
-        return d_x + self.x
+        x_hat = d_x + self.x
+        #for i in range(x_hat.shape[-1]):
+        #    x_hat[:,:,i] = (self.w[i]) * x_hat[:,:,i]
+        return x_hat#d_x + self.x

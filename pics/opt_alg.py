@@ -5,7 +5,7 @@ back tracking line search from
 https://gist.github.com/jiahao/1561144
 http://www4.ncsu.edu/~kksivara/ma706/programs/linesearch.m
 """
-def BacktrackingLineSearch(f, df, x, p,c = 0.0001,rho = 0.5):
+def BacktrackingLineSearch( f, df, x, p, c = 0.0001, rho = 0.2, ls_Nite = 10 ):
     """
     Backtracking linesearch
     f: function
@@ -13,17 +13,20 @@ def BacktrackingLineSearch(f, df, x, p,c = 0.0001,rho = 0.5):
     p: direction of search
     df: gradient of f at x
     """
-    derphi = np.sum(np.multiply(p, df(x)))
-
+    #derphi = np.sum(np.multiply(p, df(x)))
+    derphi = np.real(np.dot(p.flatten(),df(x).flatten()))
+    #print("m %g" % derphi)
+    f0 = f(x)
     alphak = 1.0
+    f_try  = f(x + alphak * p)
     i = 0
-
     #Loop
-    while i < 20 and f(x + alphak * p) > f(x) + c * alphak * derphi:
-        alphak = alphak * rho
+    while i < ls_Nite and f_try-f0 >  c * alphak * derphi and f_try > f0 :
+        alphak = alphak * rho 
+        f_try  = f(x + alphak * p)   
         i += 1
-    if alphak < 0.1:
-        alphak = 0.1
+        #print("f(x+ap)-f(x) %g" % (f_try-f0))
+    #print(i)
     return alphak, i
 
 """
@@ -31,7 +34,7 @@ back tracking line search from
 wiki version
 and sparse MRI's implementation
 """
-def BacktrackingLineSearch2(f, df, x, p,c = 0.0001,rho = 0.5):
+def BacktrackingLineSearch2( f, df, x, p, c = 0.0001, rho = 0.2, ls_Nite = 10 ):
     """
     Backtracking linesearch
     f: function
@@ -40,14 +43,18 @@ def BacktrackingLineSearch2(f, df, x, p,c = 0.0001,rho = 0.5):
     df: gradient of f at x
     """
     derphi = np.absolute(np.sum(np.multiply(p, df(x))))
+    print("m %g" % derphi)
     f0 = f(x)
     alphak = 1.0
+    f_try  = f(x + alphak * p)     
     i = 0
 
     #Loop
-    while i < 5 and f(x + alphak * p) - f0 >  - c * alphak * derphi:
+    while i < ls_Nite and f_try - f0 >  - c * alphak * derphi and f_try > f0:
         alphak = alphak * rho
+        f_try  = f(x + alphak * p) 
         i += 1
+        print("f(x+ap)-f(x) %g" % (f(x + alphak * p)-f(x)))        
     #if i > 1:
     #    alphak = alphak * rho
     #if i < 1:
@@ -79,30 +86,31 @@ nonlinear conjugate gradient, more general than the ones in proximal_func.py
 minimize function f(x) and gradient is df(x)
 
 """
-def conjugate_gradient( f, df, x0, rho, Nite ):
-    x   = np.zeros(x0.shape)
+def conjugate_gradient( f, df, x0, Nite ):
+    x = x0#np.zeros(df(x0).shape)
     eps = 0.001
-    i   = 0 #iteration index
-    dx  = -df #initial is x0# -2.0*invAfunc(-b) + rho*x0 #intial is zero #
+    i = 0
+    dx = -df(x) # first step is in the steepest gradient
     #alpha linear search argmin_alpha f(x0 + alpha*dx)
-    alpha,nstp = BacktrackingLineSearch2(f, df, x0, dx)
-    x          = x0 + alpha * dx
-    s          = dx
-    delta0     = np.linalg.norm(dx)
-    deltanew   = delta0
+    alpha,nstp = BacktrackingLineSearch(f, df, x, dx)
+    x = x + alpha * dx
+    s = dx
+    delta0 = np.linalg.norm(dx)
+    deltanew = delta0
     # iteration
-    while i < Nite and deltanew > eps*delta0 and nstp < 20:
-        dx         = -df
+    while i < Nite and deltanew > eps*delta0:#and nstp < 20
+        dx = -df(x)#-2*invAfunc(Afunc(x)-b)-rho*(x-x0) #this just -df(x)
         #Fletcher-Reeves: beta = np.linalg.norm(dx)/np.linalg.norm(dx_old)
-        deltaold   = deltanew
-        deltanew   = np.linalg.norm(dx)
-        beta       = float(deltanew / float(deltaold))
-        s          = dx + beta * s
+        deltaold = deltanew
+        deltanew = np.linalg.norm(dx)
+        beta = float(deltanew / float(deltaold))
+        s = dx + beta * s
         #alpha linear search argmin_alpha f(x + alpha*s)
-        alpha,nstp = BacktrackingLineSearch2(f, df, x, s)
-        x          = x + alpha * s
-        i          = i + 1
-        #print nstp
+        alpha,nstp = BacktrackingLineSearch(f, df, x, s)
+        x = x + alpha * s
+        i = i + 1
+        #print(deltanew)
+        #print(nstp)
     return x
 
 """
@@ -111,9 +119,12 @@ based on function gradObj = gOBJ(x,params) in  Miki's sparse MRI
     gradObj = params.FT'*(params.FT*x - params.data);
 gradObj = 2*gradObj;
 """
-def grad_fidelity(FTmopt, x, b, norm=1, l1smooth = 1e-6 ):
-    p  = norm
-    return FTmopt.forward(FTmopt.backward(x) - b)
+def grad_fidelity(FTm_opt, x, b ):
+    return 2.0*FTm_opt.backward(FTm_opt.forward(x) - b)
+
+def obj_fidelity(FTm_opt, x, b):
+    Tx = FTm_opt.forward(x) - b
+    return np.linalg.norm(FTm_opt.forward(x)-b)**2.0
 
 """
 based on function grad = gWT(x,params) in  Miki's sparse MRI
@@ -123,12 +134,14 @@ WTx = params.WT*x;
 G = p*WTx.*(WTx.*conj(WTx)+params.l1Smooth).^(p/2-1);
 grad = params.WT'*G; 
 """
-def grad_sparse(sparse_opt, x, norm=1, l1smooth = 1e-6 ):
-    p = norm
-    Tx = sparse_opt.backward(x)#transfer to sparse space
-    G = p*np.multiply(Tx, (np.multiply(Tx, np.conj(Tx))+l1smooth)**(p/2-1))
-    return sparse_opt.forward(G)
+def grad_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-3):
+    Tx = Tsparse_opt.backward(x)#transfer to sparse space
+    G = norm_p*np.multiply(Tx, (np.absolute(np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0-1.0))
+    return Tsparse_opt.forward(G)
 
+def obj_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-3):
+    Tx =  Tsparse_opt.backward(x)
+    return np.sum((np.absolute(np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
 """
 guass newtown method
 inspired by python code on https://github.com/basil-conto/gauss-newton/blob/master/gaussnewton.py

@@ -11,7 +11,6 @@ from skimage.restoration import unwrap_phase
 #from unwrap import unwrap
 
 def unwrap_freq( im ):
-    #ra        = 5 * np.random.rand(1)[0]
     max_im    = ut.scaling(np.absolute(im))
     scaled_im = (im)/max_im*np.pi
     #ut.plotim1(im)
@@ -21,7 +20,7 @@ def unwrap_freq( im ):
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('data/kellman_data/PKdata1.mat', struct_as_record=False, squeeze_me=True)
+    mat_contents = sio.loadmat('data/kellman_data/PKdata3.mat', struct_as_record=False, squeeze_me=True)
     xdata        = mat_contents["data"] 
     im           = xdata.images
     TE           = xdata.TE
@@ -41,24 +40,23 @@ def test():
     xpar         = np.zeros((nx,ny,3), np.complex128)
 
     # IDEAL and FFT jointly
-    IDEAL = idealc.IDEAL_opt2(TE, fat_freq_arr , fat_rel_amp )#
+    IDEAL = idealc.IDEAL_opt2(TE, fat_freq_arr , fat_rel_amp )#fat_freq_arr , fat_rel_amp
     IDEAL.set_x(xpar) #should update in each gauss newtown iteration
     residual    = IDEAL.residual(b)
     #do L2 cs mri recon
-    Nite  = 20 #number of iterations
-    rho   = 1.0   
+    Nite  = 20 #number of iterations   
     ostep = 1.0 
     for i in range(20):
-        dxpar = pf.prox_l2_Afxnb_CGD2( IDEAL.forward, IDEAL.backward, residual, rho, Nite )
+        dxpar = pf.prox_l2_Afxnb_CGD2( IDEAL.forward, IDEAL.backward, residual, Nite )
         if i%5 == 0:
             ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
             ut.plotim3(np.real(xpar + ostep*dxpar)[...,2],bar=1)
             ut.plotim3(np.imag(xpar + ostep*dxpar)[...,2],bar=1)
         xpar = xpar + ostep * dxpar#.astype(np.float64)   
         #xpar[:,:,2] = np.real(xpar[:,:,2])
-        if i > 1: 
-            xpar[:,:,2] = np.real(unwrap_freq(np.real(xpar[:,:,2])))\
-            +1j*(np.imag(xpar[:,:,2]))
+        #if i > 0: 
+        #    xpar[:,:,2] = np.real(unwrap_freq(np.real(xpar[:,:,2])))\
+        #    +1j*(np.imag(xpar[:,:,2]))
         IDEAL.set_x(xpar) #should update in each gauss newtown iteration
         residual    = IDEAL.residual(b)
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)
