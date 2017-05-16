@@ -57,10 +57,10 @@ def tf_property( function ):
 #wrapped model using tensorflow lib
 #model contain data, target and model_abstract
 class tf_model_wrap:
-    def __init__( self, data, target, prediction_func, optimize_func, error_func ):
+    def __init__( self, data, target, prediction_func, optimize_func, error_func, arg = None ):
         self.data             = data
         self.target           = target
-        self.arg              = None
+        self.arg              = arg
         self._prediction_func = prediction_func
         self._optimize_func   = optimize_func
         self._error_func      = error_func
@@ -83,13 +83,13 @@ class tf_model_wrap:
 #define the top level model that contains training and testing functions using tensorflow lib
 class tf_model_top:
     # intialize tensorflow model
-    def __init__( self, data_shape, target_shape, tf_prediction_func, tf_optimize_func, tf_error_func ):
+    def __init__( self, data_shape, target_shape, tf_prediction_func, tf_optimize_func, tf_error_func, arg = None ):
         # tensorflow style data and target defination, as inputs to model
         self.data       = tf.placeholder(tf.float32, data_shape) # e.g. [None, 784]
         self.target     = tf.placeholder(tf.float32, target_shape) # e.g. [None, 10]
          # model first defined in abstract form, which contains prediction, optimize, error functions
         # put data, target and model together
-        self.model_wrap = tf_model_wrap(self.data, self.target, tf_prediction_func, tf_optimize_func, tf_error_func)
+        self.model_wrap = tf_model_wrap(self.data, self.target, tf_prediction_func, tf_optimize_func, tf_error_func, arg)
         self.sess       = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
@@ -117,6 +117,11 @@ class tf_model_top:
         print('Test error {:6.2f}%'.format(100 * error))
         return self
 
+    # set argument
+    def set_arg( self, arg ):
+        self.model_wrap.arg = arg
+        return self
+
     # save the tensorflow model
     def save( self, name ):
         saver = tf.train.Saver(tf.global_variables())
@@ -127,6 +132,23 @@ class tf_model_top:
     # restore the tensorflow model
     def restore( self, name ):
         nsaver = tf.train.Saver(tf.global_variables())
-        nsaver.restore(self.sess, './'+name)
+        nsaver.restore(self.sess, name)
         print('model restored')
+        return self
+
+    # run tensorflow on cpu
+    def run_on_gpu( self, gpu_num = 0 ):
+        #run tensorflow on cpu, count of gpu = 0
+        config = tf.ConfigProto(device_count = {'GPU': gpu_num})
+        #sess = tf.Session()
+        self.sess = tf.Session(config=config)
+        return self
+
+    # allow gpu memory to grow
+    def gpu_memo_grow( self ):
+        #run tensorflow on cpu, count of gpu = 0
+        config = tf.ConfigProto()
+        #allow tensorflow release gpu memory
+        config.gpu_options.allow_growth=True
+        self.sess = tf.Session(config=config)
         return self

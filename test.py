@@ -1,3 +1,6 @@
+##########################################################################
+# fft function testing
+##########################################################################
 #import fft.nufft_func_cuda as nufft_func_cuda
 #nufft_func_cuda.test()
 
@@ -16,8 +19,34 @@
 #fftw_func.test2()
 #fftw_func.test3()
 
+#import test.numbaCUDA_GPU.test_cufft as test_cufft
+#test_cufft.test4()
+
+##########################################################################
+# MRI regular reconstruction function testing
+##########################################################################
 #import test.MRI_recon.test_uterecon as test_uterecon
 #test_uterecon.test()
+
+
+#import test.espirit.espirit_2d as espirit_2d
+#espirit_2d.test()
+
+#import test.espirit.espirit_2d_uselib as espirit_2d_uselib
+#espirit_2d_uselib.test()
+
+#import test.espirit.espirit_3d_uselib as espirit_3d_uselib
+#espirit_3d_uselib.test()
+
+#import dwi.dwi_func as dwi_func
+#dwi_func.test()
+
+#import low_rank.low_rank_tensor_func as low_rank_tensor_func
+#low_rank_tensor_func.test()
+
+##########################################################################
+# MRI PICS reconstruction function testing
+##########################################################################
 
 #import test.CS_MRI.cs_IST_1 as cs_IST_1
 #cs_IST_1.test()
@@ -28,8 +57,8 @@
 #import test.CS_MRI.cs_IST_wavelet_L1 as cs_IST_wavelet_L1
 #cs_IST_wavelet_L1.test()
 
-import test.CS_MRI.cs_CGD_wavelet_L1 as cs_CGD_wavelet_L1
-cs_CGD_wavelet_L1.test()
+#import test.CS_MRI.cs_CGD_wavelet_L1 as cs_CGD_wavelet_L1
+#cs_CGD_wavelet_L1.test()
 
 
 #import test.CS_MRI.pics_IST_3d_wavelet_L1 as pics_IST_3d_wavelet_L1
@@ -85,6 +114,9 @@ cs_CGD_wavelet_L1.test()
 #import test.CS_MRI.L2_IDEAL_orig as L2_IDEAL_orig
 #L2_IDEAL_orig.test()
 
+##########################################################################
+# MRI sequence simulation testing
+##########################################################################
 #import test.seq_sim.MRF_test_cuda as MRF_test_cuda
 #MRF_test_cuda.test()
 
@@ -96,28 +128,23 @@ cs_CGD_wavelet_L1.test()
 #ssfp_test7_db2.test()
 
 
+##########################################################################
+# neural network testing
+##########################################################################
 
 #import test.class_defines_NNmodel.classmodel_tf_wrap4 as tfmodel
 #tfmodel.test1()
 #tfmodel.test2()
 
-#import test.numbaCUDA_GPU.test_cufft as test_cufft
-#test_cufft.test4()
 
-#import test.espirit.espirit_2d as espirit_2d
-#espirit_2d.test()
+#import neural_network.zoo.tf_wrap_fc as tf_wrap_fc
+#tf_wrap_fc.test1()
+#tf_wrap_fc.test2()
 
-#import test.espirit.espirit_2d_uselib as espirit_2d_uselib
-#espirit_2d_uselib.test()
+#import neural_network.zoo.tf_wrap_cnn as tf_wrap_cnn
+#tf_wrap_cnn.test1()
+#tf_wrap_cnn.test2()
 
-#import test.espirit.espirit_3d_uselib as espirit_3d_uselib
-#espirit_3d_uselib.test()
-
-#import dwi.dwi_func as dwi_func
-#dwi_func.test()
-
-#import low_rank.low_rank_tensor_func as low_rank_tensor_func
-#low_rank_tensor_func.test()
 
 #import test.neural_network_training.enc_decoder_t1t2b0 as enc_decoder_t1t2b0
 #enc_decoder_t1t2b0.test()
