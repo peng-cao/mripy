@@ -2,6 +2,8 @@ import numpy as np
 from opt_alg import BacktrackingLineSearch
 import tvop_func as tv
 import tvop_class as tv_class
+import operators_class as opts
+import opt_alg as alg
 """
 softthreshold/proximal for l1 norm, th = lambda/rho
 argmin_x (lambda)*||x||_1 + (rho/2)*||x-x0||_2^2
@@ -64,6 +66,28 @@ Chambolle, An algorithm for total variation minimizations and applications, 2004
 and a pdf file
 Total Variation Regularization with Chambolle Algorihtm.pdf
 """
+
+# ingeneral for any TV operator defined in tvop_class, 2d/3d/2d_r/3d_r currently supporting
+def prox_tv( tvopt, y, lambda_tv, step = 0.1 ):
+    #lambda_tv = 2/rho
+    #nx, ny, nz = y.shape
+    sizeg = y.shape+(y.ndim,) #size of gradient tensor
+    G = np.zeros(sizeg)#intial gradient tensor
+    i = 0
+    #amp = lambda u : np.sqrt(np.sum(u ** 2,axis=3))#nomalize u along the third dimension
+    #norm_g0 = np.linalg.norm(tvopt.grad(y))
+    #norm_g = norm_g0
+    while i < 40:
+        dG = tvopt.grad(tvopt.Div(G)-y/lambda_tv)#gradient of G
+        G = G - step*dG#gradient desent, tested to work with negative sign for gradient update
+        d = tvopt.amp(G)#np.tile(amp(G)[:,:,np.newaxis], (1,1,1,2))#.reshape(sizeg)
+        G = G/np.maximum(d,1.0*np.ones(sizeg))#normalize to ensure the |G|<1
+        i = i + 1
+        #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
+        #norm_g = np.linalg.norm(G)
+    f = y - lambda_tv * tvopt.Div(G)
+    return f
+
 #for 2d input data
 def prox_tv2d( y, lambda_tv, step = 0.1 ):
     #lambda_tv = 2/rho
@@ -85,7 +109,8 @@ def prox_tv2d( y, lambda_tv, step = 0.1 ):
     f = y - lambda_tv * tv.Div(G)
 
     return f
-#for 2d tv on nd input data
+
+#for 2d tv on muti-dimension  (nd > 2) input data
 def prox_tv2d_r( y, lambda_tv, step = 0.1 ):
     #lambda_tv = 2/rho
     #nx, ny, nz = y.shape
@@ -128,6 +153,29 @@ def prox_tv3d( y, lambda_tv, step = 0.1 ):
         #norm_g = np.linalg.norm(G)
     f = y - lambda_tv * tvopt.Div(G)
     return f
+
+#for 2d tv on muti-dimension  (nd > 2) input data
+def prox_tv3d_r( y, lambda_tv, step = 0.1 ):
+    #lambda_tv = 2/rho
+    #nx, ny, nz = y.shape
+    sizeg = y.shape+(y.ndim,) #size of gradient tensor
+    G = np.zeros(sizeg)#intial gradient tensor
+    i = 0
+    tvopt = tv_class.TV3d_r()
+    #amp = lambda u : np.sqrt(np.sum(u ** 2,axis=3))#nomalize u along the third dimension
+    #norm_g0 = np.linalg.norm(tvopt.grad(y))
+    #norm_g = norm_g0
+    while i < 40:
+        dG = tvopt.grad(tvopt.Div(G)-y/lambda_tv)#gradient of G
+        G = G - step*dG#gradient desent, tested to work with negative sign for gradient update
+        d = tvopt.amp(G)#np.tile(amp(G)[:,:,np.newaxis], (1,1,1,2))#.reshape(sizeg)
+        G = G/np.maximum(d,1.0*np.ones(sizeg))#normalize to ensure the |G|<1
+        i = i + 1
+        #lambda_tv = lambda_tv*ntheta/np.linalg.norm(f-y)
+        #norm_g = np.linalg.norm(G)
+    f = y - lambda_tv * tvopt.Div(G)
+    return f
+
 
 """
 project on the set C, from set C find a vector that is closest to input x0
@@ -357,3 +405,48 @@ def prox_l2_Afxnb_CGD2( Afunc, invAfunc, b, x0, rho, Nite ):
         print deltanew
     return x
 """
+#proximal function for fitting using gaussnewton method
+# if x_ref is not None
+# min_x ||f(x)-b||_2^2 + ||x-x_ref||_2^2
+# iteratively solve for 
+# min_d_x ||J*d_x-residual||_2^2 + ||d_x + xn - x_ref||_2^2
+# then update xn = xn + d_x, residual = y - f(xn)
+# else solve for
+# min_x ||f(x)-b||_2^2
+# i.e. just guass newton method
+# if x_ref = zeros, then minimization become 
+# min_x ||f(x)-b||_2^2 + ||x-x_ref||_2^2
+def prox_l2_gaussnewton( IDEALopt, FTmopt, b, x_ref = None, rho = 1.0, Nite = 10, cg_Nite = 80, ls_Nite = 10 ):
+    Aideal_ftmopt = opts.joint2operators(IDEALopt, FTmopt)#(FTmopt,IDEALopt)#
+    if x_ref is not None:
+        xn     = x_ref # initial value  
+    else:
+        xn     = Aideal_ftmopt.backward(b)
+    IDEALopt.set_x(xn) #should update in each gauss newton iteration
+    residual    = IDEALopt.residual(b, FTmopt)
+    def f (xi):  # xi is d_x in below functions
+        if x_ref is not None:
+            # min_d_x ||J*d_x-residual||_2^2 + ||d_x + xn - x_ref||_2^2
+            cost_func = alg.obj_fidelity(Aideal_ftmopt, xi, residual) + (rho/2) * np.linalg.norm(xi + xn - x_ref)**2.0
+        else:
+            # min_d_x ||J*d_x-residual||_2^2
+            cost_func = alg.obj_fidelity(Aideal_ftmopt, xi, residual) 
+        return cost_func
+
+    def df(xi):
+        if x_ref is not None:
+            # invA(J * d_x - residual) + rho * (d_x + xn - x_ref) 
+            gradall = alg.grad_fidelity(Aideal_ftmopt, xi, residual) +  (rho/2) * (xi + xn - x_ref)
+        else:
+            # invA(J * d_x - residual)
+            gradall = alg.grad_fidelity(Aideal_ftmopt, xi, residual)     
+        return gradall
+
+    for _ in range(Nite):
+        dx       = alg.conjugate_gradient(f, df, x_ref, cg_Nite, ls_Nite=ls_Nite)
+        ostep,j  = alg.BacktrackingLineSearch(f, df, xn, dx,  ls_Nite=ls_Nite)
+        # update xn, using gaussnewton method
+        xn       = xn + ostep*dx
+        IDEALopt.set_x(xn) #should update in each gauss newton iteration
+        residual = IDEALopt.residual(b, FTmopt)          
+    return xn

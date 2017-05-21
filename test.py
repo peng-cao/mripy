@@ -104,9 +104,14 @@
 #import test.CS_MRI.CS_IDEAL as CS_IDEAL
 #CS_IDEAL.test()
 
+#import test.CS_MRI.CS_IDEAL_ADMMout_GaussNewtonin as CS_IDEAL_ADMMout_GaussNewtonin
+#CS_IDEAL_ADMMout_GaussNewtonin.test()
+
 #import test.CS_MRI.CS_IDEAL_CGD as CS_IDEAL_CGD
 #CS_IDEAL_CGD.test()
 
+#import test.CS_MRI.CS_IDEAL_myelin_CGD as CS_IDEAL_myelin_CGD
+#CS_IDEAL_myelin_CGD.test()
 
 #import test.CS_MRI.L2_IDEAL_FT as L2_IDEAL_FT
 #L2_IDEAL_FT.test()
@@ -137,9 +142,9 @@
 #tfmodel.test2()
 
 
-#import neural_network.zoo.tf_wrap_fc as tf_wrap_fc
+import neural_network.zoo.tf_wrap_fc as tf_wrap_fc
 #tf_wrap_fc.test1()
-#tf_wrap_fc.test2()
+tf_wrap_fc.test2()
 
 #import neural_network.zoo.tf_wrap_cnn as tf_wrap_cnn
 #tf_wrap_cnn.test1()

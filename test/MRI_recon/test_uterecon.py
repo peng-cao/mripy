@@ -40,14 +40,28 @@ def ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape ):
         im[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )
     return im
 
+def allcoil_nufft( ktraj, dcf, kdata, ncoils, im_shape ):
+    im = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
+    kdatashape, dcfshape = ut.dim_match(kdata.shape, dcf.shape)
+    kdata = np.multiply(kdata.reshape(kdatashape), dcf.reshape(dcfshape)).squeeze()
+    c = kdata.reshape((np.prod(kdata.shape[0:2]),ncoils)).squeeze()
+    ktraj = 2.0 * np.pi * ktraj/ktraj.flatten().max()
+    x = ktraj[0,:].flatten()
+    y = ktraj[1,:].flatten()
+    z = ktraj[2,:].flatten()
+    im = nft.nufft3d1_gaussker(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=1.0, eps=1E-5)
+    #im = nft_cuda.nufft3d1_gaussker_cuda(x, y, z, c, im_shape[0], im_shape[1], im_shape[2], df=1.0, eps=1E-5)
+
+    return im
+
 """
 calculate the root sum of square, for combining the coil elements
 """
 def rss( im_coils, axis_rss=None ):
-    print(np.absolute(im_coils).flatten().max())
+    #print(np.absolute(im_coils).flatten().max())
     #im_coils=im_coils/np.absolute(im_coils).flatten().max()
     if axis_rss is None:
-        axis_rss = len(im_coils.shape) - 1 #guess the last dimention is the coil dimention
+        axis_rss = len(im_coils.shape) - 1 # assume the last dimention is the coil dimention
     return np.linalg.norm(im_coils, ord=None, axis = axis_rss)
 
 def test():
@@ -63,10 +77,9 @@ def test():
     kdata = mat_contents["kdata"]
     ncoils = kdata.shape[3]
 
-    print(dcf.dtype)
-
     #im_under = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
-    im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
+    #im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
+    im_under = allcoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
 
     #for i in range(ncoils):
     #    print('Reconstructing coil: %d/%d' % (i+1, ncoils))
@@ -74,10 +87,9 @@ def test():
 
     sio.savemat(path +'nufftrecon.mat', {'im_under': im_under})
     #im_under = ut.loadmat(path +'nufftrecon.mat','im_under')
-
     rss_im_under = rss(im_under)
-    ut.plotim3(rss_im_under[:,:,:],[8,-1])
-
+    ut.plotim3(np.absolute(im_under.squeeze()),[8,-1])
+    ut.plotim3(rss_im_under)
     sio.savemat(path+'nufftrecon_rss.mat', {'rss_im_under': rss_im_under})
 #if __name__ == "__main__":
     #test()

@@ -13,12 +13,13 @@ import test.MRI_recon.IDEAL_class as idealc
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('data/kellman_data/PKdata3.mat', struct_as_record=False, squeeze_me=True)
+    mat_contents = sio.loadmat('data/kellman_data/PKdata1.mat', struct_as_record=False, squeeze_me=True)
     xdata        = mat_contents["data"] 
     im           = xdata.images
-    TE           = xdata.TE
     field        = xdata.FieldStrength
-    fat_freq_arr = 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
+    b0_gain      = 100.0
+    TE           = b0_gain * xdata.TE
+    fat_freq_arr = (1.0/b0_gain) *  42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
  
     ut.plotim3(np.real(im[:,:,:]))
@@ -39,9 +40,9 @@ def test():
     #xpar[:,:,0]  = 10*np.ones((nx,ny))
     #ut.plotim3(np.absolute(xpar),[3,-1])
     # IDEAL and FFT jointly
-    IDEAL       = idealc.IDEAL_opt2(TE, 217.0 , 1.0 )#fat_freq_arr , fat_rel_amp
+    IDEAL       = idealc.IDEAL_opt2(TE, fat_freq_arr , fat_rel_amp )#fat_freq_arr , fat_rel_amp
     Aideal_ftm  = opts.joint2operators(IDEAL, FTm)#(FTm,IDEAL)#
-    IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+    IDEAL.set_x(xpar) #should update in each gauss newton iteration
     residual    = IDEAL.residual(b, FTm)
     #ut.plotim3(np.absolute(FTm.backward(residual)))
     # wavelet and x+d_x
@@ -52,37 +53,42 @@ def test():
     Adwt_addx   = opts.joint2operators(dwt, addx) 
 
     #do soft thresholding
-    #Nite = 20 #number of iterations
-    #step = 0.1 #step size
-    #th   = 1 # theshold level
+    #Nite = 200 #number of iterations
+    #step = 0.01 #step size
+    #th   = 0.02 # theshold level
     #do tv cs mri recon
     Nite = 10 #number of iterations
     step = 1 #step size
-    l1_r = 0.01
-    tv_r = 0.01 # regularization term for tv term
+    l1_r = 0.02
+    tv_r = 0.001 # regularization term for tv term
     rho  = 1.0  
-    ostep = 0.3       
-    for i in range(20):
+    ostep = 0.3 
+      
+    for i in range(200):
         #wavelet L1 IST
     #    dxpar = solvers.IST_3( Aideal_ftm.forward, Aideal_ftm.backward,\
     #                Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, th )
         #wavelet L1 ADMM
-    #    dxpar = solvers.ADMM_l2Afxnb_l1Tfx( Aideal_ftm.forward, Aideal_ftm.backward, \
-    #               Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, l1_r, rho, 25 )
+        dxpar = solvers.ADMM_l2Afxnb_l1Tfx( Aideal_ftm.forward, Aideal_ftm.backward, \
+                   Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, l1_r, rho, 200 )
         # TV ADMM
-        dxpar = solvers.ADMM_l2Afxnb_tvx( Aideal_ftm.forward, Aideal_ftm.backward, residual\
-        	, Nite, step, tv_r, rho, 15 ) 
+    #    dxpar = solvers.ADMM_l2Afxnb_tvx( Aideal_ftm.forward, Aideal_ftm.backward, residual\
+    #    	, Nite, step, tv_r, rho, 15 ) 
+    #    dxpar = solvers.ADMM_l2Afxnb_tvTfx( Aideal_ftm.forward, Aideal_ftm.backward, \
+    #               Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, l1_r, rho, 25 )
+
         # L2 CGD
     #    dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, rho, Nite )
     #    dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, Nite )
 
         if i%1 == 0:
             ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
-            ut.plotim3(np.real(xpar + ostep*dxpar)[...,2],bar=1)
+            ut.plotim3(b0_gain * np.real(xpar + ostep*dxpar)[...,2],bar=1)
             ut.plotim3(np.imag(xpar + ostep*dxpar)[...,2],bar=1)
+
         xpar = xpar + ostep*dxpar#.astype(np.float64)   
 
-        IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+        IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(b, FTm)
-        addx.set_x(xpar) #should update in each gauss newtown iteration
+        addx.set_x(xpar) #should update in each gauss newton iteration    
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)

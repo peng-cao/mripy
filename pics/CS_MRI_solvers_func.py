@@ -195,6 +195,29 @@ def ADMM_l2Afxnb_tvx( Afunc, invAfunc, b, Nite, step, tv_r, rho, cgd_Nite = 3, t
         print( 'gradient in ADMM %g' % np.linalg.norm(x-z))
     return x
 
+#tv minimization
+#tv_r, regularization parameter for tv term
+def ADMM_l2Afxnb_tvTfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, tv_r, rho, cgd_Nite = 3, tvndim = 2 ):
+    z = invAfunc(b) #np.zeros(x.shape), z=AH(b)
+    u = np.zeros(z.shape)
+    # 2d or 3d, use different proximal funcitons
+    if tvndim is 2:
+        tvprox = pf.prox_tv2d_r
+    elif tvndim is 3:
+        tvprox = pf.prox_tv3d
+    else:
+        print('dimension imcompatiable in ADMM_l2Afxnb_tvx')
+        return None
+    # iteration
+    for _ in range(Nite):
+        # soft threshold
+        #x = pf.prox_l2_Afxnb_GD(Afunc,invAfunc,b,z-u,rho,20,0.1)
+        x = pf.prox_l2_Afxnb_CGD( Afunc, invAfunc, b, z-u, rho, cgd_Nite )
+        z = invTfunc(tvprox(Tfunc(x + u), 2.0 * tv_r/rho))#pf.prox_tv2d(x+u,2*tv_r/rho)
+        u = u + step * (x - z)
+        print( 'gradient in ADMM %g' % np.linalg.norm(x-z))
+    return x
+
 #l1 with tranform function Tf, which can be wavelet transform
 def ADMM_l2Afxnb_l1Tfx( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, l1_r, rho, cgd_Nite = 3 ):
     z = invAfunc(b)#np.zeros(x.shape)

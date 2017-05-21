@@ -26,9 +26,10 @@ def test():
     mat_contents = sio.loadmat('data/kellman_data/PKdata3.mat', struct_as_record=False, squeeze_me=True)
     xdata        = mat_contents["data"] 
     im           = xdata.images
-    TE           = xdata.TE
     field        = xdata.FieldStrength
-    fat_freq_arr = 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
+    b0_gain      = 100.0
+    TE           = b0_gain * xdata.TE
+    fat_freq_arr = (1.0/b0_gain) * 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
  
     ut.plotim3(np.real(im[:,:,:]))
@@ -49,9 +50,9 @@ def test():
     #xpar[:,:,0]  = 10*np.ones((nx,ny))
     #ut.plotim3(np.absolute(xpar),[3,-1])
     # IDEAL and FFT jointly
-    IDEAL       = idealc.IDEAL_opt2(TE, 217.0 , 1.0 )#fat_freq_arr , fat_rel_amp
+    IDEAL       = idealc.IDEAL_opt2(TE, fat_freq_arr , fat_rel_amp )#fat_freq_arr , fat_rel_amp
     Aideal_ftm  = opts.joint2operators(IDEAL, FTm)#(FTm,IDEAL)#
-    IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+    IDEAL.set_x(xpar) #should update in each gauss newton iteration
     residual    = IDEAL.residual(b, FTm)
     #ut.plotim3(np.absolute(FTm.backward(residual)))
     # wavelet and x+d_x
@@ -60,7 +61,7 @@ def test():
     addx_df     = idealc.x_add_dx()
     #addx        = idealc.x_add_dx()
     #addx.set_w([1, 1, 0.0001])
-    addx_water.set_x(xpar[...,0]) #should update in each gauss newtown iteration
+    addx_water.set_x(xpar[...,0]) #should update in each gauss newton iteration
     addx_fat.set_x  (xpar[...,1])
     addx_df.set_x   (xpar[...,2])
     dwt         = opts.DWT2d(wavelet = 'haar', level=4)
@@ -71,9 +72,9 @@ def test():
     #Adwt_addx   = opts.joint2operators(dwt, addx)
 
     #CGD
-    Nite  = 20
+    Nite  = 80
     l1_r1 = 0.1
-    l1_r2 = 0.001
+    l1_r2 = 0.1
     def f(xi):
         #return np.linalg.norm(Aideal_ftm.forward(xi)-residual)
         return alg.obj_fidelity(Aideal_ftm, xi, residual) \
@@ -114,7 +115,7 @@ def test():
     #    dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, Nite )
         # L1 CGD
         dxpar   = alg.conjugate_gradient(f, df, Aideal_ftm.backward(residual), Nite )
-        #ostep,j = alg.BacktrackingLineSearch(f, df, xpar, dxpar)
+        ostep,j = alg.BacktrackingLineSearch(f, df, xpar, dxpar)
         if i%1 == 0:
             ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
             ut.plotim3(np.real(xpar + ostep*dxpar)[...,2],bar=1)
@@ -125,10 +126,10 @@ def test():
         #    xpar[:,:,2] = np.real(unwrap_freq(np.real(xpar[:,:,2])))\
         #    +1j*(np.imag(xpar[:,:,2]))
 
-        IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+        IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(b, FTm)
-    #    addx.set_x(xpar) #should update in each gauss newtown iteration
-        addx_water.set_x(xpar[...,0]) #should update in each gauss newtown iteration
+    #    addx.set_x(xpar) #should update in each gauss newton iteration
+        addx_water.set_x(xpar[...,0]) #should update in each gauss newton iteration
         addx_fat.set_x  (xpar[...,1])
         addx_df.set_x   (xpar[...,2])
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)

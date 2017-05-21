@@ -41,14 +41,14 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
         # compute concatenate dim
         nz_catx = min(nz, catdim[0])
         if catdim[1] is not -1:
-            nz_caty = min((nz//nz_catx), catdim[1])
+            nz_caty = min(np.int(ceil(1.0*nz/nz_catx)), catdim[1])
         else:
-            nz_caty = (nz//nz_catx)
+            nz_caty = np.int(ceil(1.0*nz/nz_catx))
         #intial the cat image
         imcatx = np.zeros((nx*nz_catx, ny))        
         # zero pad im if nz < nz_catx * nz_caty
         if nz < nz_catx * nz_caty:
-            im = np.concatenate([im, np.zeros((nx,ny,nz_catx*nzcaty-nz))], 2)
+            im = np.concatenate([im, np.zeros((nx,ny,nz_catx*nz_caty-nz))], 2)
         #concatenate image in 2d, along x and y
         for j in range(nz_caty):
             imcatx = im[:,:,j*nz_catx]
@@ -58,7 +58,7 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
             if j is 0:
                 imcat = imcatx
             else:
-                imcat = np.concatenate([imcat,imcatx],0)#concatenate along y
+                imcat = np.concatenate([imcatx,imcat],0)#concatenate along y
     fig, ax = plt.subplots()
     #ax.imshow(imcat)
     if colormap is None:
@@ -287,3 +287,18 @@ return the scaling of data (b)
 """
 def scaling( b ):
     return max(b.flatten())
+
+# match the dimensions of A and B, by adding 1 
+# A_shape and B_shape are tuples from e.g. A.shape and B.shape  
+def dim_match( A_shape ,B_shape ):
+    #intialize A_out_shape, B_out_shape
+    A_out_shape = A_shape
+    B_out_shape = B_shape
+    #match them by adding 1
+    if   len(A_shape) < len(B_shape):            
+        for _ in range(len(A_shape),len(B_shape)):
+            A_out_shape += (1,)
+    elif len(A_shape) > len(B_shape):
+        for _ in range(len(B_shape),len(A_shape)):
+            B_out_shape += (1,)
+    return  A_out_shape, B_out_shape

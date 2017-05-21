@@ -70,6 +70,48 @@ class tf_layer:
         y_act = self.activate( h_fc, activate_type)
         return y_act
 
+    def multi_full_connection( self, x, n_fc_layer = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU' ):
+        for i in range(n_fc_layer):
+            #set fc_wide parameters
+            if in_fc_wide_arr is None:
+                in_fc_wide = x.shape[0]
+            else:
+                in_fc_wide = in_fc_wide_arr[i]
+
+            if out_fc_wide_arr is None:
+                out_fc_wide = x.shape[0]
+            else:
+                out_fc_wide = out_fc_wide_arr[i]
+            #set input output
+            if i is 0:
+                yin = x
+            else:
+                yin = yout
+            #define fc layers
+            yout  = self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'sigmoid')    
+        return yout
+
+    def multi_full_connection_dropout( self, x, arg = 1.0, n_fc_layer = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU' ):
+        for i in range(n_fc_layer):
+            # set fc_wide parameters 
+            if in_fc_wide_arr is None:
+                in_fc_wide = x.shape[0]
+            else:
+                in_fc_wide = in_fc_wide_arr[i]
+
+            if out_fc_wide_arr is None:
+                out_fc_wide = x.shape[0]
+            else:
+                out_fc_wide = out_fc_wide_arr[i]
+            #set input output
+            if i is 0:
+                yin = x
+            else:
+                yin = yout
+            #define fc layers
+            yout  = self.full_connection_dropout(yin, arg = arg, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'sigmoid')    
+        return yout
+
     def convolution2d( self, x, cov_ker_size = (5,1), in_n_features = 1,\
           out_n_features = 32, conv_strides = [1, 1, 1, 1],\
           pool_size = [1, 2, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU' ):
@@ -83,9 +125,35 @@ class tf_layer:
         y_act  = self.activate( h_pool, activate_type = activate_type)
         return y_act
 
-    def deconvolution2d( self, x, cov_ker_size = (5,1), in_n_features = 1,\
-                          out_n_features = 32, conv_strides = [1, 1, 1, 1],\
-                          pool_size = [1, 2, 1, 1], out_shape = None, activate = 'ReLU' ):
+    
+    def multi_convolution2d(self, x, n_fc_layer = 1, cov_ker_size = (5,1), in_n_features_arr = None,\
+          out_n_features_arr = None, conv_strides = [1, 1, 1, 1],\
+          pool_size = [1, 2, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU'):
+        for i in range(n_fc_layer):
+            # set n_features parameters
+            if in_n_features_arr is None:
+                in_n_features = 1
+            else:
+                in_n_features = in_n_features_arr[i]
+
+            if out_n_features_arr is None:
+                out_n_features = 1
+            else:
+                out_n_features = out_n_features_arr[i]
+            #set input output
+            if i is 0:
+                yin = x
+            else:
+                yin = yout
+            # define cnn layers
+            yout = self.convolution2d(yin, cov_ker_size = cov_ker_size, \
+                in_n_features = in_n_features, out_n_features = out_n_features, \
+                 conv_strides = conv_strides, pool_size = pool_size, pool_type = pool_type, activate_type = activate_type)
+        return yout
+
+    def deconvolution2d( self, x, cov_ker_size = (5,1), in_n_features = 32,\
+                          out_n_features = 1, conv_strides = [1, 1, 1, 1],\
+                          pool_size = [1, 2, 1, 1], out_shape = None,, activate_type = 'ReLU'):
         if out_shape is None:
             out_shape     = x.shape
             out_shape[0]  = pool_size[0] * out_shape[0]
@@ -99,3 +167,29 @@ class tf_layer:
                                strides = conv_strides) + b_deconv
         y_act  = self.activate( h_deconv, activate_type = activate_type)
         return y_act
+
+    def multi_deconvolution2d(self, x, n_fc_layer = 1, cov_ker_size = (5,1), in_n_features_arr = None,\
+          out_n_features_arr = None, conv_strides = [1, 1, 1, 1],\
+          pool_size = [1, 2, 1, 1], out_shape = None, activate_type = 'ReLU'):
+        for i in range(n_fc_layer):
+            # set n_features parameters
+            if in_n_features_arr is None:
+                in_n_features = 1
+            else:
+                in_n_features = in_n_features_arr[i]
+
+            if out_n_features_arr is None:
+                out_n_features = 1
+            else:
+                out_n_features = out_n_features_arr[i]
+            #set input output
+            if i is 0:
+                yin = x
+            else:
+                yin = yout
+            # define cnn layers
+            yout = self.deconvolution2d(yin, cov_ker_size = cov_ker_size, \
+                   in_n_features = in_n_features, out_n_features = out_n_features, \
+                   conv_strides  = conv_strides, pool_size = pool_size, out_shape = None,\
+                   activate_type = activate_type)
+        return yout

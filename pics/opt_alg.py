@@ -13,8 +13,11 @@ def BacktrackingLineSearch( f, df, x, p, c = 0.0001, rho = 0.2, ls_Nite = 10 ):
     p: direction of search
     df: gradient of f at x
     """
-    #derphi = np.sum(np.multiply(p, df(x)))
-    derphi = np.real(np.dot(p.flatten(),df(x).flatten()))
+    #derphi = np.real(np.sum(np.multiply(p, df(x))))
+    #derphi = np.real(np.dot(p.flatten(),df(x)).flatten())
+    # for complex vector dot product, conj may be needed
+    #
+    derphi = np.real(np.dot(p.flatten(),np.conj(df(x)).flatten())) 
     #print("m %g" % derphi)
     f0 = f(x)
     alphak = 1.0
@@ -67,7 +70,7 @@ gradient descent, more general than the ones in proximal_func.py
 minimize function f(x) and gradient is df(x)
 """
 def gradient_descent( df, x0, Nite, step ):
-    x      = np.zeros(x0.shape)    
+    x      = x0#np.zeros(x0.shape)    
     eps    = 0.001 #stop criterion
     r      = -df(x)#zero as intial guess #-2*invAfunc(Afunc(x0)-b)#x=x0 as intial guess, i.e. here r=df(x0)
     delta  = np.linalg.norm(r)
@@ -82,17 +85,37 @@ def gradient_descent( df, x0, Nite, step ):
         i     = i + 1
     return x
 """
+def gradient_descent2( f, df, x0, Nite ):
+    x      = x0#np.zeros(x0.shape)    
+    eps    = 0.001 #stop criterion
+    r      = -df(x)#zero as intial guess #-2*invAfunc(Afunc(x0)-b)#x=x0 as intial guess, i.e. here r=df(x0)
+    alpha,nstp = BacktrackingLineSearch(f, df, x, r)
+    x = x + alpha * r
+    delta  = np.linalg.norm(r)
+    delta0 = delta
+    i      = 0 #iteration index
+    # iteration
+    while i < Nite and delta > eps*delta0:
+        r     = -df(x)
+        alpha,nstp = BacktrackingLineSearch(f, df, x, r)
+        x     = x + nstp*r
+        delta = np.linalg.norm(r)
+        #print('gradient %g' % delta) 
+        i     = i + 1
+    return x
+"""
+"""
 nonlinear conjugate gradient, more general than the ones in proximal_func.py
 minimize function f(x) and gradient is df(x)
 
 """
-def conjugate_gradient( f, df, x0, Nite ):
+def conjugate_gradient( f, df, x0, Nite, ls_Nite = 10 ):
     x = x0#np.zeros(df(x0).shape)
     eps = 0.001
     i = 0
     dx = -df(x) # first step is in the steepest gradient
     #alpha linear search argmin_alpha f(x0 + alpha*dx)
-    alpha,nstp = BacktrackingLineSearch(f, df, x, dx)
+    alpha,nstp = BacktrackingLineSearch(f, df, x, dx, ls_Nite=ls_Nite)
     x = x + alpha * dx
     s = dx
     delta0 = np.linalg.norm(dx)
@@ -102,11 +125,11 @@ def conjugate_gradient( f, df, x0, Nite ):
         dx = -df(x)#-2*invAfunc(Afunc(x)-b)-rho*(x-x0) #this just -df(x)
         #Fletcher-Reeves: beta = np.linalg.norm(dx)/np.linalg.norm(dx_old)
         deltaold = deltanew
-        deltanew = np.linalg.norm(dx)
-        beta = float(deltanew / float(deltaold))
+        deltanew = np.linalg.norm(dx)#np.sum(dx**2)#
+        beta = deltanew / deltaold
         s = dx + beta * s
         #alpha linear search argmin_alpha f(x + alpha*s)
-        alpha,nstp = BacktrackingLineSearch(f, df, x, s)
+        alpha,nstp = BacktrackingLineSearch(f, df, x, s, ls_Nite=ls_Nite)
         x = x + alpha * s
         i = i + 1
         #print(deltanew)
@@ -134,16 +157,16 @@ WTx = params.WT*x;
 G = p*WTx.*(WTx.*conj(WTx)+params.l1Smooth).^(p/2-1);
 grad = params.WT'*G; 
 """
-def grad_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-3):
+def grad_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-1):
     Tx = Tsparse_opt.backward(x)#transfer to sparse space
-    G = norm_p*np.multiply(Tx, (np.absolute(np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0-1.0))
+    G = norm_p*np.divide((Tx), ((np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
     return Tsparse_opt.forward(G)
 
-def obj_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-3):
+def obj_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-1):
     Tx =  Tsparse_opt.backward(x)
-    return np.sum((np.absolute(np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
+    return np.sum(((np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
 """
-guass newtown method
+guass newton method
 inspired by python code on https://github.com/basil-conto/gauss-newton/blob/master/gaussnewton.py
 jacobian is J, pinv(J) = (J^T*J)^-1*J^T 
 residual is y - f(t,b), 
@@ -178,7 +201,7 @@ then the db that minimize the last cost function is
 db = (J^H*J + rho*I)^-1*(J^H*residual-rho*(beta0-beta_ref)), and beta = db + beta0
 set new beta0 = beta, repeat...
 """
-def guass_newtown( jacobian, residual, y, t, beta, Nite, step = 1.0 ):
+def guass_newton( jacobian, residual, y, t, beta, Nite, step = 1.0 ):
     eps    = 0.001 #stop criterion
     def dbeta(iy, it, ibeta):# pinv(jacobian) * (residual)
         return np.dot(np.linalg.pinv(jacobian(it,ibeta)),residual(iy, it,ibeta))
@@ -196,7 +219,7 @@ def guass_newtown( jacobian, residual, y, t, beta, Nite, step = 1.0 ):
     return beta
 
 # an etample for defining the f(t,beta) model
-class guass_newtown_model:
+class guass_newton_model:
     def __init___( self, y, t, func, Jaco_func ):
         self.y         = y
         self.t         = t
@@ -224,8 +247,8 @@ class guass_newtown_model:
 
 
 # use model defined above as input for jacobian and residual functions
-# as model_dbeta = guass_newtown_model.dbeta
-def guass_newtown2( model_dbeta, beta, Nite, step = 1.0 ):
+# as model_dbeta = guass_newton_model.dbeta
+def guass_newton2( model_dbeta, beta, Nite, step = 1.0 ):
     eps    = 0.001 #stop criterion
     db     = model_dbeta(beta)
     nd     = np.linalg.norm(db)

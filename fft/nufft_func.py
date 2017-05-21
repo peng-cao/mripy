@@ -409,43 +409,60 @@ def nufft1d1_gaussker( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
 
+    #compute Ftaushape
+    if len(c.shape) > 1:
+        Ftaushape = (nf1) + c.shape[1:len(c.shape)]
+    else:
+        Ftaushape = (nf1) 
+
+
     if gridfast is 0:
         # Construct the convolved grid
-        Ftau = build_grid_1d1(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype))
+        Ftau = build_grid_1d1(x * df, c, tau, nspread, np.zeros(Ftaushape, dtype=c.dtype))
     else:#fast griding with precomputing of some expoentials
-        Ftau = build_grid_1d1_fast(x * df, c, tau, nspread, np.zeros(nf1, dtype=c.dtype),\
+        Ftau = build_grid_1d1_fast(x * df, c, tau, nspread, np.zeros(Ftaushape, dtype=c.dtype),\
                            np.zeros(nspread + 1, dtype=c.dtype))
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / nf1) * np.fft.fft(Ftau)
+        Ftau = (1 / nf1) * np.fft.fft(Ftau, axis = 0)
     else:
-        Ftau = np.fft.ifft(Ftau)
+        Ftau = np.fft.ifft(Ftau, axis = 0)
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1 = nufftfreqs1d(ms)
-    return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
+    #match dimensions
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)    
+    return (1 / len(x)) * np.sqrt(np.pi / tau) \
+         * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Ftau.reshape(outFkshape))
 
 #1d nufft type 2
 def nufft1d2_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, tau = _compute_1d_grid_params(ms, eps)
-
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1 = nufftfreqs1d(ms)
-    Fk = np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Fk
+    #match dimensions
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)    
+    Fk = np.sqrt(np.pi / tau) \
+        * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Fk.reshape(outFkshape))
 
+    #compute Ftau shape
+    if len(Fk.shape) > 1:
+        Ftaushape = (nf1,) + Fk.shape[1:len(Fk.shape)]
+    else:
+        Ftaushape = nf1 
     #reshape Fk and fftshift to match the size Fntau or Ftau
-    Fntau = np.zeros(nf1, dtype=Fk.dtype)
+    Fntau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Fntau[-(ms//2):] = Fk[0:ms//2]
     Fntau[:ms//2 + ms % 2] = Fk[ms//2:ms]
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Fntau = nf1 * np.fft.ifft(Fntau)
+        Fntau = nf1 * np.fft.ifft(Fntau, axis = 0)
     else:
-        Fntau = np.fft.fft(Fntau)
+        Fntau = np.fft.fft(Fntau, axis = 0)
 
     # Construct the convolved grid
     if gridfast is not 1:
@@ -461,18 +478,26 @@ def nufft1d21_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1 = nufftfreqs1d(ms)
-    Fk = np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Fk
+    #match dimensions
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)    
+    Fk = np.sqrt(np.pi / tau) \
+        * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Fk.reshape(outFkshape))
 
-    #reshape Fk and fftshift to match the size Ftau or Ftau
-    Ftau = np.zeros(nf1, dtype=Fk.dtype)
+    #compute Ftau shape
+    if len(Fk.shape) > 1:
+        Ftaushape = (nf1,) + Fk.shape[1:len(Fk.shape)]
+    else:
+        Ftaushape = nf1 
+    #reshape Fk and fftshift to match the size Fntau or Ftau
+    Ftau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Ftau[-(ms//2):] = Fk[0:ms//2]
     Ftau[:ms//2 + ms % 2] = Fk[ms//2:ms]
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = nf1 * np.fft.ifft(Ftau)
+        Ftau = nf1 * np.fft.ifft(Ftau, axis = 0)
     else:
-        Ftau = np.fft.fft(Ftau)
+        Ftau = np.fft.fft(Ftau, axis = 0)
 
     # Construct the convolved grid
     if 1:#gridfast is not 1:
@@ -487,8 +512,8 @@ def nufft1d21_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
         Ftau = np.fft.ifft(Ftau)
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):], Ftau[:ms//2 + ms % 2]])
-    # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
-    return (1 / len(x)) * np.sqrt(np.pi / tau) * np.exp(tau * k1 ** 2) * Ftau
+    return (1 / len(x)) * np.sqrt(np.pi / tau) \
+         * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Ftau.reshape(outFkshape))
 
 #####################################################################################################
 #unfft 2d, type1, type2 and type2&type1 (AHA)
@@ -669,20 +694,27 @@ the nufft, output dim is ms X mt
 def nufft2d1_gaussker( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, tau = _compute_2d_grid_params(ms, mt, eps)
+
+    #compute Ftaushape
+    if len(c.shape) > 1:
+        Ftaushape = (nf1, nf2) + c.shape[1:len(c.shape)]
+    else:
+        Ftaushape = (nf1, nf2) 
+
     # Construct the convolved grid
     #Ftau = build_grid_2d1(x * df, y * df, c, tau, nspread,
     #                  np.zeros((nf1, nf2), dtype = c.dtype))
     if gridfast is 0:
-        Ftau = build_grid_2d1(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype))
+        Ftau = build_grid_2d1(x * df, y * df, c, tau, nspread, np.zeros(Ftaushape, dtype=c.dtype))
     else:#griding with precomputing of some exponentials
-        Ftau = build_grid_2d1_fast(x * df, y * df, c, tau, nspread, np.zeros((nf1, nf2), dtype=c.dtype),\
+        Ftau = build_grid_2d1_fast(x * df, y * df, c, tau, nspread, np.zeros(Ftaushape, dtype=c.dtype),\
                            np.zeros((nspread + 1, nspread + 1), dtype=c.dtype))
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(Ftau)
+        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(Ftau, axes = (0,1))
     else:
-        Ftau = np.fft.ifft2(Ftau) #1/(nf1*nf2) in ifft2 function when norm = None
+        Ftau = np.fft.ifft2(Ftau, axes = (0,1)) #1/(nf1*nf2) in ifft2 function when norm = None
 
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
@@ -690,8 +722,12 @@ def nufft2d1_gaussker( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 )
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2)^-1
     k1,k2 = nufftfreqs2d(ms, mt)
+
+    #match dimensions
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)    
     # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
-    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
+    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 \
+        * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape)) #
 
 #2d nufft type 2
 def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
@@ -700,11 +736,20 @@ def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2 = nufftfreqs2d(ms, mt)
-    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
-    Fk = np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Fk #np.sqrt(np.pi / tau) *
 
+    #match dimensions
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)        
+    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
+    Fk = np.sqrt(np.pi / tau)**2 \
+       * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Fk.reshape(outFkshape)) #np.sqrt(np.pi / tau) *
+
+    #compute Ftau shape
+    if len(Fk.shape) > 2:
+        Ftaushape = (nf1, nf2) + Fk.shape[2:len(Fk.shape)]
+    else:
+        Ftaushape = (nf1, nf2) 
     #reshape Fk and fftshift to match the size Fntau or Ftau
-    Fntau = np.zeros((nf1, nf2), dtype=Fk.dtype)
+    Fntau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Fntau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
     Fntau[ :ms//2 + ms % 2 , :mt//2 + mt % 2 ] = Fk[ ms//2:ms , mt//2:mt ]#2 2
     Fntau[ :ms//2 + ms % 2 ,       -(mt//2): ] = Fk[ ms//2:ms ,  0:mt//2 ]#2 1
@@ -712,9 +757,9 @@ def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Fntau = nf1 * nf2 * np.fft.ifft2(Fntau)
+        Fntau = nf1 * nf2 * np.fft.ifft2(Fntau, axes = (0,1))
     else:
-        Fntau = np.fft.fft2(Fntau)
+        Fntau = np.fft.fft2(Fntau, axes = (0,1))
     # Construct the convolved grid
     if gridfast is not 1:
         fx = build_grid_2d2(x*df, y*df, Fntau, tau, nspread)
@@ -730,11 +775,20 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2 = nufftfreqs2d(ms, mt)
-    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
-    #Fk = np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Fk #np.sqrt(np.pi / tau) *
 
-    #reshape Fk and fftshift to match the size Ftau or Ftau
-    Ftau = np.zeros((nf1, nf2), dtype=Fk.dtype)
+    #match dimensions
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)        
+    # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
+    Fk = np.sqrt(np.pi / tau)**2 \
+       * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Fk.reshape(outFkshape)) #np.sqrt(np.pi / tau) *
+
+    #compute Ftau shape
+    if len(Fk.shape) > 2:
+        Ftaushape = (nf1, nf2) + Fk.shape[2:len(Fk.shape)]
+    else:
+        Ftaushape = (nf1, nf2) 
+    #reshape Fk and fftshift to match the size Fntau or Ftau
+    Ftau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Ftau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
     Ftau[ :ms//2 + ms % 2 , :mt//2 + mt % 2 ] = Fk[ ms//2:ms , mt//2:mt ]#2 2
     Ftau[ :ms//2 + ms % 2 ,       -(mt//2): ] = Fk[ ms//2:ms ,  0:mt//2 ]#2 1
@@ -742,9 +796,9 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = nf1 * nf2 * np.fft.ifft2(Ftau)
+        Ftau = nf1 * nf2 * np.fft.ifft2(Ftau, axes = (0,1))
     else:
-        Ftau = np.fft.fft2(Ftau)
+        Ftau = np.fft.fft2(Ftau, axes = (0,1))
     # Construct the convolved grid
     if 1:#gridfast is not 1:
         Ftau = build_grid_2d21(x*df, y*df, Ftau, tau, nspread)
@@ -754,9 +808,9 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(Ftau)
+        Ftau = (1 / (nf1 * nf2)) * np.fft.fft2(Ftau, axes = (0,1))
     else:
-        Ftau = np.fft.ifft2(Ftau) #1/(nf1*nf2) in ifft2 function when norm = None
+        Ftau = np.fft.ifft2(Ftau, axes = (0,1)) #1/(nf1*nf2) in ifft2 function when norm = None
 
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:], Ftau[:ms//2 + ms % 2,:]],0)
@@ -764,7 +818,8 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2)^-1
     # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
-    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 * np.exp(tau * (k1 ** 2 + k2 ** 2)) * Ftau #
+    return (1 / len(x)) * np.sqrt(np.pi / tau)**2 \
+        * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape)) #
 #####################################################################################################
 #unfft 3d, type1, type2 and type2&type1 (AHA)
 #####################################################################################################
@@ -997,15 +1052,20 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
     #try to override nspread
-    nspread = min(3, nspread)
-
+    #nspread = min(3, nspread)
+    #compute Ftaushape
+    if len(c.shape) > 1:
+        Ftaushape = (nf1, nf2, nf3) + c.shape[1:len(c.shape)]
+    else:
+        Ftaushape = (nf1, nf2, nf3) 
+    #print(Ftaushape)
     # Construct the convolved grid
     if gridfast is 0:
         Ftau = build_grid_3d1(x * df, y * df, z *df, c, tau, nspread,\
-                      np.zeros((nf1, nf2, nf3), dtype=c.dtype))
+                      np.zeros(Ftaushape, dtype=c.dtype))
     else:#precompute some exponentials, not working
         Ftau = build_grid_3d1_fast(x * df, y * df, z *df, c, tau, nspread,\
-                      np.zeros((nf1, nf2, nf3), dtype=c.dtype), \
+                      np.zeros(Ftaushape, dtype=c.dtype), \
                       np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype))
 
     # Compute the FFT on the convolved grid
@@ -1021,8 +1081,9 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2,k3)^-1
     k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)    
     return (1 / len(x)) * np.sqrt(np.pi / tau)**3 * \
-    np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Ftau
+    np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
 #3d unfft type 2
 def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
@@ -1032,10 +1093,16 @@ def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, grid
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
-    Fk = np.sqrt(np.pi / tau)**3 * np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Fk
-
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)
+    Fk = np.sqrt(np.pi / tau)**3 \
+        * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Fk.reshape(outFkshape))
+    #compute Ftau shape
+    if len(Fk.shape) > 3:
+        Ftaushape = (nf1, nf2, nf3) + Fk.shape[3:len(Fk.shape)]
+    else:
+        Ftaushape = (nf1, nf2, nf3) 
     #reshape Fk and fftshift to match the size Fntau or Ftau
-    Fntau = np.zeros((nf1, nf2, nf3), dtype=Fk.dtype)
+    Fntau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Fntau[-(ms//2):      ,       -(mt//2):,       -(mu//2):] = Fk[0:ms//2 , 0:mt//2 , 0:mu//2]# 1 1 1
     Fntau[:ms//2 + ms % 2,       -(mt//2):,       -(mu//2):] = Fk[ms//2:ms, 0:mt//2 , 0:mu//2]# 2 1 1
     Fntau[-(ms//2):      ,       -(mt//2):, :mu//2 + mu % 2] = Fk[0:ms//2 , 0:mt//2 ,mu//2:mu]# 1 1 2
@@ -1067,10 +1134,17 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gri
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
-    Fk = np.sqrt(np.pi / tau)**3 * np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Fk
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)
+    Fk = np.sqrt(np.pi / tau)**3 \
+        * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Fk.reshape(outFkshape))
 
-    #reshape Fk and fftshift to match the size Ftau or Ftau
-    Ftau = np.zeros((nf1, nf2, nf3), dtype=Fk.dtype)
+    #compute Ftau shape
+    if len(Fk.shape) > 3:
+        Ftaushape = (nf1, nf2, nf3) + Fk.shape[3:len(Fk.shape)]
+    else:
+        Ftaushape = (nf1, nf2, nf3) 
+    #reshape Fk and fftshift to match the size Fntau or Ftau
+    Ftau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Ftau[-(ms//2):      ,       -(mt//2):,       -(mu//2):] = Fk[0:ms//2 , 0:mt//2 , 0:mu//2]# 1 1 1
     Ftau[:ms//2 + ms % 2,       -(mt//2):,       -(mu//2):] = Fk[ms//2:ms, 0:mt//2 , 0:mu//2]# 2 1 1
     Ftau[-(ms//2):      ,       -(mt//2):, :mu//2 + mu % 2] = Fk[0:ms//2 , 0:mt//2 ,mu//2:mu]# 1 1 2
@@ -1106,13 +1180,13 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gri
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2,k3)^-1
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
     return (1 / len(x)) * np.sqrt(np.pi / tau)**3 * \
-    np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)) * Ftau
+    np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
 
 def test():
     #test nudft
     #nufft_test_func.time_nufft1d1(nudft1d1, 16, 1280)
-    nufft_test_func.time_nufft2d1(nudft2d1,64,64,5120)
+    #nufft_test_func.time_nufft2d1(nudft2d1,64,64,5120)
     #nufft_test_func.time_nufft3d1(nudft3d1,32,32,16,2048)
 
     #test nufft type1

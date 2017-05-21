@@ -35,12 +35,12 @@ def test():
     # IDEAL and FFT jointly
     IDEAL       = idealc.IDEAL_opt2(TE, 217.0 , 1.0 )#fat_freq_arr , fat_rel_amp
     Aideal_ftm  = opts.joint2operators(IDEAL, FTm)#(FTm,IDEAL)#
-    IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+    IDEAL.set_x(xpar) #should update in each gauss newton iteration
     residual    = IDEAL.residual(b, FTm)
     #ut.plotim3(np.absolute(FTm.backward(residual)))
     # wavelet and x+d_x
     #addx        = idealc.x_add_dx()
-    #addx.set_x(xpar) #should update in each gauss newtown iteration
+    #addx.set_x(xpar) #should update in each gauss newton iteration
     #dwt         = opts.DWT2d(wavelet = 'haar', level=4)
     #Adwt_addx   = opts.joint2operators(dwt, addx)
 
@@ -56,8 +56,8 @@ def test():
         xpar = xpar + ostep * dxpar#.astype(np.float64)   
         #xpar[:,:,2] = np.real(xpar[:,:,2])
 
-        IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+        IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual    = IDEAL.residual(b, FTm)
-        #addx.set_x(xpar) #should update in each gauss newtown iteration
+        #addx.set_x(xpar) #should update in each gauss newton iteration
 
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)

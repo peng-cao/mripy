@@ -36,7 +36,7 @@ def test():
     tvop         = tvopc.TV2d()
     #CGD
     Nite         = 20
-    l1_r         = 0.1
+    l1_r         = 0.01
     tv_r         = 0.2
     
     #def f(xi):
@@ -57,15 +57,15 @@ def test():
         return  tv_r * alg.obj_sparsity(tvop, xi) + l1_r * alg.obj_sparsity(dwt,  xi) # +
 
     def dh(xi):
-        #gradall  = np.zeros(xi.shape, np.complex128)
-        gradall  = l1_r * alg.grad_sparsity(dwt,  xi) 
-        gradall += tv_r * alg.grad_sparsity(tvop, xi)
+        gradall  = np.zeros(xi.shape, np.complex128)
+        gradall  += l1_r * alg.grad_sparsity(dwt,  xi) 
+        gradall  += tv_r * alg.grad_sparsity(tvop, xi)
         return gradall
 
     #xopt   = alg.conjugate_gradient(f, df, FTm.backward(b), Nite )
     #xopt = pf.prox_l2_Afxnb_CGD2( FTm.forward, FTm.backward, b, Nite )
     xopt = FTm.backward(b)
-    for _ in range(200):
+    for _ in range(100):
         xopt = pf.prox_l2_Afxnb_CGD3( FTm.forward, FTm.backward, xopt, b, h, dh, Nite, 3 )
         #ut.plotim1(np.absolute(xopt))
     #do soft thresholding

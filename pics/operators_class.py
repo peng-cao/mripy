@@ -3,6 +3,7 @@ import dwt.dwt_func as dwt_func
 import scipy.io as sio
 #from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
 import fft.fftw_func as fftw
+from utilities.utilities_func import dim_match
 class data_class:
     def __init__( self, data, dims_name ):
         self.dims_name = dims_name
@@ -10,6 +11,7 @@ class data_class:
 
 # match the dimensions of A and B, by adding 1 
 # A_shape and B_shape are tuples from e.g. A.shape and B.shape  
+"""
 def dim_match( A_shape ,B_shape ):
     #intialize A_out_shape, B_out_shape
     A_out_shape = A_shape
@@ -22,6 +24,7 @@ def dim_match( A_shape ,B_shape ):
         for _ in range(len(B_shape),len(A_shape)):
             B_out_shape += (1,)
     return  A_out_shape, B_out_shape
+"""
 """
 these classes apply  FFT for the input image,
  and some also apply mask in the forward function
@@ -389,6 +392,16 @@ class espirit:
         self.sens      = mat_contents['sens']
         self.coil_axis = np.int_(mat_contents['coil_axis'])
         return self
+
+
+# do nothing operator
+class None_opt:
+    "this apply nothing"
+    def forward( self, xin ):
+        return xin
+
+    def backward( self, xin ):
+        return xin
 
 """
 this class combine two operators together, this is usefull for parallel imaging

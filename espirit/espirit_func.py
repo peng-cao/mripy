@@ -74,9 +74,8 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_bef
     #plot first singular vecctor Vn[0]
     imvn = ft.backward(vn)
     #ut.plotim3(np.absolute(imvn[:,:,0,:].squeeze()))#spatial feature of V[:,1] singular vector
-    sim  = 1j*np.zeros((nx,ny))
-    Vim  = 1j*np.zeros((nx,ny,nc))
-
+    sim  = np.zeros((nx,ny), dtype = np.complex128)
+    Vim  = np.zeros((nx,ny,nc), dtype = np.complex128)
     for ix in range(nx):
         for iy in range(ny):
             vpix         = imvn[ix,iy,:,:].squeeze()
@@ -85,6 +84,7 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_bef
             U, s, V      = np.linalg.svd(vvH, full_matrices=False)
             sim[ix,iy]   = s[0]
             Vim[ix,iy,:] = V[0,:].squeeze()
+            Vim[ix,iy,:] = Vim[ix,iy,:]
 
     Vim = np.conj(Vim)
     if pad_before_espirit is 0:

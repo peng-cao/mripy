@@ -41,12 +41,12 @@ def test():
 
     # IDEAL and FFT jointly
     IDEAL = idealc.IDEAL_opt2(TE, fat_freq_arr , fat_rel_amp )#fat_freq_arr , fat_rel_amp
-    IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+    IDEAL.set_x(xpar) #should update in each gauss newton iteration
     residual    = IDEAL.residual(b)
     #do L2 cs mri recon
     Nite  = 20 #number of iterations   
     ostep = 1.0 
-    for i in range(20):
+    for i in range(40):
         dxpar = pf.prox_l2_Afxnb_CGD2( IDEAL.forward, IDEAL.backward, residual, Nite )
         if i%5 == 0:
             ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
@@ -57,6 +57,6 @@ def test():
         #if i > 0: 
         #    xpar[:,:,2] = np.real(unwrap_freq(np.real(xpar[:,:,2])))\
         #    +1j*(np.imag(xpar[:,:,2]))
-        IDEAL.set_x(xpar) #should update in each gauss newtown iteration
+        IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual    = IDEAL.residual(b)
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)
