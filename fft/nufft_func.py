@@ -366,12 +366,12 @@ def build_grid_1d21( x, fntau, tau, nspread ):
         m  = 1 + int(xi // hx) #index for the closest grid point
         #grid once
         for mm in range(-nspread, nspread): #mm index for all the spreading points
-            Em[mm] = np.exp(-0.25 * (xi - hx * (m + mm)) ** 2 / tau)
-            c  += fntau[(m + mm) % nf1] * Em[mm]#griding with g(x) = exp(-x^2 / 4*tau)
+            Em[mm + nspread] = np.exp(-0.25 * (xi - hx * (m + mm)) ** 2 / tau)
+            c  += fntau[(m + mm) % nf1] * Em[mm + nspread]#griding with g(x) = exp(-x^2 / 4*tau)
         #grid again
         c  = c/nf1
         for mm in range(-nspread, nspread): #mm index for all the spreading points
-            ftau[(m + mm) % nf1]  += c * Em[mm]
+            ftau[(m + mm) % nf1]  += c * Em[mm + nspread]
             #griding with g(x) = exp(-x^2 / 4*tau)
     return ftau
 
@@ -413,7 +413,7 @@ def nufft1d1_gaussker( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     if len(c.shape) > 1:
         Ftaushape = (nf1) + c.shape[1:len(c.shape)]
     else:
-        Ftaushape = (nf1) 
+        Ftaushape = (nf1)
 
 
     if gridfast is 0:
@@ -433,7 +433,7 @@ def nufft1d1_gaussker( x, c, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1 = nufftfreqs1d(ms)
     #match dimensions
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)    
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)
     return (1 / len(x)) * np.sqrt(np.pi / tau) \
          * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Ftau.reshape(outFkshape))
 
@@ -444,7 +444,7 @@ def nufft1d2_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1 = nufftfreqs1d(ms)
     #match dimensions
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)    
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)
     Fk = np.sqrt(np.pi / tau) \
         * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Fk.reshape(outFkshape))
 
@@ -452,7 +452,7 @@ def nufft1d2_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     if len(Fk.shape) > 1:
         Ftaushape = (nf1,) + Fk.shape[1:len(Fk.shape)]
     else:
-        Ftaushape = nf1 
+        Ftaushape = nf1
     #reshape Fk and fftshift to match the size Fntau or Ftau
     Fntau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Fntau[-(ms//2):] = Fk[0:ms//2]
@@ -479,7 +479,7 @@ def nufft1d21_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1 = nufftfreqs1d(ms)
     #match dimensions
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)    
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)
     Fk = np.sqrt(np.pi / tau) \
         * np.multiply(np.exp(tau * k1 ** 2).reshape(outkshape), Fk.reshape(outFkshape))
 
@@ -487,7 +487,7 @@ def nufft1d21_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     if len(Fk.shape) > 1:
         Ftaushape = (nf1,) + Fk.shape[1:len(Fk.shape)]
     else:
-        Ftaushape = nf1 
+        Ftaushape = nf1
     #reshape Fk and fftshift to match the size Fntau or Ftau
     Ftau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Ftau[-(ms//2):] = Fk[0:ms//2]
@@ -651,19 +651,21 @@ def build_grid_2d21( x, y, fntau, tau, nspread ):
         for mm1 in range(-nspread, nspread): #mm index for all the spreading points
             for mm2 in range(-nspread,nspread):
                 #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-                Em[mm1, mm2] =  np.exp(-0.25 * (\
+                Em[mm1 + nspread, mm2 + nspread] =  np.exp(-0.25 * (\
                 (xi - hx * (m1 + mm1)) ** 2 + \
                 (yi - hy * (m2 + mm2)) ** 2 ) / tau)
-                c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] * Em[mm1, mm2]
+                c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] \
+                     * Em[mm1 + nspread, mm2 + nspread]
         #grid again
         c = c/(nf1*nf2)
         for mm1 in range(-nspread, nspread): #mm index for all the spreading points
             for mm2 in range(-nspread,nspread):
                 #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-                ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] += c * Em[mm1, mm2]
+                ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2] += \
+                      c * Em[mm1 + nspread, mm2 + nspread]
     return ftau
 """
-main function of nufft2d 
+main function of nufft2d
 The Gaussian used for convolution is:
 g(x,y) = exp(-( x^2 + y^2 ) / 4*tau)
 Fourier transform of g(x) is
@@ -699,7 +701,7 @@ def nufft2d1_gaussker( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 )
     if len(c.shape) > 1:
         Ftaushape = (nf1, nf2) + c.shape[1:len(c.shape)]
     else:
-        Ftaushape = (nf1, nf2) 
+        Ftaushape = (nf1, nf2)
 
     # Construct the convolved grid
     #Ftau = build_grid_2d1(x * df, y * df, c, tau, nspread,
@@ -724,7 +726,7 @@ def nufft2d1_gaussker( x, y, c, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 )
     k1,k2 = nufftfreqs2d(ms, mt)
 
     #match dimensions
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)    
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)
     # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
     return (1 / len(x)) * np.sqrt(np.pi / tau)**2 \
         * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape)) #
@@ -738,7 +740,7 @@ def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 
     k1, k2 = nufftfreqs2d(ms, mt)
 
     #match dimensions
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)        
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)
     # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
     Fk = np.sqrt(np.pi / tau)**2 \
        * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Fk.reshape(outFkshape)) #np.sqrt(np.pi / tau) *
@@ -747,7 +749,7 @@ def nufft2d2_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1 
     if len(Fk.shape) > 2:
         Ftaushape = (nf1, nf2) + Fk.shape[2:len(Fk.shape)]
     else:
-        Ftaushape = (nf1, nf2) 
+        Ftaushape = (nf1, nf2)
     #reshape Fk and fftshift to match the size Fntau or Ftau
     Fntau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Fntau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
@@ -777,7 +779,7 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
     k1, k2 = nufftfreqs2d(ms, mt)
 
     #match dimensions
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)        
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Fk.shape)
     # Note the np.sqrt(np.pi / tau)**2 due to the 2 dimentions of nufft
     Fk = np.sqrt(np.pi / tau)**2 \
        * np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2)).reshape(outkshape), Fk.reshape(outFkshape)) #np.sqrt(np.pi / tau) *
@@ -786,7 +788,7 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
     if len(Fk.shape) > 2:
         Ftaushape = (nf1, nf2) + Fk.shape[2:len(Fk.shape)]
     else:
-        Ftaushape = (nf1, nf2) 
+        Ftaushape = (nf1, nf2)
     #reshape Fk and fftshift to match the size Fntau or Ftau
     Ftau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Ftau[ -(ms//2):       ,       -(mt//2): ] = Fk[ 0:ms//2  ,  0:mt//2 ]#1 1
@@ -1002,23 +1004,89 @@ def build_grid_3d21( x, y, z, fntau, tau, nspread ):
             for mm2 in range(-nspread,nspread):
                 for mm3 in range(-nspread,nspread):
                     #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
-                    Em[mm1,mm2,mm3] = np.exp(-0.25 * (\
+                    Em[mm1 + nspread, mm2 + nspread, mm3 + nspread] = \
+                    np.exp(-0.25 * (\
                     (xi - hx * (m1 + mm1)) ** 2 + \
                     (yi - hy * (m2 + mm2)) ** 2 + \
                     (zi - hz * (m3 + mm3)) ** 2 ) / tau)
-                    c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] * Em[mm1,mm2,mm3]
+                    c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
+                         * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
         #grid again
         c = c/(nf1*nf2*nf3)
         for mm1 in range(-nspread, nspread): #mm index for all the spreading points
             for mm2 in range(-nspread,nspread):
                 for mm3 in range(-nspread,nspread):
-                    #griding with g(x,y) = exp(-(x^2 + y^2) / 4*tau)
+                    #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
                     ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
-                    += c * Em[mm1,mm2,mm3]
+                    += c * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
     return ftau
 
+#3d grid type 2 & type 1 with coil sensitivity kernel, sens_ker
+#assume sens_ker matches the fntau data resolution, and size matches 2*nspread+1 for each dimension
+@numba.jit(nopython=True)
+def build_grid_3d21_sensker( x, y, z, fntau, tau, nspread, sens_ker = None ):
+    if sens_ker is None: #then no coil sensitivity map will be used, but sill sens_ker need to be 4d
+        sens_ker = np.ones((2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1, 1),\
+                   dtype = fntau.dtype)/((2 * nspread + 1)**3)
+    nc    = sens_ker.shape[3] #currently fix the forth dim as the coil dim
+    nf1   = fntau.shape[0]    #in addtion, the forth dim of fntau need to be 1 or None
+    nf2   = fntau.shape[1]
+    nf3   = fntau.shape[2]
+    hx    = 2 * np.pi / nf1
+    hy    = 2 * np.pi / nf2
+    hz    = 2 * np.pi / nf3
+    Em    = np.zeros((2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1)) #will reuse this exponential
+    # make the forth dim be the coil dim, which need to be length = 1 for fntau
+    if len(fntau.shape) > 3 and fntau.shape[3] > 1: #if dim > 3, and dim 4 (coil dim) is not 1
+        # input dim [nf1, nf2, nf3, a ,b c] output [nf1, nf2, nf3, 1, a, b, c]
+        fntau     = np.expand_dims(fntau, axis = 3)
+    #zero pad the sens_ker, enforce the sens_ker equals to convlution kernel for simplicity
+    if sens_ker.shape[0:3] != (2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1 ):
+        sens_ker  = ut.pad_or_cut3d( sens_ker, 2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1 )
+    #initial ftau as zeros for output data
+    ftau          = np.zeros(fntau.shape, dtype = fntau.dtype)
+    outftaushape, outsenskshape = ut.dim_match(fntau.shape, sens_ker.shape)#match the dim, by adding 1 in extra dim
+    fntau         = fntau.reshape(outftaushape)# [nf1, nf2, nf3, 1, a, b, c] or [nf1, nf2, nf3, 1] if 3d data
+    ftau          = ftau.reshape(outftaushape) # [nf1, nf2, nf3, 1, a, b, c] or [nf1, nf2, nf3, 1] if 3d data
+    sens_ker      = sens_ker.reshape(outsenskshape) #[nk, nk, nk, nc, 1, 1, 1] or [nk, nk, nk, nc] nk = 2*nspread + 1
+    #do gridding for each ksp data point
+    for i in range(x.shape[0]):
+        c  = np.multiply(np.zeros(fntau[0,0,0].shape, dtype = fntau.dtype), \
+             np.zeros(sens_ker[0,0,0].shape, dtype = fntau.dtype)) #coefficient, saved temporarily
+        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
+        yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
+        zi = z[i] % (2 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
+        m1 = 1 + int(xi // hx) #index for the closest grid point
+        m2 = 1 + int(yi // hy) #index for the closest grid point
+        m3 = 1 + int(zi // hz) #index for the closest grid point
+        #grid once
+        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+            for mm2 in range(-nspread,nspread):
+                for mm3 in range(-nspread,nspread):
+                    #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
+                    Em[mm1 + nspread, mm2 + nspread, mm3 + nspread] =\
+                     np.exp(-0.25 * (\
+                    (xi - hx * (m1 + mm1)) ** 2 + \
+                    (yi - hy * (m2 + mm2)) ** 2 + \
+                    (zi - hz * (m3 + mm3)) ** 2 ) / tau)
+                    #added sens_ker this is covlution with expoential Em and sens_kernel
+                    c += np.multiply(\
+                         fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
+                             * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread], \
+                         sens_ker[mm1 + nspread, mm2 + nspread, mm3 + nspread])
+        #grid again
+        c = c/(nf1*nf2*nf3)
+        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
+            for mm2 in range(-nspread,nspread):
+                for mm3 in range(-nspread,nspread):
+                    #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
+                    #convlute with Em and conj(sens_ker), then sum along coil dimension
+                    ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
+                    += np.sum(np.multiply(c * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread],\
+                                np.conj(sens_ker[mm1 + nspread, mm2 + nspread, mm3 + nspread])), axis = 3)
+    return ftau
 """
-main function of nufft3d 
+main function of nufft3d
 The Gaussian used for convolution is:
 g(x,y,z) = exp(-( x^2 + y^2 + z^2 ) / 4*tau)
 Fourier transform of g(x) is
@@ -1057,7 +1125,7 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
     if len(c.shape) > 1:
         Ftaushape = (nf1, nf2, nf3) + c.shape[1:len(c.shape)]
     else:
-        Ftaushape = (nf1, nf2, nf3) 
+        Ftaushape = (nf1, nf2, nf3)
     #print(Ftaushape)
     # Construct the convolved grid
     if gridfast is 0:
@@ -1081,7 +1149,7 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
     # Deconvolve the grid using convolution theorem, Ftau * G(k1,k2,k3)^-1
     k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
-    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)    
+    outkshape, outFkshape = ut.dim_match(k1.shape ,Ftau.shape)
     return (1 / len(x)) * np.sqrt(np.pi / tau)**3 * \
     np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
@@ -1100,7 +1168,7 @@ def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, grid
     if len(Fk.shape) > 3:
         Ftaushape = (nf1, nf2, nf3) + Fk.shape[3:len(Fk.shape)]
     else:
-        Ftaushape = (nf1, nf2, nf3) 
+        Ftaushape = (nf1, nf2, nf3)
     #reshape Fk and fftshift to match the size Fntau or Ftau
     Fntau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Fntau[-(ms//2):      ,       -(mt//2):,       -(mu//2):] = Fk[0:ms//2 , 0:mt//2 , 0:mu//2]# 1 1 1
@@ -1142,7 +1210,7 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gri
     if len(Fk.shape) > 3:
         Ftaushape = (nf1, nf2, nf3) + Fk.shape[3:len(Fk.shape)]
     else:
-        Ftaushape = (nf1, nf2, nf3) 
+        Ftaushape = (nf1, nf2, nf3)
     #reshape Fk and fftshift to match the size Fntau or Ftau
     Ftau = np.zeros(Ftaushape, dtype=Fk.dtype)
     Ftau[-(ms//2):      ,       -(mt//2):,       -(mu//2):] = Fk[0:ms//2 , 0:mt//2 , 0:mu//2]# 1 1 1
@@ -1207,6 +1275,6 @@ def test():
     #compare type 2& typ1
     #nufft_test_func.compare_nufft1d21(nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000,1)
     #nufft_test_func.compare_nufft2d21(nufft2d1_gaussker, nufft2d21_gaussker,16,16,25000,1)
-    #nufft_test_func.compare_nufft3d21(nufft3d1_gaussker, nufft3d21_gaussker,16,16,8,20480,1)    
+    #nufft_test_func.compare_nufft3d21(nufft3d1_gaussker, nufft3d21_gaussker,16,16,8,20480,1)
 if __name__ == "__main__":
     test()

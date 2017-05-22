@@ -19,7 +19,7 @@ def plotim1( im, colormap = None, title = None, bar = None ):
         ax.set_title(title)
     if bar is not None:
         cbar = fig.colorbar(cax)
-        #cbar.ax.set_yticklabels([str(bar_ticks[0]), str(bar_ticks[-1:])]) 
+        #cbar.ax.set_yticklabels([str(bar_ticks[0]), str(bar_ticks[-1:])])
     plt.show()
     return
 
@@ -36,7 +36,7 @@ def subplot( im1, im2, colormap = None, title = None, bar = None ):
     #if bar is not None:
     #    cbar = fig.colorbar(cax)
     plt.show()
-    return    
+    return
 
 
 """
@@ -44,12 +44,12 @@ def subplot( im1, im2, colormap = None, title = None, bar = None ):
 # concatenate image along the third dim
 """
 def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
-    im = np.flip(im,0)    
+    im = np.flip(im,0)
     nx,ny,nz = im.shape
 
     #concatenate image in 1d, along the third dim
     if catdim[0] >= nz :
-        imcat = im[:,:,0]        
+        imcat = im[:,:,0]
         for i in range(nz)[0:nz-1]:
             imcat = np.concatenate([imcat, im[:,:,i+1]],1)
     else:
@@ -60,7 +60,7 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
         else:
             nz_caty = np.int(ceil(1.0*nz/nz_catx))
         #intial the cat image
-        imcatx = np.zeros((nx*nz_catx, ny))        
+        imcatx = np.zeros((nx*nz_catx, ny))
         # zero pad im if nz < nz_catx * nz_caty
         if nz < nz_catx * nz_caty:
             im = np.concatenate([im, np.zeros((nx,ny,nz_catx*nz_caty-nz))], 2)
@@ -120,14 +120,14 @@ def plot( x, y=None, line_type = '-', legend = None ):
     # Add a legend
     #plt.legend()
     if legend is not None:
-        plt.legend(legend)    
+        plt.legend(legend)
     # Show the plot
     plt.show()
 
 """
 load matlab mat file
 """
-def loadmat( matfile, var ): 
+def loadmat( matfile, var ):
     mat_contents = sio.loadmat(matfile);
     x = mat_contents[var]
     return x
@@ -156,7 +156,7 @@ def mask2d( nx, ny, center_r = 15, undersampling = 0.5 ):
         cyr = np.arange(round(cy-center_r),round(cy+center_r+1))
         mask[np.ix_(map(int,cxr),map(int,cyr))] = np.ones((cxr.shape[0],cyr.shape[0])) #center k-space is fully sampled
 
-    return mask 
+    return mask
 
 """
 #generate 3d k-space mask
@@ -203,10 +203,10 @@ def mask3d( nx, ny, nz, center_r = [15, 15, 0], undersampling = 0.5 ):
     if flag_centerfull is not 0:
         mask[np.ix_(map(int,cxr),map(int,cyr),map(int,czr))] = \
         np.ones((cxr.shape[0],cyr.shape[0],czr.shape[0])) #center k-space is fully sampled
-    return mask 
+    return mask
 
 """
-#crop 2d k-space 
+#crop 2d k-space
 nx: kx dimention size
 ny: ky dimention size
 center_r: full sampling center area is (2*r)**2
@@ -219,11 +219,11 @@ def crop2d( data, center_r = 15 ):
         cy = np.int(ny/2)
         cxr = np.arange(round(cx-center_r),round(cx+center_r))
         cyr = np.arange(round(cy-center_r),round(cy+center_r))
-        
+
     return data[np.ix_(map(int,cxr),map(int,cyr))]
 
 """
-#crop 3d k-space 
+#crop 3d k-space
 nx: kx dimention size
 ny: ky dimention size
 center_r: full sampling center area is (2*r)**2
@@ -238,7 +238,7 @@ def crop3d( data, center_r = 15 ):
         cxr = np.arange(round(cx-center_r),round(cx+center_r))
         cyr = np.arange(round(cy-center_r),round(cy+center_r))
         czr = np.arange(round(cz-center_r),round(cz+center_r))
-        
+
     return data[np.ix_(map(int,cxr),map(int,cyr),map(int,czr))]
 
 """
@@ -268,8 +268,52 @@ def pad3d( data, nx, ny, nz ):
     return ndata
 
 """
+zero pad or cut the 3d k-space in kx and ky dimentions
+"""
+def pad_or_cut3d( data, nx, ny, nz ):
+    #create undersampling mask
+    datsize    = data.shape
+    #ndata total size could include zeros, if do padding
+    totalpadcutsize    = np.array(datsize)
+    totalpadcutsize[0] = nx
+    totalpadcutsize[1] = ny
+    totalpadcutsize[2] = nz
+    ndata = np.zeros(tuple(totalpadcutsize),dtype = data.dtype)
+    # min value for data size and [nx, ny, nz], this is the output real data size (without zeros)
+    minoutdatsize    = np.zeros(3)
+    minoutdatsize[0] = min(datsize[0], nx)
+    minoutdatsize[1] = min(datsize[1], ny)
+    minoutdatsize[2] = min(datsize[2], nz)
+    # half size of the out real data size
+    halfrealdatx = np.int(minoutdatsize[0]/2)
+    halfrealdaty = np.int(minoutdatsize[1]/2)
+    halfrealdatz = np.int(minoutdatsize[2]/2)
+    # index for ndata, ndata size is [nx, ny, nz, ...]
+    halfx = np.int(nx/2)
+    halfy = np.int(ny/2)
+    halfz = np.int(nz/2)
+    # left side margin stop at index: half size of ndata - half size of out_data
+    # right side margin start at index: left side margin stop index + size of output data
+    cxr = np.arange(round(halfx - halfrealdatx), round(halfx - halfrealdatx + minoutdatsize[0]))
+    cyr = np.arange(round(halfy - halfrealdaty), round(halfy - halfrealdaty + minoutdatsize[1]))
+    czr = np.arange(round(halfz - halfrealdatz), round(halfz - halfrealdatz + minoutdatsize[2]))
+    # index for data, datsize
+    halfx2 = np.int(datsize[0]/2)
+    halfy2 = np.int(datsize[1]/2)
+    halfz2 = np.int(datsize[2]/2)
+    # left side margin stop at index: half size of data - half size of out_data
+    # right side margin start at index: left side margin stop index + size of output data
+    cxr2 = np.arange(round(halfx2 - halfrealdatx), round(halfx2 - halfrealdatx + minoutdatsize[0]))
+    cyr2 = np.arange(round(halfy2 - halfrealdaty), round(halfy2 - halfrealdaty + minoutdatsize[1]))
+    czr2 = np.arange(round(halfz2 - halfrealdatz), round(halfz2 - halfrealdatz + minoutdatsize[2]))
+    # pad or cut data to fit in the ndata matrix, which is intialized as all zeros matrix
+    ndata[np.ix_(map(int,cxr),map(int,cyr),map(int,czr))] = \
+             data[np.ix_(map(int,cxr2),map(int,cyr2),map(int,czr2))]
+    return ndata
+
+"""
 zero pad the 2d k-space in kx and ky dimentions
-""" 
+"""
 
 def pad2d( data, nx, ny ):
     #create undersampling mask
@@ -303,14 +347,14 @@ return the scaling of data (b)
 def scaling( b ):
     return max(b.flatten())
 
-# match the dimensions of A and B, by adding 1 
-# A_shape and B_shape are tuples from e.g. A.shape and B.shape  
+# match the dimensions of A and B, by adding 1
+# A_shape and B_shape are tuples from e.g. A.shape and B.shape
 def dim_match( A_shape ,B_shape ):
     #intialize A_out_shape, B_out_shape
     A_out_shape = A_shape
     B_out_shape = B_shape
     #match them by adding 1
-    if   len(A_shape) < len(B_shape):            
+    if   len(A_shape) < len(B_shape):
         for _ in range(len(A_shape),len(B_shape)):
             A_out_shape += (1,)
     elif len(A_shape) > len(B_shape):
