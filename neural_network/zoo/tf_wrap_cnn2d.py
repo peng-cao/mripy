@@ -16,25 +16,25 @@ def tf_prediction_func( model ):
     # get data size
     NNlayer     = tf_layer()
     data_size   = int(model.data.get_shape()[1])
+    im_shape    = (28, data_size//28)
     target_size = int(model.target.get_shape()[1])
-    mid_size         = 256
-    cnn_pool1d_len   = 2
+    cnn_pool2d_len   = 2
     cnn_n_features   = 2
-    cnn_out_size     = cnn_n_features*mid_size//(cnn_pool1d_len**2)
+    cnn_out_size     = cnn_n_features*data_size//(cnn_pool2d_len**4)
     # one full connection layer
-    # input data shape [-1, data_size],                     output data shape [-1, mid_size] 
-    y1      = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size, activate_type = 'sigmoid')
-    # input data shape [-1,  mid_size], output data shape [-1, mid_size, 1, 1]
-    y1_4d   = tf.reshape(y1, [-1,mid_size,1,1]) #reshape into 4d tensor
-    # input data shape [-1,  mid_size, 1, 1],               output data shape [-1, mid_size/2, 1, cnn_n_feature]
+    # input data shape [-1, data_size],                     output data shape [-1, data_size] 
+    y1      = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = data_size, activate_type = 'sigmoid')
+    # input data shape [-1,  data_size], output data shape [-1, data_size, 1, 1]
+    y1_4d   = tf.reshape(y1, [-1,im_shape[0],im_shape[1],1]) #reshape into 4d tensor
+    # input data shape [-1,  data_size, 1, 1],               output data shape [-1, data_size/2, 1, cnn_n_feature]
     #y2      = NNlayer.convolution2d(y1_4d, cov_ker_size = (5,1), in_n_features = 1, out_n_features = cnn_n_features, pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'sigmoid')
-    # input data shape [-1,  mid_size/2, 1, cnn_n_feature], output data shape [-1, mid_size/4, 1, cnn_n_feature]
+    # input data shape [-1,  data_size/2, 1, cnn_n_feature], output data shape [-1, data_size/4, 1, cnn_n_feature]
     #y3      = NNlayer.convolution2d(y2,    cov_ker_size = (5,1), in_n_features = cnn_n_features, out_n_features = cnn_n_features, pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'sigmoid')
-    y3      = NNlayer.multi_convolution2d(y1_4d, cov_ker_size = (5,1), n_cnn_layers = 2, \
+    y3      = NNlayer.multi_convolution2d(y1_4d, cov_ker_size = (5,5), n_cnn_layers = 2, \
                 in_n_features_arr = (1,              cnn_n_features), \
                out_n_features_arr = (cnn_n_features, cnn_n_features), \
-                   pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'sigmoid')
-    # input data shape [-1,  mid_size/4, 1, cnn_n_feature], output data shape [-1, cnn_out_size=cnn_n_features*mid_size//4]
+                   pool_size = [1, cnn_pool2d_len, cnn_pool2d_len, 1], activate_type = 'sigmoid')
+    # input data shape [-1,  data_size/4, 1, cnn_n_feature], output data shape [-1, cnn_out_size=cnn_n_features*data_size//4]
     y3_flat = tf.reshape(y3, [-1, cnn_out_size]) #flatten
     # input data shape [-1, cnn_out_size],                  output data shape [-1, cnn_out_size]
     y4      = NNlayer.full_connection(y3_flat, in_fc_wide = cnn_out_size, out_fc_wide = cnn_out_size, activate_type = 'sigmoid')
@@ -70,7 +70,7 @@ def test1():
     for _ in range(100):
         model.test(mnist.test.images, mnist.test.labels)
         for _ in range(100):
-            batch_xs, batch_ys = mnist.train.next_batch(1000)            
+            batch_xs, batch_ys = mnist.train.next_batch(1000)
             model.train(batch_xs, batch_ys)
     model.save('../save_data/test_model_save')
 

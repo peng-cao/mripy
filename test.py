@@ -142,14 +142,19 @@
 #tfmodel.test2()
 
 
-import neural_network.zoo.tf_wrap_fc as tf_wrap_fc
+#import neural_network.zoo.tf_wrap_fc as tf_wrap_fc
 #tf_wrap_fc.test1()
-tf_wrap_fc.test2()
+#tf_wrap_fc.test2()
 
 #import neural_network.zoo.tf_wrap_cnn as tf_wrap_cnn
 #tf_wrap_cnn.test1()
 #tf_wrap_cnn.test2()
 
+#import neural_network.zoo.tf_wrap_cnn2d as tf_wrap_cnn2d
+#tf_wrap_cnn2d.test1()
+
+import neural_network.zoo.tf_wrap_cnn2d_conv_deconv as tf_wrap_cnn2d_conv_deconv
+tf_wrap_cnn2d_conv_deconv.test1()
 
 #import test.neural_network_training.enc_decoder_t1t2b0 as enc_decoder_t1t2b0
 #enc_decoder_t1t2b0.test()
@@ -160,4 +165,17 @@ tf_wrap_fc.test2()
 #import test.neural_network_training.fc_encoder_t1t2b0 as fc_encoder_t1t2b0
 #fc_encoder_t1t2b0.test()
 
+#import test.neural_network_training.tfwrap_fc_encoder_t1t2b0 as tfwrap_fc_encoder_t1t2b0
+#tfwrap_fc_encoder_t1t2b0.test()
 
+#import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfartrr as tfwrap_fc_encoder_t1t2b0_randomfartrr
+#tfwrap_fc_encoder_t1t2b0_randomfartrr.test()
+
+#import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfartrr as tfwrap_cnn_encoder_t1t2b0_randomfartrr
+#tfwrap_cnn_encoder_t1t2b0_randomfartrr.test()
+
+##########################################################################
+# parallel testing
+##########################################################################
+#import test.parallel_compute_multiCPU.blas_test as blas_test
+#blas_test.test()

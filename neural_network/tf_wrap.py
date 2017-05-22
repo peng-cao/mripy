@@ -114,7 +114,7 @@ class tf_model_top:
     # test neural network using testing data
     def test( self, test_data, test_target ):
         error = self.sess.run(self.model_wrap.error, {self.data: test_data, self.target: test_target})
-        print('Test error {:6.2f}%'.format(100 * error))
+        print('Error {:6.2f}%'.format(100 * error))
         return self
 
     # set argument

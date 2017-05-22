@@ -21,9 +21,10 @@ def tf_prediction_func( model ):
     # one full connection layer    
     #y1 = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size,    activate_type = 'sigmoid')
     #y  = NNlayer.full_connection(y1,         in_fc_wide = mid_size,  out_fc_wide = target_size, activate_type = 'sigmoid')
-    y   = NNlayer.multi_full_connection(model.data, n_fc_layer = 3, \
-          in_fc_wide_arr = (data_size, mid_size, mid_size), out_fc_wide_arr = (mid_size, mid_size, target_size) \
-          , activate_type = 'sigmoid')
+    y   = NNlayer.multi_full_connection(model.data, n_fc_layers = 3, \
+                                        in_fc_wide_arr  = (data_size, mid_size, mid_size), \
+                                        out_fc_wide_arr = (mid_size,  mid_size, target_size), \
+                                        activate_type = 'sigmoid')
     # softmax output
     return tf.nn.softmax(y)
 
