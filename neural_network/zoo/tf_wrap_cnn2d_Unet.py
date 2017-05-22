@@ -35,7 +35,7 @@ def tf_prediction_func( model ):
     # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ] 
     # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ]
     conv2_12 = NNlayer.multi_convolution2d(pool1, cov_ker_size = (5,5), n_cnn_layers = 2, \
-                                           in_n_features_arr  = (1,          n_features), \
+                                           in_n_features_arr  = (n_features, n_features), \
                                            out_n_features_arr = (n_features, n_features), \
                                            pool_type = 'None', activate_type = 'ReLU')
     # input size   [-1, im_shape[0]/pool_len,      im_shape[1]/pool_len,      n_features ] 
@@ -58,12 +58,12 @@ def tf_prediction_func( model ):
                                            pool_type = 'None', activate_type = 'ReLU')
     # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ] 
     # output size  [-1, im_shape[0],          im_shape[1],          n_features ]
-    up4      = NNlayer.deconvolution2d(pool1, cov_ker_size = (5,5), \
+    up4      = NNlayer.deconvolution2d(conv3_12, cov_ker_size = (5,5), \
                                             in_n_features = n_features, out_n_features = n_features, \
                                             conv_strides = [1, pool_len, pool_len, 1], activate_type = 'ReLU')
     # input size   [-1, im_shape[0], im_shape[1], n_features ] 
     # output size  [-1, im_shape[0], im_shape[1], 2*n_features ]
-    merge4   = NNlayer.merge(conv3_12, up4, axis = 3, merge_type = 'concat')
+    merge4   = NNlayer.merge(conv1_12, up4, axis = 3, merge_type = 'concat')
     # input size   [-1, im_shape[0], im_shape[1], 2*n_features ]
     # output size  [-1, im_shape[0], im_shape[1], 1 ]
     conv4_12 = NNlayer.multi_convolution2d(merge4, cov_ker_size = (5,5), n_cnn_layers = 2, \

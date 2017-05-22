@@ -14,7 +14,7 @@ def tf_prediction_func( model ):
     #if model.arg is None:
     #    model.arg = [1.0, 1.0]
     # get data size
-    NNlayer     = tf_layer()
+    NNlayer     = tf_layer(debug=1)
     data_size   = int(model.data.get_shape()[1])
     im_shape    = (28, data_size//28)
     target_size = int(model.target.get_shape()[1])
@@ -35,7 +35,7 @@ def tf_prediction_func( model ):
     # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ] 
     # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ]
     conv2_12 = NNlayer.multi_convolution2d(pool1, cov_ker_size = (5,5), n_cnn_layers = 2, \
-                                           in_n_features_arr  = (1,          n_features), \
+                                           in_n_features_arr  = (n_features, n_features), \
                                            out_n_features_arr = (n_features, n_features), \
                                            pool_type = 'None', activate_type = 'ReLU')
     # input size   [-1, im_shape[0]/pool_len,      im_shape[1]/pool_len,      n_features ] 
@@ -45,17 +45,17 @@ def tf_prediction_func( model ):
 
     # input size   [-1, im_shape[0]/(pool_len**2), im_shape[1]/(pool_len**2), n_features ] 
     # output size  [-1, im_shape[0]/(pool_len**2), im_shape[1]/(pool_len**2), n_features ]    
-    fc_len  = n_features*data_size//(pool_len**4)
-    fc_in   = tf.reshape(pool2, [-1, fc_len]) #reshape into 4d tensor
-    fc_done = NNlayer.multi_full_connection_dropout(fc_in, model.arg, n_fc_layers = 3, \
-                                        in_fc_wide_arr  = (data_size, mid_size, mid_size), \
-                                        out_fc_wide_arr = (mid_size,  mid_size, target_size), \
-                                        activate_type = 'sigmoid')
-    fc_out   = tf.reshape(fc_done, [-1,im_shape[0]//(pool_len**2),im_shape[1]//(pool_len**2),n_features]) #reshape into 4d tensor
+    #fc_len  = n_features*data_size//(pool_len**4)
+    #fc_in   = tf.reshape(pool2, [-1, fc_len]) #reshape into 4d tensor
+    #fc_done = NNlayer.multi_full_connection_dropout(fc_in, model.arg, n_fc_layers = 3, \
+    #                                    in_fc_wide_arr  = (fc_len, fc_len, fc_len), \
+    #                                    out_fc_wide_arr = (fc_len, fc_len, fc_len), \
+    #                                    activate_type = 'sigmoid')
+    #fc_out   = tf.reshape(fc_done, [-1,im_shape[0]//(pool_len**2),im_shape[1]//(pool_len**2),n_features]) #reshape into 4d tensor
 
     # input size   [-1, im_shape[0]/(pool_len**2), im_shape[1]/(pool_len**2), n_features ] 
     # output size  [-1, im_shape[0]/pool_len,      im_shape[1]/pool_len,      n_features ]
-    up3      = NNlayer.deconvolution2d(fc_out, cov_ker_size = (5,5), \
+    up3      = NNlayer.deconvolution2d(pool2, cov_ker_size = (5,5), \
                                             in_n_features = n_features, out_n_features = n_features, \
                                             conv_strides = [1, pool_len, pool_len, 1], activate_type = 'ReLU')
     # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ] 
@@ -69,12 +69,12 @@ def tf_prediction_func( model ):
                                            pool_type = 'None', activate_type = 'ReLU')
     # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ] 
     # output size  [-1, im_shape[0],          im_shape[1],          n_features ]
-    up4      = NNlayer.deconvolution2d(pool1, cov_ker_size = (5,5), \
+    up4      = NNlayer.deconvolution2d(conv3_12, cov_ker_size = (5,5), \
                                             in_n_features = n_features, out_n_features = n_features, \
                                             conv_strides = [1, pool_len, pool_len, 1], activate_type = 'ReLU')
     # input size   [-1, im_shape[0], im_shape[1], n_features ] 
     # output size  [-1, im_shape[0], im_shape[1], n_features ]
-    merge4   = NNlayer.merge(conv3_12, up4, axis = 3, merge_type = 'add')
+    merge4   = NNlayer.merge(conv1_12, up4, axis = 3, merge_type = 'add')
     # input size   [-1, im_shape[0], im_shape[1], n_features ]
     # output size  [-1, im_shape[0], im_shape[1], 1 ]
     conv4_12 = NNlayer.multi_convolution2d(merge4, cov_ker_size = (5,5), n_cnn_layers = 2, \

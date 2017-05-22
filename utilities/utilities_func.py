@@ -23,6 +23,21 @@ def plotim1( im, colormap = None, title = None, bar = None ):
     plt.show()
     return
 
+def subplot( im1, im2, colormap = None, title = None, bar = None ):
+    fig, ax = plt.subplots(1,2, figsize = (8,4))
+    ax[0].imshow(im1, cmap='gray')
+    ax[1].imshow(im2, cmap='gray')
+    #if colormap is None:
+    #    cax = ax.imshow(im, cmap = cm.gray, origin='lower', interpolation='none')
+    #else:
+    #    cax = ax.imshow(im, cmap = colormap, origin='lower', interpolation='none')
+    #if title is not None:
+    #    ax.set_title(title)
+    #if bar is not None:
+    #    cbar = fig.colorbar(cax)
+    plt.show()
+    return    
+
 
 """
 # color image plot, 3d input

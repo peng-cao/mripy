@@ -153,8 +153,15 @@
 #import neural_network.zoo.tf_wrap_cnn2d as tf_wrap_cnn2d
 #tf_wrap_cnn2d.test1()
 
-import neural_network.zoo.tf_wrap_cnn2d_conv_deconv as tf_wrap_cnn2d_conv_deconv
-tf_wrap_cnn2d_conv_deconv.test1()
+#import neural_network.zoo.tf_wrap_cnn2d_conv_deconv as tf_wrap_cnn2d_conv_deconv
+#tf_wrap_cnn2d_conv_deconv.test1()
+
+#import neural_network.zoo.tf_wrap_cnn2d_Unet as tf_wrap_cnn2d_Unet
+#tf_wrap_cnn2d_Unet.test1()
+
+#import neural_network.zoo.tf_wrap_cnn2d_FCN as tf_wrap_cnn2d_FCN
+#tf_wrap_cnn2d_FCN.test1()
+
 
 #import test.neural_network_training.enc_decoder_t1t2b0 as enc_decoder_t1t2b0
 #enc_decoder_t1t2b0.test()
@@ -173,6 +180,10 @@ tf_wrap_cnn2d_conv_deconv.test1()
 
 #import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfartrr as tfwrap_cnn_encoder_t1t2b0_randomfartrr
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test()
+
+import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
+tf_wrap_cnn2d_Unet_lung_kaggle.test1()
+
 
 ##########################################################################
 # parallel testing
