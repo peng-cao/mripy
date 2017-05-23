@@ -113,6 +113,9 @@
 #import test.CS_MRI.CS_IDEAL_myelin_CGD as CS_IDEAL_myelin_CGD
 #CS_IDEAL_myelin_CGD.test()
 
+import test.CS_MRI.CS_IDEAL_waterfat_myelin_CGD as CS_IDEAL_waterfat_myelin_CGD
+CS_IDEAL_waterfat_myelin_CGD.test()
+
 #import test.CS_MRI.L2_IDEAL_FT as L2_IDEAL_FT
 #L2_IDEAL_FT.test()
 
@@ -181,8 +184,8 @@
 #import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfartrr as tfwrap_cnn_encoder_t1t2b0_randomfartrr
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test()
 
-import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
-tf_wrap_cnn2d_Unet_lung_kaggle.test1()
+#import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
+#tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 
 
 ##########################################################################
