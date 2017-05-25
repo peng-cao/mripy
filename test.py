@@ -113,8 +113,8 @@
 #import test.CS_MRI.CS_IDEAL_myelin_CGD as CS_IDEAL_myelin_CGD
 #CS_IDEAL_myelin_CGD.test()
 
-#import test.CS_MRI.CS_IDEAL_waterfat_myelin_CGD as CS_IDEAL_waterfat_myelin_CGD
-#CS_IDEAL_waterfat_myelin_CGD.test()
+import test.CS_MRI.CS_IDEAL_waterfat_myelin_CGD as CS_IDEAL_waterfat_myelin_CGD
+CS_IDEAL_waterfat_myelin_CGD.test()
 
 #import test.CS_MRI.L2_IDEAL_FT as L2_IDEAL_FT
 #L2_IDEAL_FT.test()
@@ -178,19 +178,11 @@
 #import test.neural_network_training.tfwrap_fc_encoder_t1t2b0 as tfwrap_fc_encoder_t1t2b0
 #tfwrap_fc_encoder_t1t2b0.test()
 
-import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfar_trr as tfwrap_fc_encoder_t1t2b0_randomfar_trr
-#tfwrap_fc_encoder_t1t2b0_randomfar_trr.test1()
-tfwrap_fc_encoder_t1t2b0_randomfar_trr.test2()
+#import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfartrr as tfwrap_fc_encoder_t1t2b0_randomfartrr
+#tfwrap_fc_encoder_t1t2b0_randomfartrr.test()
 
-#import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfar_trr as tfwrap_cnn_encoder_t1t2b0_randomfar_trr
-#tfwrap_cnn_encoder_t1t2b0_randomfar_trr.test()
-
-
-#import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_online_randomfar_trr as tfwrap_fc_encoder_t1t2b0_online_randomfar_trr
-#tfwrap_fc_encoder_t1t2b0_online_randomfar_trr.test()
-
-#import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_online_randomfar_trr as tfwrap_cnn_encoder_t1t2b0_online_randomfar_trr
-#tfwrap_cnn_encoder_t1t2b0_online_randomfar_trr.test()
+#import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfartrr as tfwrap_cnn_encoder_t1t2b0_randomfartrr
+#tfwrap_cnn_encoder_t1t2b0_randomfartrr.test()
 
 #import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
 #tf_wrap_cnn2d_Unet_lung_kaggle.test1()
