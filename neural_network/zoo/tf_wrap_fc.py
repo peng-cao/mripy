@@ -18,7 +18,7 @@ def tf_prediction_func( model ):
     data_size   = int(model.data.get_shape()[1])
     target_size = int(model.target.get_shape()[1])
     mid_size    = 256
-    # one full connection layer    
+    # one full connection layer
     #y1 = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size,    activate_type = 'sigmoid')
     #y  = NNlayer.full_connection(y1,         in_fc_wide = mid_size,  out_fc_wide = target_size, activate_type = 'sigmoid')
     y   = NNlayer.multi_full_connection(model.data, n_fc_layers = 3, \
@@ -51,17 +51,21 @@ def tf_error_func( model ):
 
 def test1():
     mnist = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    model = tf_wrap.tf_model_top([None, 784], [None, 10], tf_prediction_func, tf_optimize_func, tf_error_func)
+    data   = tf.placeholder(tf.float32, [None,  784])
+    target = tf.placeholder(tf.float32, [None,  10])
+    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
     for _ in range(100):
         model.test(mnist.test.images, mnist.test.labels)
         for _ in range(100):
-            batch_xs, batch_ys = mnist.train.next_batch(1000)            
+            batch_xs, batch_ys = mnist.train.next_batch(1000)
             model.train(batch_xs, batch_ys)
     model.save('../save_data/test_model_save')
 
 def test2():
     mnist = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    model = tf_wrap.tf_model_top([None, 784], [None, 10], tf_prediction_func, tf_optimize_func, tf_error_func)
+    data   = tf.placeholder(tf.float32, [None,  784])
+    target = tf.placeholder(tf.float32, [None,  10])
+    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
     model.restore('../save_data/test_model_save')
     model.test(mnist.test.images, mnist.test.labels)
 #if __name__ == '__main__':

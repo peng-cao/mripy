@@ -59,22 +59,24 @@ def tf_error_func( model ):
 #############################
 
 def test():
-    Nk            = 960#far.shape[0]
-    model = tf_wrap.tf_model_top([None,  2*Nk], [None, 4], tf_prediction_func, tf_optimize_func, tf_error_func)
+    Nk     = 960#far.shape[0]
+    data   = tf.placeholder(tf.float32, [None,  2 * Nk])
+    target = tf.placeholder(tf.float32, [None,  4])
+    model  = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
 
     batch_size = 800
     # generate far and trr
-    far_amp        = np.random.uniform(0, 15.0/180.0 * np.pi, (Nk,))
-    far_phase      = np.random.uniform(-np.pi,         np.pi, (Nk,))
-    far            = np.multiply(far_amp, np.exp(far_phase)).astype(np.complex128).squeeze()
-    trr            = np.random.uniform(3.0, 16.0, (Nk,)).astype(np.float64).squeeze()
+    far_amp    = np.random.uniform(0, 15.0/180.0 * np.pi, (Nk,))
+    far_phase  = np.random.uniform(-np.pi,         np.pi, (Nk,))
+    far        = np.multiply(far_amp, np.exp(far_phase)).astype(np.complex128).squeeze()
+    trr        = np.random.uniform(3.0, 16.0, (Nk,)).astype(np.float64).squeeze()
 
     # prepare for sequence simulation, y->x_hat
-    ti            = 10 #ms
-    M0            = np.array([0.0,0.0,1.0]).astype(np.float64)
+    ti         = 10 #ms
+    M0         = np.array([0.0,0.0,1.0]).astype(np.float64)
 
     #run tensorflow on cpu, count of gpu = 0
-    config = tf.ConfigProto()#(device_count = {'GPU': 0})
+    config     = tf.ConfigProto()#(device_count = {'GPU': 0})
     #allow tensorflow release gpu memory
     config.gpu_options.allow_growth=True
 
@@ -107,7 +109,9 @@ def test():
 
 def test2():
     Nk            = 960#far.shape[0]
-    model = tf_wrap.tf_model_top([None,  2*Nk], [None, 4], tf_prediction_func, tf_optimize_func, tf_error_func)
+    data   = tf.placeholder(tf.float32, [None,  2 * Nk])
+    target = tf.placeholder(tf.float32, [None,  4])
+    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
     model.restore('../save_data/MRF_encoder_t1t2b0')
     batch_size = 800
     # load far and trr

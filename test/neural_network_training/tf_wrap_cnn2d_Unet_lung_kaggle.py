@@ -148,8 +148,9 @@ def test1():
     MASK_LIB              = '../save_data/findlung/2d_masks/'
     IMG_HEIGHT, IMG_WIDTH = 32, 32
     batch_size            = 8
-    model                 = tf_wrap.tf_model_top([None, IMG_HEIGHT, IMG_WIDTH,1], \
-                                                 [None, IMG_HEIGHT, IMG_WIDTH,1], \
+    data                  = tf.placeholder(tf.float32, [None, IMG_HEIGHT, IMG_WIDTH,1])
+    target                = tf.placeholder(tf.float32, [None, IMG_HEIGHT, IMG_WIDTH,1])
+    model                 = tf_wrap.tf_model_top(data, target, \
                                                  tf_prediction_func, tf_optimize_func, \
                                                  tf_error_func, arg = 0.5)
     x_train, x_val, y_train, y_val = get_data( IMAGE_LIB, MASK_LIB, IMG_HEIGHT, IMG_WIDTH )
@@ -177,8 +178,9 @@ def test2():
     MASK_LIB              = '../save_data/findlung/2d_masks/'
     IMG_HEIGHT, IMG_WIDTH = 32, 32
     batch_size            = 8
-    model                 = tf_wrap.tf_model_top([None, IMG_HEIGHT, IMG_WIDTH,1], \
-                                                 [None, IMG_HEIGHT, IMG_WIDTH,1], \
+    data                  = tf.placeholder(tf.float32, [None, IMG_HEIGHT, IMG_WIDTH,1])
+    target                = tf.placeholder(tf.float32, [None, IMG_HEIGHT, IMG_WIDTH,1])
+    model                 = tf_wrap.tf_model_top(data, target, \
                                                  tf_prediction_func, tf_optimize_func, \
                                                  tf_error_func, arg = 1.0)
     x_train, x_val, y_train, y_val = get_data( IMAGE_LIB, MASK_LIB, IMG_HEIGHT, IMG_WIDTH )

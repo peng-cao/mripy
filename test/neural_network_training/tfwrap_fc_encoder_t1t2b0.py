@@ -29,7 +29,7 @@ def tf_prediction_func( model ):
     data_size   = int(model.data.get_shape()[1])
     target_size = int(model.target.get_shape()[1])
     mid_size    = 256
-    # one full connection layer    
+    # one full connection layer
     #y1 = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size,    activate_type = 'None')
     #y  = NNlayer.full_connection(y1,         in_fc_wide = mid_size,  out_fc_wide = target_size, activate_type = 'None')
     y   = NNlayer.multi_full_connection(model.data, n_fc_layers = 4, \
@@ -42,7 +42,7 @@ def tf_prediction_func( model ):
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
     #model.arg = [0.5, 0.5]
-    loss = tf.reduce_sum(tf.pow(tf.subtract(model.prediction, model.target),2))    
+    loss = tf.reduce_sum(tf.pow(tf.subtract(model.prediction, model.target),2))
     optimizer = tf.train.RMSPropOptimizer(1e-4)
     # minimization apply to cross_entropy
     return optimizer.minimize(loss)
@@ -52,15 +52,17 @@ def tf_error_func( model ):
     #model.arg = [1.0, 1.0]
     #training accuracy
     correct_prediction = tf.pow(tf.subtract(model.prediction, model.target),2)
-    return tf.reduce_mean(correct_prediction) 
+    return tf.reduce_mean(correct_prediction)
 
 
 #############################
 
 def test():
-    model = tf_wrap.tf_model_top([None, 2*960], [None, 4], tf_prediction_func, tf_optimize_func, tf_error_func)
+    data   = tf.placeholder(tf.float32, [None,  2*960])
+    target = tf.placeholder(tf.float32, [None,  4])
+    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
 
-    batch_size = 800    
+    batch_size = 800
     # load far and trr
     # read rf and tr arrays from mat file
     mat_contents  = sio.loadmat(pathdat+'mrf_rf_tr.mat');
@@ -69,7 +71,7 @@ def test():
     # prepare for sequence simulation, y->x_hat
     Nk            = far.shape[0]
     ti            = 10 #ms
-    M0            = np.array([0.0,0.0,1.0]).astype(np.float64) 
+    M0            = np.array([0.0,0.0,1.0]).astype(np.float64)
 
     #run tensorflow on cpu, count of gpu = 0
     config = tf.ConfigProto()#(device_count = {'GPU': 0})
@@ -83,20 +85,20 @@ def test():
         batch_ys[:,3]      = np.ones(batch_size)
         batch_xs   = np.zeros((batch_size,2*Nk), dtype = np.float64)
        # intial seq simulation with t1t2b0 values
-        #seq_data = ssad.irssfp_arrayin_data( batch_size, Nk ).set( batch_ys )    
+        #seq_data = ssad.irssfp_arrayin_data( batch_size, Nk ).set( batch_ys )
         T1r, T2r, dfr, PDr = ssmrf.set_par(batch_ys)
         batch_xs_c         = ssmrf.bloch_sim_batch_cuda( batch_size, 100, Nk, PDr,\
          T1r, T2r, dfr, M0, trr, far, ti )
         #seperate real/imag parts or abs/angle parts, no noise output
         batch_xs[:,0:Nk] = np.real(batch_xs_c)
-        batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)    
+        batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)
 
         #input with noise
-        #batch_xsnoise = batch_xs  + np.random.uniform(-0.01,0.01,(batch_size,2*Nk))    
+        #batch_xsnoise = batch_xs  + np.random.uniform(-0.01,0.01,(batch_size,2*Nk))
 
         #train_step.run(feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
         model.train(batch_xs, batch_ys)
         if i%10 == 0:
             model.test(batch_xs, batch_ys)
         if i%1000 == 0:
-            model.save('../save_data/MRF_encoder_t1t2b0')   
+            model.save('../save_data/MRF_encoder_t1t2b0')

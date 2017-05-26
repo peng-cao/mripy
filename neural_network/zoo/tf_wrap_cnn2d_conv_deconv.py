@@ -40,7 +40,7 @@ def tf_prediction_func( model ):
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
     model.arg = 0.5#[0.5, 0.5]
-    loss = tf.reduce_sum(tf.pow(tf.subtract(model.prediction, model.target),2))    
+    loss = tf.reduce_sum(tf.pow(tf.subtract(model.prediction, model.target),2))
     optimizer = tf.train.RMSPropOptimizer(1e-4)
     # minimization apply to cross_entropy
     return optimizer.minimize(loss)
@@ -50,13 +50,15 @@ def tf_error_func( model ):
     model.arg = 1.0#[1.0, 1.0]
     #training accuracy
     correct_prediction = tf.pow(tf.subtract(model.prediction, model.target),2)
-    return tf.reduce_mean(correct_prediction) 
+    return tf.reduce_mean(correct_prediction)
 
 #############################
 
 def test1():
     mnist = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    model = tf_wrap.tf_model_top([None, 784], [None, 784], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
+    data   = tf.placeholder(tf.float32, [None,  784])
+    target = tf.placeholder(tf.float32, [None,  784])
+    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
     for _ in range(100):
         model.test(mnist.test.images, mnist.test.images)
         for _ in range(100):
@@ -65,8 +67,10 @@ def test1():
     model.save('../save_data/test_model_save')
 
 def test2():
-    mnist = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    model = tf_wrap.tf_model_top([None, 784], [None, 784], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
+    mnist  = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
+    data   = tf.placeholder(tf.float32, [None,  784])
+    target = tf.placeholder(tf.float32, [None,  784])
+    model  = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
     model.restore('../save_data/test_model_save')
     model.test(mnist.test.images, mnist.test.images)
 #if __name__ == '__main__':

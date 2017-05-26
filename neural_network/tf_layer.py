@@ -106,12 +106,12 @@ class tf_layer:
             else:
                 yin = yout
             #define fc layers
-            yout  = self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type =activate_type)    
+            yout  = self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type =activate_type)
         return yout
 
     def multi_full_connection_dropout( self, x, arg = 1.0, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU' ):
         for i in range(n_fc_layers):
-            # set fc_wide parameters 
+            # set fc_wide parameters
             if in_fc_wide_arr is None:
                 in_fc_wide = x.shape[0]
             else:
@@ -127,7 +127,7 @@ class tf_layer:
             else:
                 yin = yout
             #define fc layers
-            yout  = self.full_connection_dropout(yin, arg = arg, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'ReLU')    
+            yout  = self.full_connection_dropout(yin, arg = arg, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'ReLU')
         return yout
 
     def convolution2d( self, x, cov_ker_size = (5,1), in_n_features = 1,\
@@ -141,7 +141,7 @@ class tf_layer:
         W_conv = self.weight_variable([cov_ker_size[0], cov_ker_size[1],\
                                          in_n_features, out_n_features])
         b_conv = self.bias_variable([out_n_features])
-        #define convolution 
+        #define convolution
         h_conv = self.conv2d(x, W_conv, strides = conv_strides) + b_conv
         h_pool = self.pool(h_conv, pool_size = pool_size, pool_type = pool_type) #pooling
         y_act  = self.activate( h_pool, activate_type = activate_type)
@@ -151,7 +151,7 @@ class tf_layer:
                                summarize=4, first_n=1)
         return y_act
 
-    
+
     def multi_convolution2d( self, x, n_cnn_layers = 1, cov_ker_size = (5,1), in_n_features_arr = None,\
                              out_n_features_arr = None, conv_strides = [1, 1, 1, 1],\
                              pool_size = [1, 1, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU'):
@@ -264,7 +264,7 @@ class tf_layer:
         else:
             x_2 = x_1 #do nothing if size equal
         return x_2
-    
+
     def merge( self, x1, x2, axis, merge_type = 'concat', resize_x2 = 0 ):
         if resize_x2 is 1: #resize x2 based on the high/width size of x1
             x2 = self.crop_or_pad(x2, x1.get_shape().as_list()[1], x1.get_shape().as_list()[2])#or try .get_shape().as_list()
