@@ -94,25 +94,26 @@ class tf_model_top:
         self.sess.run(tf.global_variables_initializer())
 
     # train neural network, using all training data, do mini-batch in this function
+    """
     def train_all_batch( self, train_data, train_target, N_example, N_batch, mini_batch_func ):
         #mini-batch
         batch_x, batch_y = mini_batch_func(N_example, N_batch, train_data, train_target)
         for _ in range(N_example//N_batch):
             self.sess.run(self.model_wrap.optimize, {self.data: batch_x, self.target: batch_y})
         return self
-
+    """
     # simple training function, do one step training, should be putted in a loop for mini-batch
-    def train( self, train_data, train_target ):
+    def train( self, train_data, train_target = None ):
         self.sess.run(self.model_wrap.optimize, {self.data: train_data, self.target: train_target})
         return self
 
     # simple training function, do one step training, should be putted in a loop for mini-batch
-    def prediction( self, data, target ):
+    def prediction( self, data, target = None ):
         target = self.sess.run(self.model_wrap.prediction, {self.data: data, self.target: target})
         return target
 
     # test neural network using testing data
-    def test( self, test_data, test_target ):
+    def test( self, test_data, test_target = None ):
         error = self.sess.run(self.model_wrap.error, {self.data: test_data, self.target: test_target})
         print('Error {:6.2f}%'.format(100 * error))
         return self

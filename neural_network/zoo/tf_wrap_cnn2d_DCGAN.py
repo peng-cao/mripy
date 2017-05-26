@@ -32,7 +32,7 @@ def generator( z ):
     h3      = NNlayer.convolution2d(h2, cov_ker_size = ksize, in_n_features = 8*n_features, \
                                     out_n_features = 16*n_features, \
                                     pool_size = [1, pool_len, pool_len, 1], activate_type = 'tanh')
-    return h3#tf.nn.tanh(h4)
+    return h3
 
 # from image to label or logits
 def discriminator( image, reuse = False ):
@@ -52,66 +52,65 @@ def discriminator( image, reuse = False ):
     return tf.nn.sigmoid(y3), y3
 
 def tf_prediction_func( model ):
-    #(currently I am using model.target to transfer z to here)
     # z should be sampled from a noise prior, for creating fake image
-    outy.G                  = generator(model.target)
+    G             = generator(model.data['z'])
     # D  = sigmoid(D_logits),  D_logits: D(x),    x is image/model.data
     # D_ = sigmoid(D_logits_), D_logits: D(G(z)), z is sampled from noise prior
-    outy.D,  outy.D_logits  = discriminator(model.data)
-    outy.D_, outy.D_logits_ = discriminator(outy.G, reuse = True)
-    # softmax output
+    D,  D_logits  = discriminator(model.data['image'])
+    D_, D_logits_ = discriminator(outy.G, reuse = True)
+    # struncture output
+    outy = {'G':G,'D':D, 'D_':D_,'D_logits':D_logits,'D_logits_':D_logits_}
     return outy#tf.nn.softmax(y)
 
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
     #run prediction
     gety = model.prediction
+    D    = gety['D']
+    D_   = gety['D_']
+    D_logits  = gety['D_logits']
+    D_logits_ = gety['D_logits_']
     #define loss for discriminator
     # discriminator maximizing probablity for D(x)   with label = 1, i.e. image labeled as 1
     #                                    and D(G(z)) with label = 0, i.e. fake image labeled as 0
     # d_loss_real: cross_entropy = label * -log(sigmoid(D(x))), lables = ones
     #                            = -log(sigmoid(D(x))), in D(x), x image
-    # d_loss_real = tf.reduce_mean(-tf.log(gety.D))
+    # d_loss_real = tf.reduce_mean(-tf.log(D))
     # d_loss_fake: cross_entropy = (1-labels) * -log(1-sigmoid(D(G(z)))), labels = zeros
     #                            = -log(1-sigmoid(D(G(z)))), in D(G(z)),
     #                              z sampled from a noise prior, G(z) fake image
-    # d_loss_fake = tf.reduce_mean(-tf.log(1 - gety.D_))
-    d_loss_real = tf.reduce_mean(\
-        tf.nn.sigmoid_cross_entropy_with_logits(gety.D_logits,\
-                                                tf.ones_like(gety.D)))
-    d_loss_fake = tf.reduce_mean(\
-        tf.nn.sigmoid_cross_entropy_with_logits(gety.D_logits_,\
-                                                tf.zeros_like(gety.D_)))
+    # d_loss_fake = tf.reduce_mean(-tf.log(1 - D_))
+    d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logits,\
+                                                tf.ones_like(D)))
+    d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logits_,\
+                                                tf.zeros_like(D_)))
     d_loss = d_loss_real + d_loss_fake
     #define loss for generator,
     # generator maximizing probability for D(G(z)) with label = 1 version,
     # i.e. maximizing the probability of fake image been labeled as 1 by discriminator
     #g_loss:  cross_entropy = label * -log(sigmoid(D(x))), lables = ones
     #                       = -log(sigmoid(D(G(z)))), G(z), fake image
-    # g_loss = tf.reduce_mean(-tf.log(gety.D_))
-    g_loss = tf.reduce_mean(\
-        tf.nn.sigmoid_cross_entropy_with_logits(gety.D_logits_,\
-                                                tf.ones_like(gety.D_)))
+    # g_loss = tf.reduce_mean(-tf.log(D_))
+    g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logits_,\
+                                                tf.ones_like(D_)))
     # generator minimizing probability for D(G(z)) with label = 0 version,
     # i.e. minimizing the probability for fake image been labeled as 0 by discriminator
     #g_loss:  -1 * cross_entropy = -1 * (1-labels) * -log(1-sigmoid(D(G(z)))), labels = zeros
     #                            = log(1-sigmoid(D(G(z)))), G(z), fake image
-    # g_loss = tf.reduce_mean(tf.log(1 - gety.D_))
+    # g_loss = tf.reduce_mean(tf.log(1 - D_))
     #g_loss = -tf.reduce_mean(\
-    #    tf.nn.sigmoid_cross_entropy_with_logits(gety.D_logits_,\
-    #                                            tf.zeros_like(gety.D_)))
+    #    tf.nn.sigmoid_cross_entropy_with_logits(D_logits_,\
+    #                                            tf.zeros_like(D_)))
 
     #select variables for g_ and d_, i.e. training generator and discriminator seperately
-    t_vars = tf.trainable_variables()
-    d_vars = [var for var in t_vars if 'd_' in var.name]
-    g_vars = [var for var in t_vars if 'g_' in var.name]
+    #t_vars = tf.trainable_variables()
+    #d_vars = [var for var in t_vars if 'd_' in var.name]
+    #g_vars = [var for var in t_vars if 'g_' in var.name]
     # selectively do training for generator and discriminator
     if model.arg == 'train_D':
-        optim = tf.train.AdamOptimizer(1e-4) \
-                    .minimize(d_loss, var_list = d_vars)
+        optim = tf.train.AdamOptimizer(1e-4).minimize(d_loss) #, var_list = d_vars
     elif model.arg == 'train_G':
-        optim = tf.train.AdamOptimizer(1e-4) \
-                    .minimize(g_loss, var_list = g_vars)
+        optim = tf.train.AdamOptimizer(1e-4).minimize(g_loss) #, var_list = g_vars
     return optim#optimizer.minimize(loss)
 
 # example of the error function, defined using tensorflow lib
@@ -119,37 +118,37 @@ def tf_error_func( model ):
     #model.arg = 1.0#[1.0, 1.0]
     #training accuracy
     gety = model.prediction
-    g_loss = tf.reduce_mean(\
-        tf.nn.sigmoid_cross_entropy_with_logits(gety.D_logits_,\
-                                                tf.ones_like(gety.D_)))
+    D_logits_ = gety['D_logits_']
+    D_        = gety['D_']
+    g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logits_,\
+                                                tf.ones_like(D_)))
     return g_loss
 
 #############################
 
 def test1():
     mnist  = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    data   = tf.placeholder(tf.float32, [None, 28,28,1])
-    target = tf.placeholder(tf.float32, [None])# use to transfer z to model,
-    model  = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
+    image  = tf.placeholder(tf.float32, [None, 28,28,1])
+    z      = tf.placeholder(tf.float32, [None])
+    model  = tf_wrap.tf_model_top({'image':image,'z':z}, None, tf_prediction_func, tf_optimize_func, tf_error_func)
     for _ in range(100):
         model.test(mnist.test.images, mnist.test.images)
         for _ in range(100):
             batch_size = 1000
             batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-            # z shoud be sampled from a noise prior for creating fake image
             batch_z = np.random.uniform(0,1,(batch_size,)).astype(np.float32)
-            model.set_arg('train_D').train(batch_image, batch_z)
-            model.set_arg('train_G').train(batch_image, batch_z)
+            model.set_arg('train_D').train({'image':batch_image,'z':batch_z}, None)
+            model.set_arg('train_G').train({'image':batch_image,'z':batch_z}, None)
     model.save('../save_data/test_model_save')
 
 def test2():
     mnist   = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    data    = tf.placeholder(tf.float32, [None, 28,28,1])
-    target  = tf.placeholder(tf.float32, [None])# use to transfer z to model, shoud be a noise for creating facke image
-    model   = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
+    image  = tf.placeholder(tf.float32, [None, 28,28,1])
+    z      = tf.placeholder(tf.float32, [None])
+    model   = tf_wrap.tf_model_top({'image':image,'z':z}, None, tf_prediction_func, tf_optimize_func, tf_error_func)
     batch_z = np.random.uniform(0,1,(mnist.test.images.shape[0],)).astype(np.float32)
     model.restore('../save_data/test_model_save')
-    model.test(mnist.test.images, batch_z)
+    model.test({'image':mnist.test.images, 'z':batch_z}, None)
 #if __name__ == '__main__':
     #test1()
     #test2()

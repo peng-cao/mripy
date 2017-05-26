@@ -235,7 +235,7 @@ class tf_layer:
                    conv_strides  = conv_strides, out_shape = None,\
                    activate_type = activate_type)
         return yout
-    
+
     def crop_or_pad( self, x, new_height, new_width ):
         old_height = x.get_shape().as_list()[1]
         old_width  = x.get_shape().as_list()[2]
