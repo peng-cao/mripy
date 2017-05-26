@@ -9,7 +9,7 @@ import neural_network.tf_wrap as tf_wrap
 from neural_network.tf_layer import tf_layer
 from tensorflow.examples.tutorials.mnist import input_data
 
-# from z to image
+# from z to fake image
 def generator( z ):
     NNlayer     = tf_layer()
     #data_size   = int(z.get_shape()[1])
@@ -35,7 +35,7 @@ def generator( z ):
     return h3#tf.nn.tanh(h4)
 
 # from image to label or logits
-def discriminator( image, reuse=False ):
+def discriminator( image, reuse = False ):
     NNlayer      = tf_layer()
     pool_len     = 2
     n_features   = 8
@@ -58,7 +58,7 @@ def tf_prediction_func( model ):
     # D  = sigmoid(D_logits),  D_logits: D(x),    x is image/model.data
     # D_ = sigmoid(D_logits_), D_logits: D(G(z)), z is sampled from noise prior
     outy.D,  outy.D_logits  = discriminator(model.data)
-    outy.D_, outy.D_logits_ = discriminator(outy.G, reuse=True)
+    outy.D_, outy.D_logits_ = discriminator(outy.G, reuse = True)
     # softmax output
     return outy#tf.nn.softmax(y)
 
@@ -67,8 +67,8 @@ def tf_optimize_func( model ):
     #run prediction
     gety = model.prediction
     #define loss for discriminator
-    # discriminator maximizing probablity for D(x)   with label = 1
-    #                                    and D(G(z)) with label = 0
+    # discriminator maximizing probablity for D(x)   with label = 1, i.e. image labeled as 1
+    #                                    and D(G(z)) with label = 0, i.e. fake image labeled as 0
     # d_loss_real: cross_entropy = label * -log(sigmoid(D(x))), lables = ones
     #                            = -log(sigmoid(D(x))), in D(x), x image
     # d_loss_real = tf.reduce_mean(-tf.log(gety.D))
@@ -83,7 +83,7 @@ def tf_optimize_func( model ):
         tf.nn.sigmoid_cross_entropy_with_logits(gety.D_logits_,\
                                                 tf.zeros_like(gety.D_)))
     d_loss = d_loss_real + d_loss_fake
-    #loss for generator,
+    #define loss for generator,
     # generator maximizing probability for D(G(z)) with label = 1 version,
     # i.e. maximizing the probability of fake image been labeled as 1 by discriminator
     #g_loss:  cross_entropy = label * -log(sigmoid(D(x))), lables = ones
@@ -147,7 +147,7 @@ def test2():
     data    = tf.placeholder(tf.float32, [None, 28,28,1])
     target  = tf.placeholder(tf.float32, [None])# use to transfer z to model, shoud be a noise for creating facke image
     model   = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
-    batch_z = np.random.uniform(0,1,(mnist.test.images[0],)).astype(np.float32)
+    batch_z = np.random.uniform(0,1,(mnist.test.images.shape[0],)).astype(np.float32)
     model.restore('../save_data/test_model_save')
     model.test(mnist.test.images, batch_z)
 #if __name__ == '__main__':
