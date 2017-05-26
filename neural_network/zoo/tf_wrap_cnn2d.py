@@ -1,5 +1,5 @@
 """
-class wrap the tensorflow model into a class tf_wrap
+CNN example
 """
 import numpy as np
 import functools
@@ -46,7 +46,7 @@ def tf_prediction_func( model ):
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
     model.arg = 0.5#[0.5, 0.5]
-    # cost funcion as cross entropy = y * log(y)
+    # cost funcion as cross entropy = y_target * log(y_predicted), check the meaning of reduction_indices???
     cross_entropy = tf.reduce_mean(-tf.reduce_sum(model.target * tf.log(model.prediction), reduction_indices=[1]))
     #cross_entropy = -tf.reduce_sum(self.target * tf.log(self.prediction))
     optimizer = tf.train.RMSPropOptimizer(0.03)

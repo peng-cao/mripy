@@ -1,5 +1,5 @@
 """
-class wrap the tensorflow model into a class tf_wrap
+CNN convolution and deconvolution/transpose of convolution example
 """
 import numpy as np
 import functools

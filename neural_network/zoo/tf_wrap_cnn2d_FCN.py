@@ -1,5 +1,5 @@
 """
-class wrap the tensorflow model into a class tf_wrap
+FCN example
 """
 import numpy as np
 import functools
