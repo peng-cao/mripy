@@ -54,8 +54,8 @@ class tf_layer:
             y_act = tf.nn.softmax(x)
         elif activate_type is 'argmax':
             y_act = tf.argmax(x)
-        elif activate_type is 'tan':
-            y_act = tf.tan(x)
+        elif activate_type is 'tanh':
+            y_act = tf.tanh(x)
         else:
             y_act = x
         return y_act

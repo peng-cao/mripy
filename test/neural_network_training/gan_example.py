@@ -94,9 +94,9 @@ def _plot_distributions(db, pd, pg, gen_range):
     plt.legend()
     plt.show()
 
-
-NNlayer      = tf_layer()
 """
+NNlayer      = tf_layer()
+
 # from z to fake image
 def generator( z, h_dim ):
     #out_size = data_size#n_features*data_size//(pool_len**4)
@@ -115,7 +115,7 @@ def discriminator( data, h_dim, reuse = False ):
     #h4      = NNlayer.full_connection(h3,   out_fc_wide = 2*h_dim,scope= 'd4', activate_type = 'tanh', w_stddev = 1.0)
     #h5      = NNlayer.full_connection(h4,   out_fc_wide = 2*h_dim,scope= 'd5', activate_type = 'tanh', w_stddev = 1.0)
     #h6      = NNlayer.full_connection(h5,   out_fc_wide = 2*h_dim,scope= 'd6', activate_type = 'tanh', w_stddev = 1.0)
-    h7      = NNlayer.full_connection(h3,   out_fc_wide = 1, scope='d7', activate_type = 'sigmoid', w_stddev = 1.0) 
+    h7      = NNlayer.full_connection(h3,   out_fc_wide = 1, scope='d7', activate_type = 'sigmoid', w_stddev = 1.0)
     return h7
 """
 def linear(input, output_dim, scope=None, stddev=1.0):
@@ -157,7 +157,7 @@ def optimizer(loss, var_list, initial_learning_rate):
         global_step=batch,
         var_list=var_list
     )
-    return optimizer 
+    return optimizer
 
 class GAN:
     def __init__( self, batch_size ):
@@ -180,7 +180,7 @@ class GAN:
             self.D1 = discriminator(self.x, h_dim)
             scope.reuse_variables()
             self.D2 = discriminator(self.G, h_dim)#
-        #return G, D1, D2    
+        #return G, D1, D2
 
         learning_rate = 0.03
         self.d_loss = tf.reduce_mean(-tf.log(self.D1)-tf.log(1 - self.D2))
@@ -190,24 +190,24 @@ class GAN:
         #d_vars = [var for var in t_vars if 'Gen' in var.name]
         #g_vars = [var for var in t_vars if 'Disc' in var.name]
         d_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Disc')
-        g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Gen')    
+        g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Gen')
 
         # selectively do training for generator and discriminator
         #self.dopt = tf.train.AdamOptimizer(1e-4).minimize(self.d_loss, var_list = d_vars)#, var_list = d_vars
         #self.gopt = tf.train.AdamOptimizer(1e-4).minimize(self.g_loss, var_list = g_vars)#, var_list = g_vars
         self.dopt = optimizer(self.d_loss, d_vars, learning_rate)
-        self.gopt = optimizer(self.g_loss, g_vars, learning_rate)    
+        self.gopt = optimizer(self.g_loss, g_vars, learning_rate)
 
-        #return d_loss, g_loss, doptim, goptim#optimizer.minimize(loss)    
+        #return d_loss, g_loss, doptim, goptim#optimizer.minimize(loss)
     def train( self ):
         with tf.Session() as session:
             tf.global_variables_initializer().run()
             for i in range(5200):
                 x         = self.data.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)
-                z         = self.gen.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)        
+                z         = self.gen.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)
 
                 loss_d, _ = session.run([self.d_loss, self.dopt], {self.x:x, self.z:z})
-                z         = self.gen.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)            
+                z         = self.gen.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)
                 loss_g, _ = session.run([self.g_loss, self.gopt], {self.x:x, self.z:z})
                 print('{}: {}\t{}'.format(i, loss_d, loss_g))
             self._plot_distributions(session)
@@ -268,11 +268,17 @@ class GAN:
 #############################
 
 def test1():
+<<<<<<< HEAD
+    batch_size = 12
+    x       = tf.placeholder(tf.float32, shape=(batch_size, 1))
+    z     = tf.placeholder(tf.float32, shape=(batch_size, 1))
+=======
     batch_size = 12  
     with tf.variable_scope('Disc'):
         x       = tf.placeholder(tf.float32, shape=(batch_size, 1))
     with tf.variable_scope('Gen'):
         z     = tf.placeholder(tf.float32, shape=(batch_size, 1)) 
+>>>>>>> origin/master
     #test_z     = GeneratorDistribution(range=8).sample(batch_size).reshape((batch_size,1)).astype(np.float32)
     ganinst    = GAN(batch_size)
     ganinst.train()
