@@ -189,7 +189,11 @@
 #import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
 #tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 
+#import test.neural_network_training.gan_example as gan_example
+#gan_example.test1()
 
+import neural_network.zoo.tf_wrap_fc_GAN as tf_wrap_fc_GAN
+tf_wrap_fc_GAN.test1()
 ##########################################################################
 # parallel testing
 ##########################################################################

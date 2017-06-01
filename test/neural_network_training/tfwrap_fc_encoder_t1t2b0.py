@@ -58,9 +58,7 @@ def tf_error_func( model ):
 #############################
 
 def test():
-    data   = tf.placeholder(tf.float32, [None,  2*960])
-    target = tf.placeholder(tf.float32, [None,  4])
-    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func)
+    model = tf_wrap.tf_model_top([None,  2*960],  [None,  4], tf_prediction_func, tf_optimize_func, tf_error_func)
 
     batch_size = 800
     # load far and trr

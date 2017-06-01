@@ -161,13 +161,11 @@ def optimizer(loss, var_list, initial_learning_rate):
 
 class GAN:
     def __init__( self, batch_size ):
-        #self.x = x
-        #self.z = z
+        self.x = tf.placeholder(tf.float32, shape=(batch_size, 1))
+        self.z = tf.placeholder(tf.float32, shape=(batch_size, 1))
         self.data = DataDistribution()
         self.gen  = GeneratorDistribution(range=8)
         self.batch_size = batch_size
-        #self.z     = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
-        #self.x     = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
         self.creat_model()
 
 
@@ -175,10 +173,10 @@ class GAN:
         h_dim = 10
         # z should be sampled from a noise prior, for creating fake image
         with tf.variable_scope('Gen'):
-            self.z  = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
+            #self.z  = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
             self.G  = generator(self.z, h_dim)
         with tf.variable_scope('Disc') as scope:
-            self.x  = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
+            #self.x  = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
             self.D1 = discriminator(self.x, h_dim)
             scope.reuse_variables()
             self.D2 = discriminator(self.G, h_dim)#
@@ -270,9 +268,17 @@ class GAN:
 #############################
 
 def test1():
+<<<<<<< HEAD
     batch_size = 12
     x       = tf.placeholder(tf.float32, shape=(batch_size, 1))
     z     = tf.placeholder(tf.float32, shape=(batch_size, 1))
+=======
+    batch_size = 12  
+    with tf.variable_scope('Disc'):
+        x       = tf.placeholder(tf.float32, shape=(batch_size, 1))
+    with tf.variable_scope('Gen'):
+        z     = tf.placeholder(tf.float32, shape=(batch_size, 1)) 
+>>>>>>> origin/master
     #test_z     = GeneratorDistribution(range=8).sample(batch_size).reshape((batch_size,1)).astype(np.float32)
     ganinst    = GAN(batch_size)
     ganinst.train()

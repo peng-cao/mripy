@@ -74,9 +74,7 @@ def tf_error_func( model ):
 
 def test1():
     Nk     = 960#far.shape[0]
-    data   = tf.placeholder(tf.float32, [None,  2 * Nk])
-    target = tf.placeholder(tf.float32, [None,  4])
-    model  = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func, 0.5)
+    model  = tf_wrap.tf_model_top([None,  2 * Nk], [None,  4], tf_prediction_func, tf_optimize_func, tf_error_func, 0.5)
 
     batch_size = 800
     # generate far and trr
@@ -125,9 +123,7 @@ def test1():
 
 def test2():
     Nk            = 960#far.shape[0]
-    data   = tf.placeholder(tf.float32, [None,  2 * Nk])
-    target = tf.placeholder(tf.float32, [None,  4])
-    model  = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func, 1.0)
+    model  = tf_wrap.tf_model_top([None,  2*960],  [None,  4], tf_prediction_func, tf_optimize_func, tf_error_func, 1.0)
     model.restore('../save_data/MRF_encoder_t1t2b0')
     batch_size = 800
     # load far and trr
