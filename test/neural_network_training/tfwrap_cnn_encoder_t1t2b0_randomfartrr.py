@@ -92,10 +92,6 @@ def test1():
     config.gpu_options.allow_growth=True
     Nite   = 2000
     #run for 2000
-<<<<<<< HEAD
-=======
-    Nite   = 2000
->>>>>>> 85aa8bd2cd916d634735f3859ae485ed6b7cc488
     for i in range(Nite):
         batch_ys           = np.random.uniform(0,1,(batch_size,4)).astype(np.float64)
         #batch_ys[:,2] = np.zeros(batch_size)
