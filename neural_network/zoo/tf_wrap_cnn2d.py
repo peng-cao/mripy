@@ -66,9 +66,7 @@ def tf_error_func( model ):
 
 def test1():
     mnist = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    data   = tf.placeholder(tf.float32, [None,  784])
-    target = tf.placeholder(tf.float32, [None,  10])
-    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
+    model = tf_wrap.tf_model_top([None,  784], [None,  10], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
     for _ in range(100):
         model.test(mnist.test.images, mnist.test.labels)
         for _ in range(100):
@@ -78,9 +76,7 @@ def test1():
 
 def test2():
     mnist = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    data   = tf.placeholder(tf.float32, [None,  784])
-    target = tf.placeholder(tf.float32, [None,  10])
-    model = tf_wrap.tf_model_top(data, target, tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
+    model = tf_wrap.tf_model_top([None,  784], [None,  10], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
     model.restore('../save_data/test_model_save')
     model.test(mnist.test.images, mnist.test.labels)
 #if __name__ == '__main__':

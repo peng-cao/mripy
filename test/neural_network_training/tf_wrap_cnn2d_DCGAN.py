@@ -128,9 +128,7 @@ def tf_error_func( model ):
 
 def test1():
     mnist  = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    image  = tf.placeholder(tf.float32, [None, 28,28,1])
-    z      = tf.placeholder(tf.float32, [None])
-    model  = tf_wrap.tf_model_top({'image':image,'z':z}, None, tf_prediction_func, tf_optimize_func, tf_error_func)
+    model  = tf_wrap.tf_model_top([None, 28,28,1], [None,1], tf_prediction_func, tf_optimize_func, tf_error_func)
     for _ in range(100):
         model.test(mnist.test.images, mnist.test.images)
         for _ in range(100):
@@ -143,9 +141,7 @@ def test1():
 
 def test2():
     mnist   = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
-    image  = tf.placeholder(tf.float32, [None, 28,28,1])
-    z      = tf.placeholder(tf.float32, [None])
-    model   = tf_wrap.tf_model_top({'image':image,'z':z}, None, tf_prediction_func, tf_optimize_func, tf_error_func)
+    model   = tf_wrap.tf_model_top([None, 28,28,1], [None,1], tf_prediction_func, tf_optimize_func, tf_error_func)
     batch_z = np.random.uniform(0,1,(mnist.test.images.shape[0],)).astype(np.float32)
     model.restore('../save_data/test_model_save')
     model.test({'image':mnist.test.images, 'z':batch_z}, None)

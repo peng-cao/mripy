@@ -38,65 +38,8 @@ class GeneratorDistribution(object):
             np.random.random(N) * 0.01
 
 
-def samples(gen_range, batch_size, session, D1, G, x, z, data, num_points=10000, num_bins=100):
-    '''
-    Return a tuple (db, pd, pg), where db is the current decision
-    boundary, pd is a histogram of samples from the data distribution,
-    and pg is a histogram of generated samples.
-    '''
-    xs = np.linspace(-gen_range, gen_range, num_points)
-    bins = np.linspace(-gen_range, gen_range, num_bins)
-
-    # decision boundary
-    db = np.zeros((num_points, 1))
-    for i in range(num_points // batch_size):
-        db[batch_size * i:batch_size * (i + 1)] = session.run(D1, {
-            x: np.reshape(
-                xs[batch_size * i:batch_size * (i + 1)],
-                (batch_size, 1)
-            )
-        })
-
-    # data distribution
-    d = data.sample(num_points)
-    pd, _ = np.histogram(d, bins=bins, density=True)
-
-    # generated samples
-    zs = np.linspace(-gen_range, gen_range, num_points)
-    g = np.zeros((num_points, 1))
-    for i in range(num_points // batch_size):
-        g[batch_size * i:batch_size * (i + 1)] = session.run(G, {
-            z: np.reshape(
-                zs[batch_size * i:batch_size * (i + 1)],
-                (batch_size, 1)
-            )
-        })
-    pg, _ = np.histogram(g, bins=bins, density=True)
-
-    return db, pd, pg
-
-##
-#    db, pd, pg = self._samples(session)
-##
-def _plot_distributions(db, pd, pg, gen_range):
-
-    db_x = np.linspace(-gen_range, gen_range, len(db))
-    p_x  = np.linspace(-gen_range, gen_range, len(pd))
-
-    f, ax = plt.subplots(1)
-    ax.plot(db_x, db, label='decision boundary')
-    ax.set_ylim(0, 1)
-    plt.plot(p_x, pd, label='real data')
-    plt.plot(p_x, pg, label='generated data')
-    plt.title('1D Generative Adversarial Network')
-    plt.xlabel('Data values')
-    plt.ylabel('Probability density')
-    plt.legend()
-    plt.show()
-
-
-NNlayer      = tf_layer()
 """
+NNlayer      = tf_layer()
 # from z to fake image
 def generator( z, h_dim ):
     #out_size = data_size#n_features*data_size//(pool_len**4)
@@ -119,7 +62,7 @@ def discriminator( data, h_dim, reuse = False ):
     return h7
 """
 def linear(input, output_dim, scope=None, stddev=1.0):
-    norm = tf.random_normal_initializer(stddev=stddev)
+    norm  = tf.random_normal_initializer(stddev=stddev)
     const = tf.constant_initializer(0.0)
     with tf.variable_scope(scope or 'linear'):
         w = tf.get_variable('w', [input.get_shape()[1], output_dim], initializer=norm)
@@ -141,77 +84,76 @@ def discriminator(input, h_dim):
     h3 = tf.sigmoid(linear(h2, 1, scope='d3'))
     return h3
 
-def optimizer(loss, var_list, initial_learning_rate):
-    decay = 0.95
+def optimizer( loss, var_list, initial_learning_rate ):
+    decay           = 0.95
     num_decay_steps = 150
-    batch = tf.Variable(0)
-    learning_rate = tf.train.exponential_decay(
+    batch           = tf.Variable(0)
+    learning_rate   = tf.train.exponential_decay(
         initial_learning_rate,
         batch,
         num_decay_steps,
         decay,
-        staircase=True
+        staircase  = True
     )
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(
+    optimizer      = tf.train.GradientDescentOptimizer(learning_rate).minimize(
         loss,
         global_step=batch,
-        var_list=var_list
+        var_list   =var_list
     )
     return optimizer 
 
-class GAN:
-    def __init__( self, batch_size ):
-        self.x = tf.placeholder(tf.float32, shape=(batch_size, 1))
-        self.z = tf.placeholder(tf.float32, shape=(batch_size, 1))
+def tf_prediction_func( model ):
+    h_dim        = 10
+    # z should be sampled from a noise prior, for creating fake image
+    with tf.variable_scope('Gen'):
+        model.z  = tf.placeholder(tf.float32, shape=(model.arg, 1))
+        G        = generator(model.target, h_dim)
+    with tf.variable_scope('Disc') as scope:
+        model.x  = tf.placeholder(tf.float32, shape=(model.arg, 1))
+        D1       = discriminator(model.data, h_dim)
+        scope.reuse_variables()
+        D2       = discriminator(G, h_dim)#
+    return G, D1, D2#tf.nn.softmax(y)
+
+# example of the prediction function, defined using tensorflow lib
+def tf_optimize_func( model ):
+    #run prediction
+    G,D1,D2 = model.prediction
+    model.z = model.data
+    model.x = model.target
+
+    learning_rate = 0.03
+    d_loss  = tf.reduce_mean(-tf.log(D1)-tf.log(1 - D2))
+    g_loss  = tf.reduce_mean(-tf.log(D2))
+    #select variables for g_ and d_, i.e. training generator and discriminator seperately
+    d_vars  = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Disc')
+    g_vars  = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Gen')    
+
+    # selectively do training for generator and discriminator
+    dopt = optimizer(d_loss, d_vars, learning_rate)
+    gopt = optimizer(g_loss, g_vars, learning_rate) 
+    return d_loss,g_loss, dopt, gopt#optimizer.minimize(loss)
+
+# example of the error function, defined using tensorflow lib
+def tf_error_func( model ):
+    #model.arg = 1.0#[1.0, 1.0]
+    #training accuracy
+    G,D1,D2 = model.prediction
+    d_loss = tf.reduce_mean(-tf.log(D1)-tf.log(1 - D2))
+    g_loss = tf.reduce_mean(-tf.log(D2))
+    return d_loss,g_loss
+
+
+class DATA:
+    def __init__( self, x, z, batch_size, G, D1, D2 ):
+        self.x    = x
+        self.z    = z
         self.data = DataDistribution()
         self.gen  = GeneratorDistribution(range=8)
         self.batch_size = batch_size
-        self.creat_model()
-
-
-    def creat_model( self ):
-        h_dim = 10
-        # z should be sampled from a noise prior, for creating fake image
-        with tf.variable_scope('Gen'):
-            #self.z  = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
-            self.G  = generator(self.z, h_dim)
-        with tf.variable_scope('Disc') as scope:
-            #self.x  = tf.placeholder(tf.float32, shape=(self.batch_size, 1))
-            self.D1 = discriminator(self.x, h_dim)
-            scope.reuse_variables()
-            self.D2 = discriminator(self.G, h_dim)#
-        #return G, D1, D2    
-
-        learning_rate = 0.03
-        self.d_loss = tf.reduce_mean(-tf.log(self.D1)-tf.log(1 - self.D2))
-        self.g_loss = tf.reduce_mean(-tf.log(self.D2))
-        #select variables for g_ and d_, i.e. training generator and discriminator seperately
-        #t_vars = tf.trainable_variables()
-        #d_vars = [var for var in t_vars if 'Gen' in var.name]
-        #g_vars = [var for var in t_vars if 'Disc' in var.name]
-        d_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Disc')
-        g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Gen')    
-
-        # selectively do training for generator and discriminator
-        #self.dopt = tf.train.AdamOptimizer(1e-4).minimize(self.d_loss, var_list = d_vars)#, var_list = d_vars
-        #self.gopt = tf.train.AdamOptimizer(1e-4).minimize(self.g_loss, var_list = g_vars)#, var_list = g_vars
-        self.dopt = optimizer(self.d_loss, d_vars, learning_rate)
-        self.gopt = optimizer(self.g_loss, g_vars, learning_rate)    
-
-        #return d_loss, g_loss, doptim, goptim#optimizer.minimize(loss)    
-    def train( self ):
-        with tf.Session() as session:
-            tf.global_variables_initializer().run()
-            for i in range(5200):
-                x         = self.data.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)
-                z         = self.gen.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)        
-
-                loss_d, _ = session.run([self.d_loss, self.dopt], {self.x:x, self.z:z})
-                z         = self.gen.sample(self.batch_size).reshape((self.batch_size,1)).astype(np.float32)            
-                loss_g, _ = session.run([self.g_loss, self.gopt], {self.x:x, self.z:z})
-                print('{}: {}\t{}'.format(i, loss_d, loss_g))
-            self._plot_distributions(session)
-
+        self.G    = G
+        self.D1   = D1
+        self.D2   = D2
 
     def _samples(self, session, num_points=10000, num_bins=100):
         '''
@@ -269,18 +211,21 @@ class GAN:
 
 def test1():
     batch_size = 12  
-    with tf.variable_scope('Disc'):
-        x       = tf.placeholder(tf.float32, shape=(batch_size, 1))
-    with tf.variable_scope('Gen'):
-        z     = tf.placeholder(tf.float32, shape=(batch_size, 1)) 
-    #test_z     = GeneratorDistribution(range=8).sample(batch_size).reshape((batch_size,1)).astype(np.float32)
-    ganinst    = GAN(batch_size)
-    ganinst.train()
-    #batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-    #ut.plotim3(batch_xs.reshape((batch_size,28,28))[0,:,:])
-    #model  = tf_wrap.tf_model_top(data, z, tf_prediction_func, tf_optimize_func, tf_error_func)
-    #model.save('../save_data/test_model_save')
+    model      = tf_wrap.tf_model_top((batch_size, 1), (batch_size, 1), tf_prediction_func, tf_optimize_func, tf_error_func, arg = batch_size, dtype = np.float32)
 
+    d_loss,g_loss, dopt, gopt = model.model_wrap.optimize
+    G, D1, D2                 = model.model_wrap.prediction
+    ganinst                   = DATA(model.data, model.target, batch_size, G, D1, D2)
+    for i in range(1200):
+        x         = ganinst.data.sample(batch_size).reshape((batch_size,1)).astype(np.float32)
+        z         = ganinst.gen.sample(batch_size).reshape((batch_size,1)).astype(np.float32)
+        
+        loss_d, _ = model.sess.run([d_loss, dopt], {model.data:x, model.target:z})
+        z         = ganinst.gen.sample(batch_size).reshape((batch_size,1)).astype(np.float32)      
+        loss_g, _ = model.sess.run([g_loss, gopt], {model.data:x, model.target:z})
+        print('{}: {}\t{}'.format(i, loss_d, loss_g))
+    ganinst._plot_distributions(model.sess)
+    model.save('../save_data/test_model_save')
 #if __name__ == '__main__':
     #test1()
     #test2()

@@ -83,10 +83,10 @@ class tf_model_wrap:
 #define the top level model that contains training and testing functions using tensorflow lib
 class tf_model_top:
     # intialize tensorflow model
-    def __init__( self, data, target, tf_prediction_func, tf_optimize_func, tf_error_func, arg = None ):
+    def __init__( self, data_shape, target_shape, tf_prediction_func, tf_optimize_func, tf_error_func, arg = None, dtype = tf.float32 ):
         # tensorflow style data and target defination, as inputs to model
-        self.data       = data #tf.placeholder(tf.float32, data_shape) # e.g. [None, 784]
-        self.target     = target #tf.placeholder(tf.float32, target_shape) # e.g. [None, 10]
+        self.data       = tf.placeholder(tf.float32, data_shape) #tf.placeholder(tf.float32, data_shape) # e.g. [None, 784]
+        self.target     = tf.placeholder(tf.float32, target_shape) #tf.placeholder(tf.float32, target_shape) # e.g. [None, 10]
          # model first defined in abstract form, which contains prediction, optimize, error functions
         # put data, target and model together
         self.model_wrap = tf_model_wrap(self.data, self.target, tf_prediction_func, tf_optimize_func, tf_error_func, arg)
