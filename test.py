@@ -178,8 +178,8 @@
 #import test.neural_network_training.tfwrap_fc_encoder_t1t2b0 as tfwrap_fc_encoder_t1t2b0
 #tfwrap_fc_encoder_t1t2b0.test()
 
-#import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfartrr as tfwrap_fc_encoder_t1t2b0_randomfartrr
-#tfwrap_fc_encoder_t1t2b0_randomfartrr.test1()
+import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfartrr as tfwrap_fc_encoder_t1t2b0_randomfartrr
+tfwrap_fc_encoder_t1t2b0_randomfartrr.test1()
 #tfwrap_fc_encoder_t1t2b0_randomfartrr.test2()
 
 #import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfartrr as tfwrap_cnn_encoder_t1t2b0_randomfartrr
@@ -192,8 +192,8 @@
 #import test.neural_network_training.gan_example as gan_example
 #gan_example.test1()
 
-import neural_network.zoo.tf_wrap_fc_GAN as tf_wrap_fc_GAN
-tf_wrap_fc_GAN.test1()
+#import neural_network.zoo.tf_wrap_fc_GAN as tf_wrap_fc_GAN
+#tf_wrap_fc_GAN.test1()
 ##########################################################################
 # parallel testing
 ##########################################################################

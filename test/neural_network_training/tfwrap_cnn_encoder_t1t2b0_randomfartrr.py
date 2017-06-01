@@ -52,7 +52,7 @@ def tf_prediction_func( model ):
     # input data shape [-1, cnn_out_size],                  output data shape [-1, target_size]
     y       = NNlayer.full_connection_dropout(y4, model.arg, in_fc_wide = cnn_out_size, out_fc_wide = target_size, activate_type = 'sigmoid')
     # softmax output
-    return tf.nn.sigmoid(y)
+    return y#tf.nn.sigmoid(y)
 
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
@@ -90,9 +90,9 @@ def test1():
     config = tf.ConfigProto()#(device_count = {'GPU': 0})
     #allow tensorflow release gpu memory
     config.gpu_options.allow_growth=True
-
+    Nite   = 2000
     #run for 2000
-    for i in range(2000):
+    for i in range(Nite):
         batch_ys           = np.random.uniform(0,1,(batch_size,4)).astype(np.float64)
         #batch_ys[:,2] = np.zeros(batch_size)
         batch_ys[:,3]      = np.ones(batch_size)
@@ -116,7 +116,7 @@ def test1():
         model.train(batch_xs, batch_ys)
         if i%10 == 0:
             model.test(batch_xs, batch_ys)
-        if i%1000 == 0:
+        if i%1000 == 0 or i >= (Nite - 1):
             model.save('../save_data/MRF_encoder_t1t2b0')
             sio.savemat('../save_data/MRF_far_trr.mat', {'far':far, 'trr':trr})
 

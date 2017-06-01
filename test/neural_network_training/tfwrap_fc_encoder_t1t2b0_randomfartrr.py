@@ -38,7 +38,7 @@ def tf_prediction_func( model ):
                                        out_fc_wide_arr = (data_size//2, data_size//4, data_size//8, data_size//16, data_size//32, target_size),\
                                          activate_type = 'ReLU')
     # softmax output
-    return tf.nn.sigmoid(y)
+    return y#tf.nn.sigmoid(y)
 
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
@@ -58,7 +58,7 @@ def tf_error_func( model ):
 
 #############################
 
-def test():
+def test1():
     Nk     = 960#far.shape[0]
     model  = tf_wrap.tf_model_top( [None,  2 * Nk], [None,  4], tf_prediction_func, tf_optimize_func, tf_error_func)
 
@@ -77,9 +77,10 @@ def test():
     config     = tf.ConfigProto()#(device_count = {'GPU': 0})
     #allow tensorflow release gpu memory
     config.gpu_options.allow_growth=True
-
+    
+    Nite       = 2000
     #run for 2000
-    for i in range(2000):
+    for i in range(Nite):
         batch_ys           = np.random.uniform(0,1,(batch_size,4)).astype(np.float64)
         #batch_ys[:,2] = np.zeros(batch_size)
         batch_ys[:,3]      = np.ones(batch_size)
@@ -101,7 +102,7 @@ def test():
         model.train(batch_xsnoise, batch_ys)
         if i%10 == 0:
             model.test(batch_xsnoise, batch_ys)
-        if i%1000 == 0:
+        if i%1000 == 0 or i >= (Nite - 1):
             model.save('../save_data/MRF_encoder_t1t2b0')
             sio.savemat('../save_data/MRF_far_trr.mat', {'far':far, 'trr':trr})
 
