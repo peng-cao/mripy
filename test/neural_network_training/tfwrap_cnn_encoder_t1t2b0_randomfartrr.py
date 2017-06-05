@@ -11,6 +11,7 @@ import scipy.io as sio
 import os
 import tensorflow as tf
 import bloch_sim.sim_seq_MRF_irssfp_cuda as ssmrf
+import utilities.utilities_func as ut
 
 pathdat  = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
 pathexe  = '/home/pcao/git/mripy/test/neural_network_training/'
@@ -34,13 +35,13 @@ def tf_prediction_func( model ):
     cnn_out_size     = cnn_n_features*mid_size//(cnn_pool1d_len**2)
     # one full connection layer
     # input data shape [-1, data_size],                     output data shape [-1, mid_size]
-    y1      = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size, activate_type = 'sigmoid')
+    y1      = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size, activate_type = 'ReLU')
     # input data shape [-1,  mid_size], output data shape [-1, mid_size, 1, 1]
     y1_4d   = tf.reshape(y1, [-1,mid_size,1,1]) #reshape into 4d tensor
     # input data shape [-1,  mid_size, 1, 1],               output data shape [-1, mid_size/2, 1, cnn_n_feature]
-    y2      = NNlayer.convolution2d(y1_4d, cov_ker_size = (5,1), in_n_features = 1, out_n_features = cnn_n_features, pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'sigmoid')
+    y2      = NNlayer.convolution2d(y1_4d, cov_ker_size = (5,1), in_n_features = 1, out_n_features = cnn_n_features, pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'ReLU')
     # input data shape [-1,  mid_size/2, 1, cnn_n_feature], output data shape [-1, mid_size/4, 1, cnn_n_feature]
-    y3      = NNlayer.convolution2d(y2,    cov_ker_size = (5,1), in_n_features = cnn_n_features, out_n_features = cnn_n_features, pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'sigmoid')
+    y3      = NNlayer.convolution2d(y2,    cov_ker_size = (5,1), in_n_features = cnn_n_features, out_n_features = cnn_n_features, pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'ReLU')
     # input data shape [-1,  mid_size/4, 1, cnn_n_feature], output data shape [-1, cnn_out_size=cnn_n_features*mid_size//4]
     #y3      = NNlayer.multi_convolution2d(y1_4d, cov_ker_size = (5,1), n_cnn_layer = 2, \
     #            in_n_features_arr = (1,              cnn_n_features), \
@@ -48,7 +49,7 @@ def tf_prediction_func( model ):
     #               pool_size = [1, cnn_pool1d_len, 1, 1], activate_type = 'None')
     y3_flat = tf.reshape(y3, [-1, cnn_out_size]) #flatten
     # input data shape [-1, cnn_out_size],                  output data shape [-1, cnn_out_size]
-    y4      = NNlayer.full_connection(y3_flat, in_fc_wide = cnn_out_size, out_fc_wide = cnn_out_size, activate_type = 'sigmoid')
+    y4      = NNlayer.full_connection(y3_flat, in_fc_wide = cnn_out_size, out_fc_wide = cnn_out_size, activate_type = 'ReLU')
     # input data shape [-1, cnn_out_size],                  output data shape [-1, target_size]
     y       = NNlayer.full_connection_dropout(y4, model.arg, in_fc_wide = cnn_out_size, out_fc_wide = target_size, activate_type = 'sigmoid')
     # softmax output
@@ -110,12 +111,12 @@ def test1():
         batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)
 
         #input with noise
-        #batch_xsnoise = batch_xs  + np.random.uniform(-0.01,0.01,(batch_size,2*Nk))
+        batch_xsnoise = batch_xs  + np.random.uniform(-0.1,0.1,(batch_size,2*Nk))
 
         #train_step.run(feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
-        model.train(batch_xs, batch_ys)
+        model.train(batch_xsnoise, batch_ys)
         if i%10 == 0:
-            model.test(batch_xs, batch_ys)
+            model.test(batch_xsnoise, batch_ys)
         if i%1000 == 0 or i >= (Nite - 1):
             model.save('../save_data/MRF_encoder_t1t2b0')
             sio.savemat('../save_data/MRF_far_trr.mat', {'far':far, 'trr':trr})
@@ -158,3 +159,5 @@ def test2():
     prey = model.prediction(batch_xsnoise,np.zeros(batch_ys.shape))
     model.test(batch_xsnoise, batch_ys)
     ut.plot(prey[...,0], batch_ys[...,0], line_type = '.')
+    ut.plot(prey[...,1], batch_ys[...,1], line_type = '.')
+    ut.plot(prey[...,2], batch_ys[...,2], line_type = '.')

@@ -61,18 +61,18 @@ def discriminator( data, h_dim, reuse = False ):
     h7      = NNlayer.full_connection(h3,   out_fc_wide = 1, scope='d7', activate_type = 'sigmoid', w_stddev = 1.0) 
     return h7
 """
-def linear(input, output_dim, scope=None, stddev=0.3):
+def linear(input, output_dim, scope=None, stddev=0.1):
     norm  = tf.random_normal_initializer(stddev=stddev)
     const = tf.constant_initializer(0.0)
     with tf.variable_scope(scope or 'linear'):
-        w = tf.get_variable('w', [input.get_shape()[1], output_dim], initializer=norm)
+        w = tf.get_variable('w', [input.get_shape().as_list()[1], output_dim], initializer=norm)
         b = tf.get_variable('b', [output_dim], initializer=const)
         return tf.matmul(input, w) + b
 
 
 def generator(input, h_dim):
     h0 = tf.nn.softplus(linear(input, h_dim, 'g0'))
-    h1 = linear(h0, 1, 'g1')
+    h1 = linear(h0, 28*28, 'g1')
     return h1
 
 
@@ -83,6 +83,49 @@ def discriminator(input, h_dim):
 
     h3 = tf.sigmoid(linear(h2, 1, scope='d3'))
     return h3
+
+"""
+# from z to fake image
+def generator( z, h_dim ):
+    NNlayer     = tf_layer()
+    #data_size   = int(z.get_shape()[1])
+    #im_shape    = (int(z.get_shape()[1]), int(z.get_shape()[2]))
+    #target_size = int(model.target.get_shape()[1])
+    pool_len    = 2
+    n_features  = 32
+    ksize       = (5,5)
+    #out_size = data_size#n_features*data_size//(pool_len**4)
+    y1      = NNlayer.full_connection(z, in_fc_wide = 1, out_fc_wide = 7*7*n_features, activate_type = 'ReLU')
+    # input data shape [-1,  mid_size], output data shape [-1, mid_size, 1, 1]
+    y1_4d   = tf.reshape(y1, [-1,7,7,n_features]) #reshape into 4d tensor
+    #y1_4d    = tf.reshape(model.data, [-1,im_shape[0],im_shape[1],1]) #reshape into 4d tensor
+    # input size   [-1, im_shape[0],          im_shape[1],          n_features ]
+    # output size  [-1, im_shape[0]*pool_len, im_shape[1]*pool_len, n_features ]
+    h2      = NNlayer.multi_deconvolution2d(y1_4d, cov_ker_size = ksize, n_cnn_layers = 1, \
+                                           in_n_features_arr  = (n_features,), \
+                                           out_n_features_arr = (2*n_features,), \
+                                           conv_strides = [1, pool_len, pool_len, 1], activate_type = 'ReLU')
+    h3      = NNlayer.deconvolution2d(h2, cov_ker_size = ksize, in_n_features = 2*n_features, \
+                                    out_n_features = 1, \
+                                    conv_strides = [1, pool_len, pool_len, 1], activate_type = 'tanh')
+    y   = tf.reshape(h3, [-1,28*28])
+    return h3
+
+# from x to label or logits
+def discriminator( x, h_dim ):
+    NNlayer      = tf_layer()
+    pool_len     = 2
+    n_features   = 32
+    ksize        = (5,5)
+    cnn_out_size = 2*n_features*(28*28)//(pool_len**4)
+    y1_4d   = tf.reshape(x, [-1,28,28,1])
+    h1      = NNlayer.multi_convolution2d(y1_4d, cov_ker_size = ksize, n_cnn_layers = 2, \
+                                           in_n_features_arr  = (1,            n_features), \
+                                           out_n_features_arr = ( n_features, 2*n_features), \
+                                           pool_size = [1, pool_len, pool_len, 1], activate_type = 'ReLU')
+    y2      = tf.reshape(h1, [-1, cnn_out_size]) #flatten
+    y3      = NNlayer.full_connection(y2, in_fc_wide = cnn_out_size, out_fc_wide = 1, activate_type = 'sigmoid')
+    return y3
 
 def optimizer( loss, var_list, initial_learning_rate ):
     decay           = 0.95
@@ -104,19 +147,24 @@ def optimizer( loss, var_list, initial_learning_rate ):
 
 def tf_prediction_func( model ):
     h_dim        = 10
-    # z should be sampled from a noise prior, for creating fake image
+    # z should be sampled from a noise prior, for creating fake x
     with tf.variable_scope('Gen'):
+        #model.z  = tf.placeholder(tf.float32, shape=(model.arg, 1))
         G        = generator(model.target, h_dim)
     with tf.variable_scope('Disc') as scope:
+        #model.x  = tf.placeholder(tf.float32, shape=(model.arg, 28*28))
         D1       = discriminator(model.data, h_dim)
         scope.reuse_variables()
         D2       = discriminator(G, h_dim)#
     return G, D1, D2#tf.nn.softmax(y)
+"""
 
 # example of the prediction function, defined using tensorflow lib
 def tf_optimize_func( model ):
     #run prediction
     G,D1,D2 = model.prediction
+    #model.z = model.data
+    #model.x = model.target
 
     learning_rate = 0.03
     d_loss  = tf.reduce_mean(-tf.log(D1)-tf.log(1 - D2))
@@ -139,89 +187,35 @@ def tf_error_func( model ):
     g_loss = tf.reduce_mean(-tf.log(D2))
     return d_loss,g_loss
 
-
-class DATA:
-    def __init__( self, x, z, batch_size, G, D1, D2 ):
-        self.x    = x
-        self.z    = z
-        self.data = DataDistribution()
-        self.gen  = GeneratorDistribution(range=8)
-        self.batch_size = batch_size
-        self.G    = G
-        self.D1   = D1
-        self.D2   = D2
-
-    def _samples(self, session, num_points=10000, num_bins=100):
-        '''
-        Return a tuple (db, pd, pg), where db is the current decision
-        boundary, pd is a histogram of samples from the data distribution,
-        and pg is a histogram of generated samples.
-        '''
-        xs = np.linspace(-self.gen.range, self.gen.range, num_points)
-        bins = np.linspace(-self.gen.range, self.gen.range, num_bins)
-
-        # decision boundary
-        db = np.zeros((num_points, 1))
-        for i in range(num_points // self.batch_size):
-            db[self.batch_size * i:self.batch_size * (i + 1)] = session.run(self.D1, {
-                self.x: np.reshape(
-                    xs[self.batch_size * i:self.batch_size * (i + 1)],
-                    (self.batch_size, 1)
-                )
-            })
-
-        # data distribution
-        d = self.data.sample(num_points)
-        pd, _ = np.histogram(d, bins=bins, density=True)
-
-        # generated samples
-        zs = np.linspace(-self.gen.range, self.gen.range, num_points)
-        g = np.zeros((num_points, 1))
-        for i in range(num_points // self.batch_size):
-            g[self.batch_size * i:self.batch_size * (i + 1)] = session.run(self.G, {
-                self.z: np.reshape(
-                    zs[self.batch_size * i:self.batch_size * (i + 1)],
-                    (self.batch_size, 1)
-                )
-            })
-        pg, _ = np.histogram(g, bins=bins, density=True)
-
-        return db, pd, pg
-
-    def _plot_distributions(self, session):
-        db, pd, pg = self._samples(session)
-        db_x = np.linspace(-self.gen.range, self.gen.range, len(db))
-        p_x = np.linspace(-self.gen.range, self.gen.range, len(pd))
-        f, ax = plt.subplots(1)
-        ax.plot(db_x, db, label='decision boundary')
-        ax.set_ylim(0, 1)
-        plt.plot(p_x, pd, label='real data')
-        plt.plot(p_x, pg, label='generated data')
-        plt.title('1D Generative Adversarial Network')
-        plt.xlabel('Data values')
-        plt.ylabel('Probability density')
-        plt.legend()
-        plt.show()
-
 #############################
 
 def test1():
-    batch_size = 12  
-    model      = tf_wrap.tf_model_top((batch_size, 1), (batch_size, 1), tf_prediction_func, tf_optimize_func, tf_error_func, arg = batch_size, dtype = np.float32)
-
+    mnist      = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
+    batch_size = 200  
+    model      = tf_wrap.tf_model_top([None,  784], [None, 1],\
+                                       tf_prediction_func, tf_optimize_func, tf_error_func, \
+                                       arg = batch_size, dtype = np.float32)
     d_loss,g_loss, dopt, gopt = model.model_wrap.optimize
     G, D1, D2                 = model.model_wrap.prediction
-    ganinst                   = DATA(model.data, model.target, batch_size, G, D1, D2)
     for i in range(1200):
-        x         = ganinst.data.sample(batch_size).reshape((batch_size,1)).astype(np.float32)
-        z         = ganinst.gen.sample(batch_size).reshape((batch_size,1)).astype(np.float32)
+        x, y      = mnist.train.next_batch(batch_size)
+        z         = np.random.uniform(0,1,(batch_size,1)).astype(np.float32)
         
         loss_d, _ = model.sess.run([d_loss, dopt], {model.data:x, model.target:z})
-        z         = ganinst.gen.sample(batch_size).reshape((batch_size,1)).astype(np.float32)      
+        z         = np.random.uniform(0,1,(batch_size,1)).astype(np.float32)
         loss_g, _ = model.sess.run([g_loss, gopt], {model.data:x, model.target:z})
         print('{}: {}\t{}'.format(i, loss_d, loss_g))
-    ganinst._plot_distributions(model.sess)
+        if i%1000 == 0:
+            getG      = model.sess.run(G, {model.data:x, model.target:z}).reshape((batch_size,28,28))
+            ut.plotim3(sum(getG,0))
     model.save('../save_data/test_model_save')
+
+#def test2():
+#    mnist   = input_data.read_data_sets('./data/MNIST_data/', one_hot=True)
+#    model   = tf_wrap.tf_model_top([None, 28,28,1], [None,1], tf_prediction_func, tf_optimize_func, tf_error_func)
+#    batch_z = np.random.uniform(0,1,(mnist.test.images.shape[0],)).astype(np.float32)
+#    model.restore('../save_data/test_model_save')
+#    model.test({'image':mnist.test.images, 'z':batch_z}, None)
 #if __name__ == '__main__':
     #test1()
     #test2()

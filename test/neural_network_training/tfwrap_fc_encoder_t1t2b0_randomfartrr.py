@@ -29,7 +29,7 @@ def tf_prediction_func( model ):
     NNlayer     = tf_layer()
     data_size   = int(model.data.get_shape()[1])
     target_size = int(model.target.get_shape()[1])
-    mid_size    = 256*5
+    mid_size    = 960*5
     # one full connection layer
     #y1 = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size,    activate_type = 'ReLU')
     #y  = NNlayer.full_connection(y1,         in_fc_wide = mid_size,  out_fc_wide = target_size, activate_type = 'ReLU')
@@ -98,7 +98,7 @@ def test1():
         batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)
 
         #input with noise
-        batch_xsnoise = batch_xs  + np.random.uniform(-0.1,0.1,(batch_size,2*Nk))
+        batch_xsnoise = batch_xs  + np.random.uniform(-0.05,0.05,(batch_size,2*Nk))
         model.train(batch_xsnoise, batch_ys)
         if i%10 == 0:
             model.test(batch_xsnoise, batch_ys)
@@ -140,7 +140,9 @@ def test2():
     batch_xs[:,0:Nk] = np.real(batch_xs_c)
     batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)
     #input with noise
-    batch_xsnoise = batch_xs  + np.random.uniform(-0.1,0.1,(batch_size,2*Nk))
+    batch_xsnoise = batch_xs  + np.random.uniform(-0.05,0.05,(batch_size,2*Nk))
     prey = model.prediction(batch_xsnoise,np.zeros(batch_ys.shape))
     model.test(batch_xsnoise, batch_ys)
     ut.plot(prey[...,0], batch_ys[...,0], line_type = '.')
+    ut.plot(prey[...,1], batch_ys[...,1], line_type = '.')
+    ut.plot(prey[...,2], batch_ys[...,2], line_type = '.')
