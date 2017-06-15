@@ -31,7 +31,7 @@ def test():
     #create mask
     mask = ut.mask2d( nx, ny, center_r = 15, undersampling = 0.25 )
     FTm  = opts.FFT2d_kmask(mask)
-    #ut.plotim1(np.absolute(mask))#plot the mask
+    ut.plotim1(np.absolute(mask))#plot the mask
     Aopt = opts.joint2operators(esp, FTm)
     #create image
     im   = FTm.backward(x)

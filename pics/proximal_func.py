@@ -238,7 +238,7 @@ def grad_prox_l2_Afxnb(Afunc,invAfunc, b,x, x0,rho):
 gadient desent for minimizing f(x) = ||Afunc(x)-b||_2^2+(rho/2)*||x-x0||_2^2
 """
 def prox_l2_Afxnb_GD( Afunc, invAfunc, b, x0, rho, Nite, step ):
-    x = np.zeros(x0.shape)
+    x = x0#np.zeros(x0.shape)
     eps = 0.001
     r = -2*invAfunc(-b)+rho*x0#zero as intial guess #-2*invAfunc(Afunc(x0)-b)#x=x0 as intial guess, i.e. here r=df(x0)
     delta = np.linalg.norm(r)
@@ -255,7 +255,7 @@ def prox_l2_Afxnb_GD( Afunc, invAfunc, b, x0, rho, Nite, step ):
 
 # defined gradient df(x) inside
 def prox_l2_Afxnb_GD2( Afunc, invAfunc, b, x0, rho, Nite, step ):
-    x = np.zeros(x0.shape)
+    x = x0#np.zeros(x0.shape)
     def df(xi):
         return 2*invAfunc(Afunc(xi)-b)+rho*(xi-x0)
     eps = 0.001

@@ -50,13 +50,13 @@ def test():
     ut.plotim1(np.absolute(Aopt.backward(b))) #undersampled imag
 
     #do cs mri recon
-    Nite = 20 #number of iterations
+    Nite = 40 #number of iterations
     step = 0.5 #step size
     tv_r = 0.002 # regularization term for tv term
     rho  = 1.0
     #th   = 1 #threshold
     #xopt = solvers.IST_2(FTm.forward,FTm.backward,b, Nite, step,th) #soft thresholding
-    xopt = solvers.ADMM_l2Afxnb_tvx( Aopt.forward, Aopt.backward, b, Nite, step, tv_r, rho )
+    xopt = solvers.ADMM_l2Afxnb_tvx( Aopt.forward, Aopt.backward, b, Nite, step, tv_r, rho)
     #xopt = solvers.ADMM_l2Afxnb_l1x_2( FTm.forward, FTm.backward, b, Nite, step, 100, 1 )
 
     ut.plotim3(np.absolute(xopt))

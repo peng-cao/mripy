@@ -24,6 +24,7 @@ def test():
     #do espirit2d  
     Vim, sim = espirit_2d(xcrop, x.shape,\
      nsingularv = 150, hkwin_shape = (16,16,16), pad_before_espirit = 0, pad_fact = 2 )
+    ut.plotim3(np.absolute(Vim))
     esp = opts.espirit(Vim)
     esp_im = esp.backward(im)
     ut.plotim1(np.absolute(esp_im))

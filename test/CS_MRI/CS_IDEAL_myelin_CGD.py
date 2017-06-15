@@ -140,11 +140,11 @@ def test():
         if i%1 == 0:
             nxpar = xpar + ostep*dxpar
             nxpar[...,1] = 10*nxpar[...,1]
-            ut.plotim3(np.absolute(nxpar)[...,0:2],colormap='viridis', bar=1)
+            ut.plotim3(np.absolute(nxpar)[...,0:2],colormap='viridis', bar=1, vmin = 0, vmax = 1)
             ut.plotim3(b0_gain * np.real(nxpar)[...,2],colormap='viridis',bar=1)
             ut.plotim3(np.imag(nxpar)[...,2],colormap='viridis',bar=1)
             ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1)
-            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1)
+            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1, vmin = 0, vmax = 0.01)
             sio.savemat('cs_IDEAL.mat', {'xpar': xpar, 'residual': residual})
         xpar = xpar + ostep*dxpar#.astype(np.float64)   
 

@@ -11,11 +11,11 @@ from skimage.restoration import unwrap_phase
 #from unwrap import unwrap
 
 def unwrap_freq( im ):
-    max_im    = ut.scaling(np.absolute(im))
+    max_im    = 0.8*ut.scaling(np.absolute(im))
     scaled_im = (im)/max_im*np.pi
-    #ut.plotim1(im)
-    im  = unwrap_phase(scaled_im.astype(np.float))/np.pi*max_im
-    ut.plotim1(np.real(im),bar=1)
+    ut.plotim1(im, bar = 1)
+    im  = unwrap_phase(scaled_im)/np.pi*max_im
+    ut.plotim1(im,bar=1)
     return im
 
 def test():
@@ -55,7 +55,7 @@ def test():
         xpar = xpar + ostep * dxpar#.astype(np.float64)   
         #xpar[:,:,2] = np.real(xpar[:,:,2])
         #if i > 0: 
-        #    xpar[:,:,2] = np.real(unwrap_freq(np.real(xpar[:,:,2])))\
+        #    xpar[:,:,2] = unwrap_freq(np.real(xpar[:,:,2]))\
         #    +1j*(np.imag(xpar[:,:,2]))
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual    = IDEAL.residual(b)

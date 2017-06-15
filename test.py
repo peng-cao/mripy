@@ -28,7 +28,6 @@
 #import test.MRI_recon.test_uterecon as test_uterecon
 #test_uterecon.test()
 
-
 #import test.espirit.espirit_2d as espirit_2d
 #espirit_2d.test()
 
@@ -119,8 +118,8 @@
 #import test.CS_MRI.L2_IDEAL_FT as L2_IDEAL_FT
 #L2_IDEAL_FT.test()
 
-#import test.CS_MRI.L2_IDEAL_orig as L2_IDEAL_orig
-#L2_IDEAL_orig.test()
+import test.CS_MRI.L2_IDEAL_orig as L2_IDEAL_orig
+L2_IDEAL_orig.test()
 
 ##########################################################################
 # MRI sequence simulation testing
@@ -178,9 +177,9 @@
 #import test.neural_network_training.tfwrap_fc_encoder_t1t2b0 as tfwrap_fc_encoder_t1t2b0
 #tfwrap_fc_encoder_t1t2b0.test()
 
-import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfartrr as tfwrap_fc_encoder_t1t2b0_randomfartrr
+#import test.neural_network_training.tfwrap_fc_encoder_t1t2b0_randomfartrr as tfwrap_fc_encoder_t1t2b0_randomfartrr
 #tfwrap_fc_encoder_t1t2b0_randomfartrr.test1()
-tfwrap_fc_encoder_t1t2b0_randomfartrr.test2()
+#tfwrap_fc_encoder_t1t2b0_randomfartrr.test2()
 
 #import test.neural_network_training.tfwrap_cnn_encoder_t1t2b0_randomfartrr as tfwrap_cnn_encoder_t1t2b0_randomfartrr
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test1()

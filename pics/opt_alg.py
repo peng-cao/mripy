@@ -159,12 +159,12 @@ grad = params.WT'*G;
 """
 def grad_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-1):
     Tx = Tsparse_opt.backward(x)#transfer to sparse space
-    G = norm_p*np.divide((Tx), ((np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
+    G = norm_p*np.divide((Tx), (np.absolute(np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
     return Tsparse_opt.forward(G)
 
 def obj_sparsity(Tsparse_opt, x, norm_p=1.0, l1smooth = 5e-1):
     Tx =  Tsparse_opt.backward(x)
-    return np.sum(((np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
+    return np.sum((np.absolute(np.multiply(Tx, np.conj(Tx)))+l1smooth)**(norm_p/2.0))
 """
 guass newton method
 inspired by python code on https://github.com/basil-conto/gauss-newton/blob/master/gaussnewton.py

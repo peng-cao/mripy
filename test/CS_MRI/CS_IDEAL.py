@@ -13,7 +13,7 @@ import test.MRI_recon.IDEAL_class as idealc
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('data/kellman_data/PKdata1.mat', struct_as_record=False, squeeze_me=True)
+    mat_contents = sio.loadmat('data/kellman_data/PKdata3.mat', struct_as_record=False, squeeze_me=True)
     xdata        = mat_contents["data"] 
     im           = xdata.images
     field        = xdata.FieldStrength
@@ -69,13 +69,13 @@ def test():
     #    dxpar = solvers.IST_3( Aideal_ftm.forward, Aideal_ftm.backward,\
     #                Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, th )
         #wavelet L1 ADMM
-        dxpar = solvers.ADMM_l2Afxnb_l1Tfx( Aideal_ftm.forward, Aideal_ftm.backward, \
-                   Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, l1_r, rho, 200 )
+    #    dxpar = solvers.ADMM_l2Afxnb_l1Tfx( Aideal_ftm.forward, Aideal_ftm.backward, \
+    #               Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, l1_r, rho, 200 )
         # TV ADMM
     #    dxpar = solvers.ADMM_l2Afxnb_tvx( Aideal_ftm.forward, Aideal_ftm.backward, residual\
     #    	, Nite, step, tv_r, rho, 15 ) 
-    #    dxpar = solvers.ADMM_l2Afxnb_tvTfx( Aideal_ftm.forward, Aideal_ftm.backward, \
-    #               Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, l1_r, rho, 25 )
+        dxpar = solvers.ADMM_l2Afxnb_tvTfx( Aideal_ftm.forward, Aideal_ftm.backward, \
+                   addx.backward, addx.forward, residual, Nite, step, l1_r, rho, 200 )
 
         # L2 CGD
     #    dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, rho, Nite )

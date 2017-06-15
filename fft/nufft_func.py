@@ -1116,7 +1116,7 @@ output:
 the nufft result, output dim is ms X mt X mu
 """
 # 3d nufft type 1
-def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
     #try to override nspread
@@ -1251,7 +1251,7 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gri
     np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
 
-def test():
+#def test():
     #test nudft
     #nufft_test_func.time_nufft1d1(nudft1d1, 16, 1280)
     #nufft_test_func.time_nufft2d1(nudft2d1,64,64,5120)
@@ -1276,5 +1276,5 @@ def test():
     #nufft_test_func.compare_nufft1d21(nufft1d1_gaussker, nufft1d21_gaussker, 128, 100000,1)
     #nufft_test_func.compare_nufft2d21(nufft2d1_gaussker, nufft2d21_gaussker,16,16,25000,1)
     #nufft_test_func.compare_nufft3d21(nufft3d1_gaussker, nufft3d21_gaussker,16,16,8,20480,1)
-if __name__ == "__main__":
-    test()
+#if __name__ == "__main__":
+#    test()

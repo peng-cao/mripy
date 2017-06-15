@@ -21,7 +21,7 @@ def test():
 
     mask = ut.mask2d( nx, ny, center_r = 15 )
     FTm = opts.FFT2d_kmask(mask)
-    #ut.plotim1(np.absolute(mask))#plot the mask
+    ut.plotim1(np.absolute(mask))#plot the mask
 
     # undersampling in k-space
     b = FTm.forward(im)

@@ -7,13 +7,14 @@ from math import ceil
 """
 # color image plot
 """
-def plotim1( im, colormap = None, title = None, bar = None ):
+def plotim1( im, colormap = None, title = None, bar = None, vmin = None, vmax = None ):
     im = np.flip(im,0)
     fig, ax = plt.subplots()
+
     if colormap is None:
-        cax = ax.imshow(im, cmap = cm.gray, origin='lower', interpolation='none')
+        cax = ax.imshow(im, cmap = cm.gray, origin='lower', interpolation='none', vmin = vmin, vmax = vmax)
     else:
-        cax = ax.imshow(im, cmap = colormap, origin='lower', interpolation='none')
+        cax = ax.imshow(im, cmap = colormap, origin='lower', interpolation='none', vmin = vmin, vmax = vmax)
     ax.axis('off')
     if title is not None:
         ax.set_title(title)
@@ -43,7 +44,7 @@ def subplot( im1, im2, colormap = None, title = None, bar = None ):
 # color image plot, 3d input
 # concatenate image along the third dim
 """
-def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
+def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None, vmin = None, vmax = None ):
     im = np.flip(im,0)
     nx,ny,nz = im.shape
 
@@ -77,9 +78,9 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
     fig, ax = plt.subplots()
     #ax.imshow(imcat)
     if colormap is None:
-        cax = ax.imshow(imcat, cmap = cm.gray, origin='lower', interpolation='none')
+        cax = ax.imshow(imcat, cmap = cm.gray, origin='lower', interpolation='none', vmin = vmin, vmax = vmax)
     else:
-        cax = ax.imshow(imcat, cmap = colormap, origin='lower', interpolation='none')
+        cax = ax.imshow(imcat, cmap = colormap, origin='lower', interpolation='none', vmin = vmin, vmax = vmax)
     ax.axis('off')
     if title is not None:
         ax.set_title(title)
@@ -88,12 +89,12 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None )
     plt.show()
     return
 
-def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None ):
+def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None, vmin = None, vmax = None ):
     #im = np.matrix(im)
     if len(im.shape)   == 3:
-        catplotim(im, catdim = catdim , colormap = colormap, title = title, bar = bar)
+        catplotim(im, catdim = catdim , colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax)
     elif len(im.shape) == 2:
-        plotim1(im, colormap = colormap, title = title, bar = bar )
+        plotim1(im, colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax )
     return
 
 """
