@@ -94,8 +94,8 @@
 #import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
 #cs_MRF_CNN_IST_cuda.test()
 
-#import test.CS_MRI.cs_MRF_CNN_IST_1p5_cuda as cs_MRF_CNN_IST_1p5_cuda
-#cs_MRF_CNN_IST_1p5_cuda.test()
+import test.CS_MRI.cs_MRF_CNN_IST_1p5_cuda as cs_MRF_CNN_IST_1p5_cuda
+cs_MRF_CNN_IST_1p5_cuda.test()
 
 #import test.CS_MRI.cs_MRF_CNN_IST_2_cuda as cs_MRF_CNN_IST_2_cuda
 #cs_MRF_CNN_IST_2_cuda.test()
@@ -118,8 +118,8 @@
 #import test.CS_MRI.L2_IDEAL_FT as L2_IDEAL_FT
 #L2_IDEAL_FT.test()
 
-import test.CS_MRI.L2_IDEAL_orig as L2_IDEAL_orig
-L2_IDEAL_orig.test()
+#import test.CS_MRI.L2_IDEAL_orig as L2_IDEAL_orig
+#L2_IDEAL_orig.test()
 
 ##########################################################################
 # MRI sequence simulation testing

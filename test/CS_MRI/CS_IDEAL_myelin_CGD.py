@@ -39,7 +39,7 @@ def test():
     field        = 3.0
     fat_freq_arr = (1.0/b0_gain) * 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
-    print(b0_gain/1000 * TE)
+    print(1000/b0_gain * TE)
     #ut.plotim3(np.absolute(im[:,:,-10:-1]),[4,-1])
 
     nx,ny,nte  = im.shape
@@ -89,23 +89,23 @@ def test():
     #Adwt_addx   = opts.joint2operators(dwt, addx)
 
     #CGD
-    Nite  = 100
+    Nite  = 400
     l1_r1 = 0.01
     l1_r2 = 0.01
     def f(xi):
         #return np.linalg.norm(Aideal_ftm.forward(xi)-residual)
         return alg.obj_fidelity(Aideal_ftm, xi, residual) \
         + l1_r1 * alg.obj_sparsity(Adwt_addx_w, xi[...,0])\
-        + l1_r1 * alg.obj_sparsity(Adwt_addx_f, xi[...,1])\
-        + l1_r2 * alg.obj_sparsity(Adwt_addx_dwat, xi[...,2])\
+        + l1_r2 * alg.obj_sparsity(Adwt_addx_f, xi[...,1])\
+        + l1_r1 * alg.obj_sparsity(Adwt_addx_dwat, xi[...,2])\
         + l1_r2 * alg.obj_sparsity(Adwt_addx_dfat, xi[...,3])
 
     def df(xi):
         #return 2*Aideal_ftm.backward(Aideal_ftm.forward(xi)-residual)
         gradall = alg.grad_fidelity(Aideal_ftm, xi, residual)
         gradall[...,0] += l1_r1 * alg.grad_sparsity(Adwt_addx_w, xi[...,0])
-        gradall[...,1] += l1_r1 * alg.grad_sparsity(Adwt_addx_f, xi[...,1])
-        gradall[...,2] += l1_r2 * alg.grad_sparsity(Adwt_addx_dwat, xi[...,2]) 
+        gradall[...,1] += l1_r2 * alg.grad_sparsity(Adwt_addx_f, xi[...,1])
+        gradall[...,2] += l1_r1 * alg.grad_sparsity(Adwt_addx_dwat, xi[...,2]) 
         gradall[...,3] += l1_r2 * alg.grad_sparsity(Adwt_addx_dfat, xi[...,3]) 
 
         return gradall
@@ -144,7 +144,7 @@ def test():
             ut.plotim3(b0_gain * np.real(nxpar)[...,2],colormap='viridis',bar=1)
             ut.plotim3(np.imag(nxpar)[...,2],colormap='viridis',bar=1)
             ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1)
-            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1, vmin = 0, vmax = 0.01)
+            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1, vmin = 0, vmax = 0.02)
             sio.savemat('cs_IDEAL.mat', {'xpar': xpar, 'residual': residual})
         xpar = xpar + ostep*dxpar#.astype(np.float64)   
 

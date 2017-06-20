@@ -130,26 +130,32 @@ def test():
     # intial tmp data
     test_outy0    = np.zeros((Nexample,4),dtype=np.float64)
     test_outy     = np.zeros((Nexample,4),dtype=np.float64)
-
+    step          = 1.0
     # for loop start here
     for _ in range(40):
-        #cuda bloch simulation for each pixel, parameters-->x
-        T1r, T2r, dfr, PDr = ssmrf.set_par(test_outy)
-        #timing.start()
-        data_x_c      = ssmrf.bloch_sim_batch_cuda( Nexample, 7*ny, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
+        for _ in range(10):
+            ssmrf.batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy, keep_prob )                
+            #cuda bloch simulation for each pixel, parameters-->x
+            T1r, T2r, dfr, PDr = ssmrf.set_par(test_outy)
+            #timing.start()
+            data_x_c      = ssmrf.bloch_sim_batch_cuda( Nexample, 7*ny, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
+            print(np.linalg.norm(data_x_c - ssmrf.seqdata_realimag_2complex(data_x_acc)))
+            print(np.linalg.norm(data_x_c))
+            data_x_acc    = ssmrf.seqdata_complex_2realimag(data_x_c)            
         #timing.stop().display('Bloch sim in loop ')
         #0.5* d||M*FT(x)-b||_2^2/dx = 2 * FT^-1(M*(FT(x) - b))
         # lamda * d(x^2)/dx = 2*lambda*x
         data_x_c      = mask_ksp3d(nx, ny, Nk, FTm, data_x_c - data_x0_c)#data_x_c-data_x0_c#
         # gradient descent/update
         data_x_acc    = data_x_acc - step*ssmrf.seqdata_complex_2realimag(data_x_c)
+        #data_x_c   = data_x_c - mask_ksp3d(nx, ny, Nk, FTm, data_x_c) + data_x0_c
+        #data_x_acc = ssmrf.seqdata_complex_2realimag(data_x_c)
         #data_x_c      = (wavel1_data(nx, ny, ssmrf.seqdata_realimag_2complex(data_x_acc)))
         # apply CNN model, x-->parameters
-        ssmrf.batch_apply_tf_cuda( Nexample, ny, sess.run, x, data_x_acc, y_conv, test_outy, keep_prob )
-        test_outy     = constraints( test_outy )
         print('gradient 0.5* d||f(p)-b||_2^2/dp: %g' % np.linalg.norm(data_x0_c - data_x_c))
         #could do soft thresholding on test_outy here, i.e. test_outy = threshold(test_outy)
         #test_outy     = wavel1_par(nx, ny, test_outy) #  
+        #test_outy     = constraints( test_outy )
         #test_outy     = tv_par(nx, ny, test_outy)
         #test_outy  = constraints( test_outy )
         sio.savemat(pathdat +'cnn_cs_testouty.mat', {'test_outy': test_outy})
