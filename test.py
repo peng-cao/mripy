@@ -94,8 +94,8 @@
 #import test.CS_MRI.cs_MRF_CNN_IST_cuda as cs_MRF_CNN_IST_cuda
 #cs_MRF_CNN_IST_cuda.test()
 
-import test.CS_MRI.cs_MRF_CNN_IST_1p5_cuda as cs_MRF_CNN_IST_1p5_cuda
-cs_MRF_CNN_IST_1p5_cuda.test()
+#import test.CS_MRI.cs_MRF_CNN_IST_1p5_cuda as cs_MRF_CNN_IST_1p5_cuda
+#cs_MRF_CNN_IST_1p5_cuda.test()
 
 #import test.CS_MRI.cs_MRF_CNN_IST_2_cuda as cs_MRF_CNN_IST_2_cuda
 #cs_MRF_CNN_IST_2_cuda.test()
@@ -168,7 +168,7 @@ cs_MRF_CNN_IST_1p5_cuda.test()
 #import test.neural_network_training.enc_decoder_t1t2b0 as enc_decoder_t1t2b0
 #enc_decoder_t1t2b0.test()
 
-#import test.neural_network_training.fc_decoder_t1t2b0 as fc_decoder_t1t2b0
+#import test.neural_network_training.fc_decoder_t1t2b0 as fc_decoder_t1t2b0python
 #fc_decoder_t1t2b0.test()
 
 #import test.neural_network_training.fc_encoder_t1t2b0 as fc_encoder_t1t2b0
@@ -185,8 +185,8 @@ cs_MRF_CNN_IST_1p5_cuda.test()
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test1()
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test2()
 
-#import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
-#tf_wrap_cnn2d_Unet_lung_kaggle.test1()
+import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
+tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 
 #import test.neural_network_training.gan_example as gan_example
 #gan_example.test1()

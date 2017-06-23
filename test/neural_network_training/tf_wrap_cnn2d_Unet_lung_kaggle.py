@@ -2,14 +2,12 @@
 Unet for lung segmentation
 """
 import numpy as np
-import functools
 import tensorflow as tf
 import neural_network.tf_wrap as tf_wrap
 from neural_network.tf_layer import tf_layer
-from tensorflow.examples.tutorials.mnist import input_data
 
 import os
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+#import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import cv2
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
