@@ -31,7 +31,7 @@ import sim_seq_MRF_irssfp_cuda as ssmrf
 def set_par( t1t2dfpdr ):
     T1 = 5000.0 * np.array(t1t2dfpdr[:,0].squeeze()) #ms
     T2 = 500.0 * np.array(t1t2dfpdr[:,1].squeeze()) #ms
-    df = 100.0 * np.array((2*t1t2dfpdr[:,2].squeeze() - 1)) #hz
+    df = 500.0 * np.array(t1t2dfpdr[:,2].squeeze())#100.0 * np.array((2*t1t2dfpdr[:,2].squeeze() - 1)) #hz
     PD = np.array(t1t2dfpdr[:,3].squeeze()) #proton density
     return T1, T2, df, PD
 
@@ -51,37 +51,45 @@ def bloch_sim_irssfp_cuda( Nexample, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti, S
     Afp  = cuda.local.array(shape=(3, 3), dtype=numba.float32)
     Bfp  = cuda.local.array(shape=3,      dtype=numba.float32)
     # sequence has multiple BSSFP-TRs for one IR
-    if PDr[i] > 0.0001 and T1r[i] > 0.0001 and T2r[i] > 0.0001:
+    if T1r[i] > 0.0001 and T2r[i] > 0.0001:#PDr[i] > 0.0001 and 
         PD = PDr[i] # proton density
         T1 = T1r[i] # T1
         T2 = T2r[i] # T2
         df = dfr[i] # freq offset
         # M0=[0 0 1] is proton density weighted
         ss_cu.veccopy_cuda(M, M0)
-        M = ss_cu.vmuls_cuda(M,PD)
-        #inversion pulse, phi = np.pi
-        ss_cu.excitation_cuda( Mtmp, M, Rtho, Rz, Rx, Rth, np.pi, 0. )
-        ss_cu.veccopy_cuda(M, Mtmp)
-        #relaxation during inversion time
-        ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, ti, T1, T2, df, PD )
-        ss_cu.veccopy_cuda(M, Mtmp)
-        #loop for TRs within one IR segment
-        for k in range(Nk):
-            fa = far[k] # rf complex
-            fa_angle = phase(fa)  # rf phase
-            fa_absolute = abs(fa) # rf amplitude, flip angle
-            tr = trr[k]
-            #excitation
-            ss_cu.excitation_cuda( Mtmp, M, Rtho, Rz, Rx, Rth, fa_absolute, fa_angle )
+        M = ss_cu.vmuls_cuda(M,PD)        
+        #loop for dummy
+        for d in range(5):        
+            #inversion pulse, phi = np.pi
+            ss_cu.excitation_cuda( Mtmp, M, Rtho, Rz, Rx, Rth, np.pi, 0. )
             ss_cu.veccopy_cuda(M, Mtmp)
-            #free precession half TR
-            ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, tr/2.0, T1, T2, df, PD )
+
+            #relaxation during inversion time
+            ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, ti, T1, T2, df, PD )
             ss_cu.veccopy_cuda(M, Mtmp)
-            #save the MR signal on the spin echo center
-            S[i, k]=M[0]+1j*M[1]
-            #second half of TR
-            ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, tr/2.0, T1, T2, df, PD )
-            ss_cu.veccopy_cuda(M, Mtmp)
+            #crusher
+            M = ss_cu.xynull_cuda(M)
+
+            #loop for TRs within one IR segment
+            for k in range(Nk):
+                fa = far[k] # rf complex
+                fa_angle = phase(fa)  # rf phase
+                fa_absolute = abs(fa) # rf amplitude, flip angle
+                tr = trr[k]
+                #excitation
+                ss_cu.excitation_cuda( Mtmp, M, Rtho, Rz, Rx, Rth, fa_absolute, fa_angle )
+                ss_cu.veccopy_cuda(M, Mtmp)
+                #free precession half TR
+                ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, tr/2.0, T1, T2, df, PD )
+                ss_cu.veccopy_cuda(M, Mtmp)
+                #save the MR signal on the spin echo center
+                #phase correction with rf phase
+                S[i, k]=(M[0]+1j*M[1])*(cos(fa_angle)-1j*sin(fa_angle))
+                #second half of TR
+                ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, tr/2.0, T1, T2, df, PD )
+                ss_cu.veccopy_cuda(M, Mtmp)
+        
     else:
         for k in range(Nk):
             S[i, k]=1j*0.0

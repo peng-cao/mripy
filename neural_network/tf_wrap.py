@@ -116,7 +116,7 @@ class tf_model_top:
     def test( self, test_data, test_target = None ):
         error = self.sess.run(self.model_wrap.error, {self.data: test_data, self.target: test_target})
         print('Error {:6.2f}%'.format(100 * error))
-        return self
+        return error #pcao 201700805 changed from self to error
 
     # set argument
     def set_arg( self, arg ):

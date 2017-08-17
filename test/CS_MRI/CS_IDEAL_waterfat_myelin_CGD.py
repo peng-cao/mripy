@@ -28,18 +28,19 @@ def test():
     #datpath = '/data/larson/brain_uT2/2016-12-22_7T-volunteer/' #
     datpath = '/data/larson/brain_uT2/2016-09-13_3T-volunteer/'
     f = h5py.File(datpath+'ute_32echo_random-csreconallec_l2_r0p01.mat')
-
+    
+    Ndiv         = 16
     #im3d         = f['imallplus'][0:10].transpose([1,2,3,0])
     #im           = im3d[:,40,:,:].squeeze().view(np.complex128)
-    im3d         = f['imallplus'][0:8].transpose([1,3,2,0])
+    im3d         = f['imallplus'][0:Ndiv].transpose([1,3,2,0])
     im           = im3d[40,:,:,:].squeeze().view(np.complex128)
 
-    b0_gain      = 1000.0
-    TE           = b0_gain * 1e-6 * f['TE'][0][0:8]
+    b0_gain      = 10.0
+    TE           = b0_gain * 1e-6 * f['TE'][0][0:Ndiv]
     field        = 3.0
     fat_freq_arr = (1.0/b0_gain) * 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
-    print(b0_gain/1000 * TE)
+    print(1000/b0_gain * TE)
     #ut.plotim3(np.absolute(im[:,:,-10:-1]),[4,-1])
 
     nx,ny,nte  = im.shape
@@ -51,7 +52,7 @@ def test():
     #b          = FTm.forward(im)
     scaling    = ut.scaling(im)
     im         = im/scaling
-    ut.plotim3(np.absolute(im[:,:,:]),[4,-1],bar=1)
+    ut.plotim3(np.absolute(im[:,:,:]),[4,-1],bar=1,pause_close=2)
 
     #ut.plotim3(mask)
     #ut.plotim3(np.absolute(FTm.backward(b))) #undersampled imag
@@ -60,7 +61,7 @@ def test():
     #xpar[:,:,0]  = 10*np.ones((nx,ny))
     #ut.plotim3(np.absolute(xpar),[3,-1])
     # IDEAL and FFT jointly
-    IDEAL       = idealc.IDEAL_fatmyelin_opt2(TE, fat_freq_arr , fat_rel_amp )#fat_freq_arr , fat_rel_amp
+    IDEAL       = idealc.IDEAL_waterfat_myelin_opt2(TE, fat_freq_arr , fat_rel_amp )#fat_freq_arr , fat_rel_amp
     Aideal_ftm  = IDEAL#opts.joint2operators(IDEAL, FTm)#(FTm,IDEAL)#
     IDEAL.set_x(xpar) #should update in each gauss newton iteration
     residual    = IDEAL.residual(im)
@@ -93,8 +94,8 @@ def test():
 
     #CGD
     Nite  = 100
-    l1_r1 = 0.01
-    l1_r2 = 0.01
+    l1_r1 = 0.001
+    l1_r2 = 0.001
     def f(xi):
         #return np.linalg.norm(Aideal_ftm.forward(xi)-residual)
         return alg.obj_fidelity(Aideal_ftm, xi, residual) \
@@ -109,7 +110,7 @@ def test():
         gradall         = alg.grad_fidelity(Aideal_ftm, xi, residual)
         gradall[...,0] += l1_r1 * alg.grad_sparsity(Adwt_addx_w, xi[...,0])
         gradall[...,1] += l1_r1 * alg.grad_sparsity(Adwt_addx_f, xi[...,1])
-        gradall[...,2] += l1_r1 * alg.grad_sparsity(Adwt_addx_m, xi[...,2])
+        gradall[...,2] += 10*l1_r1 * alg.grad_sparsity(Adwt_addx_m, xi[...,2])
         gradall[...,3] += l1_r2 * alg.grad_sparsity(Adwt_addx_dfwatfat, xi[...,3])
         gradall[...,4] += l1_r2 * alg.grad_sparsity(Adwt_addx_dfmyelin, xi[...,4])
         return gradall
@@ -143,23 +144,35 @@ def test():
         ostep,j = alg.BacktrackingLineSearch(f, df, xpar, dxpar)
         if i%1 == 0:
             nxpar = xpar + ostep*dxpar
-            nxpar[...,1] = 10*nxpar[...,1]
-            ut.plotim3(np.absolute(nxpar)[...,0:3],colormap='viridis', bar=1)
-            ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1)
-            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1)
-            ut.plotim3(b0_gain * np.real(nxpar)[...,4],colormap='viridis',bar=1)
-            ut.plotim3(np.imag(nxpar)[...,4],colormap='viridis',bar=1)
-            sio.savemat('cs_IDEAL.mat', {'xpar': xpar, 'residual': residual})
+            #nxpar[...,2] = nxpar[...,2]
+            ut.plotim3(np.absolute(nxpar)[...,0:3],colormap='viridis', bar=1, pause_close = 2)
+            ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1, pause_close = 2)
+            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1, pause_close = 2)
+            ut.plotim3(b0_gain * np.real(nxpar)[...,4],colormap='viridis',bar=1, pause_close = 2)
+            ut.plotim3(np.imag(nxpar)[...,4],colormap='viridis',bar=1, pause_close = 2)
+            sio.savemat(datpath + 'cs_ideal_fitting/cs_IDEAL_waterfatmyelin.mat', {'xpar': nxpar, 'residual': residual})
         xpar = xpar + ostep*dxpar#.astype(np.float64)
 
-        #if i > 1: #fix the frequence offset to be equal for two components
+        #if i > 0: 
+            #box constraint for r2 myelin
+            #for xx in range(xpar.shape[0]):
+                #for yy in range(xpar.shape[1]):
+                    #r2myelin = np.imag(xpar[xx,yy,4])
+                    #r2water  = np.imag(xpar[xx,yy,3])
+                    #if r2myelin < 0.06:
+                        #xpar[xx,yy,2] = 0
+                    #    xpar[xx,yy,4] = np.real(xpar[xx,yy,4])+1j*0.06
+                    #if r2water > (r2myelin/2):
+                    #    xpar[xx,yy,4] = np.real(xpar[xx,yy,4])+1j*(np.imag(xpar[xx,yy,4]) + 0.01)                        
+
+        #fix the frequence offset to be equal for two components
         #    freq_ave    = 0.5 * np.real(xpar[:,:,2]) + 0.5 * np.real(xpar[:,:,3])
         #    xpar[:,:,2] = freq_ave +1j*(np.imag(xpar[:,:,2]))
         #    xpar[:,:,3] = freq_ave +1j*(np.imag(xpar[:,:,3]))
 
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(im)
-        ut.plotim3(np.absolute(residual),[4,-1],bar=1)
+        ut.plotim3(np.absolute(residual),[4,-1],bar=1,pause_close = 2)
 
         #addx.set_x(xpar) #should update in each gauss newton iteration
         addx_water.set_x     (xpar[...,0]) #should update in each gauss newton iteration

@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scipy.io as sio
 from math import ceil
+import time
 """
 # color image plot
 """
-def plotim1( im, colormap = None, title = None, bar = None, vmin = None, vmax = None ):
+def plotim1( im, colormap = None, title = None, bar = None, vmin = None, vmax = None, pause_close = None ):
     im = np.flip(im,0)
     fig, ax = plt.subplots()
 
@@ -21,7 +22,13 @@ def plotim1( im, colormap = None, title = None, bar = None, vmin = None, vmax = 
     if bar is not None:
         cbar = fig.colorbar(cax)
         #cbar.ax.set_yticklabels([str(bar_ticks[0]), str(bar_ticks[-1:])])
-    plt.show()
+    #plt.show()
+    if pause_close is not None and pause_close > 0:
+        plt.show(block = False)
+        time.sleep(pause_close)
+        plt.close(fig)
+    else:
+        plt.show()    
     return
 
 def subplot( im1, im2, colormap = None, title = None, bar = None ):
@@ -44,7 +51,7 @@ def subplot( im1, im2, colormap = None, title = None, bar = None ):
 # color image plot, 3d input
 # concatenate image along the third dim
 """
-def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None, vmin = None, vmax = None ):
+def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None, vmin = None, vmax = None, pause_close = None ):
     im = np.flip(im,0)
     nx,ny,nz = im.shape
 
@@ -86,32 +93,46 @@ def catplotim(im, catdim = [10,-1] , colormap = None, title = None, bar = None, 
         ax.set_title(title)
     if bar is not None:
         cbar = fig.colorbar(cax)
-    plt.show()
+    #plt.show()
+    if pause_close is not None and pause_close > 0:
+        plt.show(block = False)
+        time.sleep(pause_close)
+        plt.close(fig)
+    else:
+        plt.show()
     return
 
-def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None, vmin = None, vmax = None ):
+def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None, vmin = None, vmax = None, pause_close = None ):
     #im = np.matrix(im)
     if len(im.shape)   == 3:
-        catplotim(im, catdim = catdim , colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax)
+        catplotim(im, catdim = catdim , colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax, pause_close = pause_close)
     elif len(im.shape) == 2:
-        plotim1(im, colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax )
+        plotim1(im, colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax, pause_close = pause_close)
     return
 
 """
 #gray image plot
 """
-def plotgray( im ):
+def plotgray( im, pause_close = None ):
     im = np.flip(im,0)
     fig, ax = plt.subplots()
     ax.imshow(im, cmap=cm.gray, origin='lower', interpolation='none')
     ax.axis('off')
-    plt.show()
+    #plt.show()
+    if pause_close is not None and pause_close > 0:
+        plt.show(block = False)
+        time.sleep(pause_close)
+        plt.close(fig)
+    else:
+        plt.show()
+
     return
 
 """
 plot a line
 """
-def plot( x, y=None, line_type = '-', legend = None ):
+def plot( x, y=None, line_type = '-', legend = None, pause_close = None ):
+    fig = plt.figure()
     # Prepare the data
     if y is None:
         y = np.linspace(0, 1, x.size)
@@ -122,8 +143,14 @@ def plot( x, y=None, line_type = '-', legend = None ):
     #plt.legend()
     if legend is not None:
         plt.legend(legend)
-    # Show the plot
-    plt.show()
+    # Show the plot   
+    if pause_close is not None and pause_close > 0:
+        plt.show(block = False)
+        time.sleep(pause_close)
+        plt.close(fig)
+    else:
+        plt.show()
+
 
 """
 load matlab mat file

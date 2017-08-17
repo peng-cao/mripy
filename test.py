@@ -84,6 +84,9 @@
 #import test.CS_MRI.pics_TV_ADMM_3d_uselib as pics_TV_ADMM_3d_uselib
 #pics_TV_ADMM_3d_uselib.test()
 
+#import test.CS_MRI.pics_IST_3d_wavelet_L1_shuffledmprage as pics_IST_3d_wavelet_L1_shuffledmprage
+#pics_IST_3d_wavelet_L1_shuffledmprage.test()
+
 #import test.CS_MRI.cs_TV_ADMM_3d as cs_TV_ADMM_3d
 #cs_TV_ADMM_3d.test()
 
@@ -111,6 +114,9 @@
 
 #import test.CS_MRI.CS_IDEAL_myelin_CGD as CS_IDEAL_myelin_CGD
 #CS_IDEAL_myelin_CGD.test()
+
+import test.CS_MRI.CS_IDEAL_myelin_ADMM as CS_IDEAL_myelin_ADMM
+CS_IDEAL_myelin_ADMM.test()
 
 #import test.CS_MRI.CS_IDEAL_waterfat_myelin_CGD as CS_IDEAL_waterfat_myelin_CGD
 #CS_IDEAL_waterfat_myelin_CGD.test()
@@ -185,8 +191,8 @@
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test1()
 #tfwrap_cnn_encoder_t1t2b0_randomfartrr.test2()
 
-import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
-tf_wrap_cnn2d_Unet_lung_kaggle.test1()
+#import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
+#tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 
 #import test.neural_network_training.gan_example as gan_example
 #gan_example.test1()
@@ -197,6 +203,16 @@ tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 #import test.neural_network_training.tf_wrap_fc_GAN_MNIST as tf_wrap_fc_GAN_MNIST
 #tf_wrap_fc_GAN_MNIST.test1()
 
+#import test.neural_network_training.tfwrap_fc_jing_dict as tfwrap_fc_jing_dict
+#tfwrap_fc_jing_dict.test2()
+
+#import test.neural_network_training.tfwrap_cnn_jing_dict as tfwrap_cnn_jing_dict
+#tfwrap_cnn_jing_dict.test1()
+#tfwrap_cnn_jing_dict.test2()
+
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2 as tfwrap_fc_jing_randt1t2
+#tfwrap_fc_jing_randt1t2.test1()
+#tfwrap_fc_jing_randt1t2.test2()
 ##########################################################################
 # parallel testing
 ##########################################################################

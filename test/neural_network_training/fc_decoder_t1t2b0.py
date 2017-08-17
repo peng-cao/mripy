@@ -149,7 +149,7 @@ def test():
         #batch_xsnoise = batch_xs + np.random.uniform(-0.001,0.001,(batch_size,2*Nk))    
 
         train_step.run(feed_dict={x: batch_ys, y_: batch_xs, keep_prob: 0.5})
-        if i%10 == 0:
+        if i%1000 == 0:
             train_error = accuracy.eval(feed_dict={x: batch_ys, y_: batch_xs, keep_prob: 1.0})
             print("step %d, training error %g"%(i, train_error))
         if i%1000 == 0:

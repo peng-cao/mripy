@@ -31,11 +31,12 @@ def test():
 
     #im3d         = f['imallplus'][0:10].transpose([1,2,3,0])
     #im           = im3d[:,40,:,:].squeeze().view(np.complex128)
-    im3d         = f['imallplus'][0:8].transpose([1,3,2,0])
-    im           = im3d[40,:,:,:].squeeze().view(np.complex128)
+    Ndiv         = 8
+    im3d         = f['imallplus'][0:Ndiv].transpose([1,3,2,0])
+    im           = im3d[35,:,:,:].squeeze().view(np.complex128)
 
     b0_gain      = 1000.0
-    TE           = b0_gain * 1e-6 * f['TE'][0][0:8]
+    TE           = b0_gain * 1e-6 * f['TE'][0][0:Ndiv]
     field        = 3.0
     fat_freq_arr = (1.0/b0_gain) * 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
@@ -51,7 +52,7 @@ def test():
     #b          = FTm.forward(im)
     scaling    = ut.scaling(im)
     im         = im/scaling
-    ut.plotim3(np.absolute(im[:,:,:]),[4,-1],bar=1)
+    ut.plotim3(np.absolute(im[:,:,:]),[4,-1],bar=1, pause_close = 2)
 
     #ut.plotim3(mask)
     #ut.plotim3(np.absolute(FTm.backward(b))) #undersampled imag
@@ -92,21 +93,23 @@ def test():
     Nite  = 400
     l1_r1 = 0.01
     l1_r2 = 0.01
+    l1_r3 = 0.01
+    l1_r4 = 0.01
     def f(xi):
         #return np.linalg.norm(Aideal_ftm.forward(xi)-residual)
         return alg.obj_fidelity(Aideal_ftm, xi, residual) \
         + l1_r1 * alg.obj_sparsity(Adwt_addx_w, xi[...,0])\
         + l1_r2 * alg.obj_sparsity(Adwt_addx_f, xi[...,1])\
-        + l1_r1 * alg.obj_sparsity(Adwt_addx_dwat, xi[...,2])\
-        + l1_r2 * alg.obj_sparsity(Adwt_addx_dfat, xi[...,3])
+        + l1_r3 * alg.obj_sparsity(Adwt_addx_dwat, xi[...,2])\
+        + l1_r4 * alg.obj_sparsity(Adwt_addx_dfat, xi[...,3])
 
     def df(xi):
         #return 2*Aideal_ftm.backward(Aideal_ftm.forward(xi)-residual)
         gradall = alg.grad_fidelity(Aideal_ftm, xi, residual)
         gradall[...,0] += l1_r1 * alg.grad_sparsity(Adwt_addx_w, xi[...,0])
         gradall[...,1] += l1_r2 * alg.grad_sparsity(Adwt_addx_f, xi[...,1])
-        gradall[...,2] += l1_r1 * alg.grad_sparsity(Adwt_addx_dwat, xi[...,2]) 
-        gradall[...,3] += l1_r2 * alg.grad_sparsity(Adwt_addx_dfat, xi[...,3]) 
+        gradall[...,2] += l1_r3 * alg.grad_sparsity(Adwt_addx_dwat, xi[...,2]) 
+        gradall[...,3] += l1_r4 * alg.grad_sparsity(Adwt_addx_dfat, xi[...,3]) 
 
         return gradall
 
@@ -140,12 +143,12 @@ def test():
         if i%1 == 0:
             nxpar = xpar + ostep*dxpar
             nxpar[...,1] = 10*nxpar[...,1]
-            ut.plotim3(np.absolute(nxpar)[...,0:2],colormap='viridis', bar=1, vmin = 0, vmax = 1)
-            ut.plotim3(b0_gain * np.real(nxpar)[...,2],colormap='viridis',bar=1)
-            ut.plotim3(np.imag(nxpar)[...,2],colormap='viridis',bar=1)
-            ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1)
-            ut.plotim3(np.imag(nxpar)[...,3],colormap='viridis',bar=1, vmin = 0, vmax = 0.02)
-            sio.savemat('cs_IDEAL.mat', {'xpar': xpar, 'residual': residual})
+            ut.plotim3(np.absolute(nxpar)[...,0:2],colormap='viridis', bar=1, vmin = 0, vmax = 1, pause_close = 2)
+            ut.plotim3(b0_gain * np.real(nxpar)[...,2],colormap='viridis',bar=1, pause_close = 2)
+            ut.plotim3(b0_gain * np.imag(nxpar)[...,2],colormap='viridis',bar=1, pause_close = 2)
+            ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1, pause_close = 2)
+            ut.plotim3(b0_gain * np.imag(nxpar)[...,3],colormap='viridis',bar=1, pause_close = 2)
+            sio.savemat(datpath + 'cs_ideal_fitting/cs_IDEAL_CGD.mat', {'xpar': xpar, 'residual': residual})
         xpar = xpar + ostep*dxpar#.astype(np.float64)   
 
         #if i > 1: #fix the frequence offset to be equal for two components
@@ -155,7 +158,7 @@ def test():
 
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(im)
-        ut.plotim3(np.absolute(residual),[4,-1],bar=1)
+        ut.plotim3(np.absolute(residual),[4,-1],bar=1, pause_close = 2)
         
         #addx.set_x(xpar) #should update in each gauss newton iteration
         addx_water.set_x(xpar[...,0]) #should update in each gauss newton iteration

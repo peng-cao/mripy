@@ -75,7 +75,7 @@ class IDEAL_waterfat_myelin_dataformat:
         x[...,0] = self.water
         x[...,1] = self.fat
         x[...,2] = self.myelin
-        x[...,3] = self.offres_water
+        x[...,3] = self.offres_waterfat
         x[...,4] = self.offres_myelin
         return x
 
@@ -507,7 +507,7 @@ class IDEAL_waterfat_myelin_opt2:
             #im = water*exp(Cte*offres_waterfat)+fat*Allfpeak*exp(Cte*offres_waterfat)
             #    + myelin*Allfpeak*exp(Cte*offres_myelin)
             im[...,j] = np.multiply(beta.water + beta.fat * Allfpeak, np.exp(Cte * beta.offres_waterfat)) \
-                        * + Allfpeak * np.multiply(beta.myelin, np.exp(Cte * beta.offres_myelin))
+                         + Allfpeak * np.multiply(beta.myelin, np.exp(Cte * beta.offres_myelin))
         return im
 
     # calculate residual in guass newtown method, this is used in min_d_beta ||J*d_beta-R||_2^2 term

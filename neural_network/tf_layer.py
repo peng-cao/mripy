@@ -2,19 +2,21 @@ import tensorflow as tf
 import numpy as np
 from math import ceil
 class tf_layer:
-    def __init__( self, debug = 0 ):
-    	self.config = None
-    	self.arg    = None
-        self.debug  = debug
+    def __init__( self, debug = 0, w_std = 0.1, b_const = 0.1 ):
+    	self.config  = None
+    	self.arg     = None
+        self.debug   = debug
+        self.w_std   = w_std
+        self.b_const = b_const
 
     #intial random weight_variable
     def weight_variable( self, shape ):
-        initial = tf.truncated_normal(shape, stddev=0.1)
+        initial = tf.truncated_normal(shape, stddev=self.w_std)
         return tf.Variable(initial)
 
    #initial constant bias_variable
     def bias_variable( self, shape ):
-        initial = tf.constant(0.1, shape=shape)
+        initial = tf.constant(self.b_const, shape=shape)
         return tf.Variable(initial)
 
     #convolution
@@ -92,12 +94,12 @@ class tf_layer:
         for i in range(n_fc_layers):
             #set fc_wide parameters
             if in_fc_wide_arr is None:
-                in_fc_wide = x.shape[0]
+                in_fc_wide = x.get_shape().as_list()[1]#x.shape[0]
             else:
                 in_fc_wide = in_fc_wide_arr[i]
 
             if out_fc_wide_arr is None:
-                out_fc_wide = x.shape[0]
+                out_fc_wide = x.get_shape().as_list()[1]#x.shape[0]
             else:
                 out_fc_wide = out_fc_wide_arr[i]
             #set input output
@@ -113,12 +115,12 @@ class tf_layer:
         for i in range(n_fc_layers):
             # set fc_wide parameters
             if in_fc_wide_arr is None:
-                in_fc_wide = x.shape[0]
+                in_fc_wide = x.get_shape().as_list()[1]#x.shape[0]
             else:
                 in_fc_wide = in_fc_wide_arr[i]
 
             if out_fc_wide_arr is None:
-                out_fc_wide = x.shape[0]
+                out_fc_wide = x.get_shape().as_list()[1]#x.shape[0]
             else:
                 out_fc_wide = out_fc_wide_arr[i]
             #set input output

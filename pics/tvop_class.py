@@ -65,11 +65,31 @@ class TV2d_r:
         sx = x.shape[0]
         sy = x.shape[1]    
         Dx = x[np.r_[1:sx, sx-1],:] - x
+        self.rx = x[sx-1,:]
         Dy = x[:,np.r_[1:sy, sy-1]] - x
+        self.ry = x[:,sy-1]
         #res = np.zeros((sx,sy,2), dtype=x.dtype)
         res = np.zeros(x.shape + (self.ndim,), dtype = x.dtype)
         res[...,0] = Dx
         res[...,1] = Dy
+        return res
+
+    def adjgradx( self, x ): #adj for gradient
+        sx   = x.shape[0]
+        x[sx-1,:] = self.rx
+        x = np.flip(np.cumsum(np.flip(x,0), 0),0)
+        #x[0:sx-1,:] = cumx[1:sx,:]
+        return x
+
+    def adjgrady( self, x ): #adj for gradient
+        sy = x.shape[1]
+        x[:,sy-1] = self.ry
+        x = np.flip(np.cumsum(np.flip(x,1), 1),1)
+        #x[:,0:sy-1] = cumx[:,1:sy]
+        return x
+
+    def adjgrad( self, y ): #adj for gradient
+        res = self.adjgradx(y[...,0]) + self.adjgrady(y[...,1])
         return res
 
     def adjDy( self, x ): #used in computing divergense of x
@@ -106,7 +126,7 @@ class TV2d_r:
         return self.grad(x)
     # sparse domain --> image
     def forward( self, y ):
-        return self.Div(y)    
+        return self.Div(y)    #self.adjgrad(y)#
 
 # this define the 3d tv operator including gradient and divergense functions
 class TV3d:

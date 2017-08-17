@@ -134,6 +134,13 @@ def vaddv_cuda( a, b ):
         a[i] = a[i]+b[i]    
     return a
 
+
+# a += b
+@cuda.jit(device=True)
+def xynull_cuda( a ):
+    for i in range(2):
+        a[i] = 0    
+    return a
 """
 gpu version, function rotating spin in SO(3), according to Euler angular
 This function need these input tmp arrays

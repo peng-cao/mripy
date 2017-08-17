@@ -372,7 +372,7 @@ class espirit:
         # coil combination is sum(conj(sens)*im)
         return np.sum(np.multiply(im_coils.reshape(im_out_shape),\
                      np.conj(self.sens).reshape(sens_out_shape))\
-                    , axis=self.coil_axis)
+                    , axis=self.coil_axis, keepdims = True)
 
     # multiply image with coil sensitivity profile
     def forward( self, im_sos ):

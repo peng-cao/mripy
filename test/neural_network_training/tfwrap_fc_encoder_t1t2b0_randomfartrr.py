@@ -140,7 +140,7 @@ def test2():
     batch_xs[:,0:Nk] = np.real(batch_xs_c)
     batch_xs[:,Nk:2*Nk] = np.imag(batch_xs_c)
     #input with noise
-    batch_xsnoise = batch_xs  + np.random.uniform(-0.05,0.05,(batch_size,2*Nk))
+    batch_xsnoise = batch_xs  #+ np.random.uniform(-0.05,0.05,(batch_size,2*Nk))
     prey = model.prediction(batch_xsnoise,np.zeros(batch_ys.shape))
     model.test(batch_xsnoise, batch_ys)
     ut.plot(prey[...,0], batch_ys[...,0], line_type = '.')

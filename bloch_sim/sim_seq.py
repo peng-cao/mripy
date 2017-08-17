@@ -31,7 +31,7 @@ def sim_ssfp( M0, tr, fa, T1, T2, df, PD, Nk ):
         A,B = ss.freeprecess(tr/2.0,T1,T2,df)
         M = A*M+PD*B.T
         #save the MR signal
-	S.itemset(k, M.item(0)+1j*M.item(1))
+        S.itemset(k, M.item(0)+1j*M.item(1))
         #second half of TR
         M = A*M+PD*B.T
         fa = -fa;
@@ -66,7 +66,7 @@ def sim_ssfp_arrayin( M0, trr, far, T1, T2, df, PD, Nk ):
         A,B = ss.freeprecess(trr.item(k)/2.0,T1,T2,df)
         M = A*M+PD*B.T
         #save the MR signal
-	S.itemset(k, M.item(0)+1j*M.item(1))
+        S.itemset(k, M.item(0)+1j*M.item(1))
         #second half of TR
         M = A*M+PD*B.T
     return S
@@ -106,7 +106,7 @@ def sim_irssfp_arrayin( M0, trr, far, ti, T1, T2, df, PD, Nk ):
         A,B = ss.freeprecess(trr.item(k)/2.0,T1,T2,df)
         M = A*M+PD*B.T
         #save the MR signal
-	S.itemset(k, M.item(0)+1j*M.item(1))
+        S.itemset(k, M.item(0)+1j*M.item(1))
         #second half of TR
         M = A*M+PD*B.T
     return S
@@ -129,23 +129,25 @@ Nk = 960
 S = sseq.sim_gre( M0, tr, te, fa, T1, T2, df, PD, Nk )
 print abs(S)
 """
-def sim_gre( M0, tr, te, fa, T1, T2, df, PD, Nk ):
+def sim_gre( M0, tr, te, fa, T1, T2, df, PD, Nk, Ndum = 5 ):
     "simulate gre sequence"
     S = 1j*np.zeros(Nk) #initial an array
-    M = M0*PD
-    for k in range(Nk):
-        #excitation
-        M = ss.throt(np.absolute(fa), np.angle(fa))*M
-        #free precession 0 to TE
-        A,B = ss.freeprecess(te,T1,T2,df)
-        M = A*M+PD*B.T
-        #save the MR signal
-	S.itemset(k, M.item(0)+1j*M.item(1))
-        #free precession TE to TR
-        A,B = ss.freeprecess(tr-te,T1,T2,df)
-        M = A*M+PD*B.T
-        #gradient spoiler
-        M.itemset(0,0);
-        M.itemset(1,0);
-        #fa = -fa;
+
+    for _ in dummy(Ndum):  #dummy loop
+        M = M0*PD        
+        for k in range(Nk):
+            #excitation
+            M = ss.throt(np.absolute(fa), np.angle(fa))*M
+            #free precession 0 to TE
+            A,B = ss.freeprecess(te,T1,T2,df)
+            M = A*M+PD*B.T
+            #save the MR signal
+            S.itemset(k, (M.item(0)+1j*M.item(1))*exp(-1j*np.angle(fa)))
+            #free precession TE to TR
+            A,B = ss.freeprecess(tr-te,T1,T2,df)
+            M = A*M+PD*B.T
+            #gradient spoiler
+            M.itemset(0,0);
+            M.itemset(1,0);
+            #fa = -fa;
     return S

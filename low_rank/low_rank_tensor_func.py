@@ -1,5 +1,5 @@
 """
-should meak the changes below in the sktensor code
+should make the changes below in the sktensor code
 in pc.py change the type define to complex
 sktensor.cp._DEF_TYPE=np.complex
 and remove below debug function in line 165 in the pc.py 
