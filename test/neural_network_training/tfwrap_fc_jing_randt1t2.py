@@ -15,8 +15,13 @@ import bloch_sim.sim_utilities_func as simut
 #pathdat  = '/working/larson/UTE_GRE_shuffling_recon/Mapping-MachineLearning/'
 #pathdat  = '/working/larson/UTE_GRE_shuffling_recon/20170801/exp3_irssfp_largefov_invivo/'
 #pathdat  = '/home/pcao/git/save_data/20170801/'
-pathdat  = '/home/pcao/git/save_data/jing_dict/'
+#pathdat  = '/home/pcao/git/save_data/jing_dict/'
 #pathdat  = '/home/pcao/git/save_data/20170814/'
+#pathdat  = '/home/pcao/git/save_data/20170814_2/'
+#pathdat  = '/home/pcao/git/save_data/20170814_3/'
+#pathdat  = '/home/pcao/git/save_data/20170801_3/'
+pathdat  = '/home/pcao/git/save_data/jing_dict_3/'
+
 #pathsave = '/home/pcao/git/nn_checkpoint/'
 # these functions should be defined specifically for individal neural network
 # example of the prediction function, defined using tensorflow lib
@@ -27,15 +32,20 @@ def tf_prediction_func( model ):
     NNlayer     = tf_layer( w_std = 0.2 )
     data_size   = int(model.data.get_shape()[1])
     target_size = int(model.target.get_shape()[1])
-    mid_size    = 512
+    mid_size    = 256
     # one full connection layer
     y1 = NNlayer.full_connection(model.data, in_fc_wide = data_size, out_fc_wide = mid_size,    activate_type = 'sigmoid')
     y2 = NNlayer.multi_full_connection(y1,  n_fc_layers = 8,                                   activate_type = 'sigmoid')   
-    y  = NNlayer.full_connection(y2,         in_fc_wide = mid_size,  out_fc_wide = target_size, activate_type = 'sigmoid')
+    y  = NNlayer.full_connection_dropout(y2, arg= model.arg,        in_fc_wide = mid_size,  out_fc_wide = target_size, activate_type = 'sigmoid')
     #y   = NNlayer.multi_full_connection(model.data, n_fc_layers = 12, \
     #                                    in_fc_wide_arr  = (data_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size), \
-    #                                    out_fc_wide_arr = (mid_size,  mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, target_size), \
+    #                                   out_fc_wide_arr = (mid_size,  mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, mid_size, target_size), \
     #                                    activate_type = 'sigmoid')
+    #y   = NNlayer.multi_full_connection(model.data, n_fc_layers = 8, \
+    #                                    in_fc_wide_arr = (data_size,    data_size//2, data_size//4, data_size//8,  data_size//16, data_size//32, data_size//64, data_size//128),\
+    #                                   out_fc_wide_arr = (data_size//2, data_size//4, data_size//8, data_size//16, data_size//32, data_size//64, data_size//128, target_size),\
+    #                                     activate_type = 'ReLU')
+    # softmax output
     # softmax output
     return y#tf.nn.softmax(y)
 
@@ -48,16 +58,25 @@ def tf_optimize_func( model ):
     #optimizer = tf.train.RMSPropOptimizer(0.003)
 
      # l2-norm
-    loss = tf.reduce_sum(tf.pow(tf.subtract(model.target[:,:],model.prediction[:,:]),2))  #+  0.5 * tf.reduce_sum(tf.pow(model.prediction[:,:],2))#\
-         #+ tf.reduce_sum(tf.pow(tf.subtract(model.target[:,1],model.prediction[:,1]),2)) #\
-         #+ tf.reduce_sum(tf.pow(tf.subtract(model.target[:,2],model.prediction[:,2]),2)) # 
+  # l2-norm
+    #loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target[:,0],model.prediction[:,0]),2) ) \
+    #      + tf.reduce_sum(tf.pow(tf.subtract(model.target[:,1],model.prediction[:,1]),2) ) \
+    #      + tf.reduce_sum(tf.pow(tf.subtract(model.target[:,2],model.prediction[:,2]),2) ) \
+    #      + tf.reduce_sum(tf.pow(tf.subtract(model.target[:,3],model.prediction[:,3]),2) ) #\
+          #+ 0.1* tf.reduce_sum(tf.pow(model.prediction[:,2],2)) 
+    loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target[:,0],model.prediction[:,0]),2) ) \
+          + 0.5*tf.reduce_sum(tf.pow(tf.subtract(model.target[:,1],model.prediction[:,1]),2) ) \
+          + 0.5*tf.reduce_sum(tf.pow(tf.subtract(model.target[:,2],model.prediction[:,2]),2) ) \
+          + tf.reduce_sum(tf.pow(tf.subtract(model.target[:,3],model.prediction[:,3]),2) ) \
+          + 0.5 * tf.reduce_sum(tf.pow(model.prediction[:,1],2)) \
+          + 1.5 * tf.reduce_sum(tf.pow(model.prediction[:,2],2)) 
         
     # minimization apply to cross_entropy
-    return tf.train.AdamOptimizer(1e-4).minimize(loss)    #optimizer.minimize(cross_entropy)
+    return tf.train.AdamOptimizer(1e-4).minimize(loss) #tf.train.RMSPropOptimizer(1e-4).minimize(loss)#   #optimizer.minimize(cross_entropy)
 
 # example of the error function, defined using tensorflow lib
 def tf_error_func( model ):
-    #model.arg =  1.0#[1.0, 1.0]
+    model.arg =  1.0#[1.0, 1.0]
     # mistakes as the difference between target and prediction, argmax as output layer
     mistakes = tf.reduce_sum(tf.pow(tf.subtract(model.target,model.prediction),2) )/tf.reduce_sum(tf.pow(model.target,2) )
     # error=cost(mistakes) = ||mistakes||_2
@@ -78,7 +97,7 @@ def test1():
     Ndiv       = coeff.shape[1]#par[0]['ndiv'][0][0][0]#16
     orig_Ndiv  = coeff.shape[0] 
     npar       = 4
-    model = tf_wrap.tf_model_top([None,  Ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func)
+    model = tf_wrap.tf_model_top([None,  Ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
 
 
     fa         = par[0]['fa'][0][0][0].astype(np.float32)#35#30 #deg
@@ -101,11 +120,11 @@ def test1():
 
     for i in range(1000000):
         batch_ys           = np.random.uniform(0,1,(batch_size,4)).astype(np.float64)
-        batch_ys[:,0]      = np.random.uniform(0.1,1.0,(batch_size)).astype(np.float64)
-        #batch_ys[:,1]      = np.random.uniform(0.1,0.5,(batch_size)).astype(np.float64)
+        #batch_ys[:,0]      = np.random.uniform(0.1,0.6,(batch_size)).astype(np.float64)
+        #batch_ys[:,1]      = np.random.uniform(0.1,0.3,(batch_size)).astype(np.float64)
         batch_ys[:,2]      = np.random.uniform(0,1.0/tr,(batch_size)).astype(np.float64)
         #batch_ys[:,2]      = np.zeros(batch_size)
-        #batch_ys[:,3]      = np.ones(batch_size)#np.random.uniform(0.5,1,(batch_size)).astype(np.float64)#
+        #batch_ys[:,3]      = np.random.uniform(0.2,1.0,(batch_size)).astype(np.float64)#np.ones(batch_size)#np.random.uniform(0.5,1,(batch_size)).astype(np.float64)#
 
         # intial seq simulation with t1t2b0 values
         #seq_data = ssad.irssfp_arrayin_data( batch_size, Nk ).set( batch_ys )
@@ -114,13 +133,20 @@ def test1():
 
 
         #ut.plot(np.absolute(batch_xs_c[0,:]))   
-        batch_xs = np.absolute(simut.average_dict(batch_xs_c, orig_Ndiv))#(np.dot(np.absolute(simut.average_dict(batch_xs_c, Ndiv)), coeff)) 
-        batch_xs = batch_xs + np.random.ranf(1)[0]*np.random.uniform(-0.001,0.001,(batch_xs.shape))
+        if orig_Ndiv is not Nk:
+            batch_xs = np.absolute(simut.average_dict(batch_xs_c, orig_Ndiv))#(np.dot(np.absolute(simut.average_dict(batch_xs_c, Ndiv)), coeff)) 
+        else:
+            batch_xs = np.absolute(batch_xs_c)
+        batch_xt = batch_xs
+        batch_xs = batch_xs + np.random.ranf(1)[0]*np.random.uniform(-0.1,0.1,(batch_xs.shape))
 
         #batch_xs = batch_xs/np.ndarray.max(batch_xs.flatten())
-        batch_xs = 1000*np.dot(batch_xs, coeff)
-        
-        #batch_ys[:,2]      = np.zeros(batch_size)
+        if 1:
+            batch_xs = 1000*np.dot(batch_xs, coeff)
+            batch_xt = 1000*np.dot(batch_xt, coeff)
+        else:
+            batch_xs = 1000*batch_xs
+        #batch_ys[:,3]      = np.zeros(batch_size)
         #for dd in range(batch_xs.shape[0]):
         #    tc = batch_xs[dd,:] #- np.mean(imall[i,:])        
         #    normtc = np.linalg.norm(tc)
@@ -128,14 +154,14 @@ def test1():
         #        batch_xs[dd,:] = tc/normtc
         #    else:
         #        batch_xs[dd,:] = np.zeros([1,Ndiv])
-        #ut.plot(np.real(batch_xs[0,:]))
+        #ut.plot(np.real(batch_xs[0,:]),pause_close = 1)
         #batch_ys[:,3]      = np.ones(batch_size) * np.random.ranf(1)[0]  
         #batch_xs = batch_xs *  batch_ys[0,3] #* np.random.ranf(1)[0]#
-
+        model.train(batch_xt, batch_ys)
         model.train(batch_xs, batch_ys)
-        model.test(batch_xs, batch_ys)
+        model.test(batch_xt, batch_ys)
         if i % 100 == 0:
-            prey = model.prediction(batch_xs,np.zeros(batch_ys.shape))
+            prey = model.prediction(batch_xt,np.zeros(batch_ys.shape))
             ut.plot(prey[...,0], batch_ys[...,0], line_type = '.', pause_close = 1)
             ut.plot(prey[...,1], batch_ys[...,1], line_type = '.', pause_close = 1)
             ut.plot(prey[...,2], batch_ys[...,2], line_type = '.', pause_close = 1)
@@ -146,9 +172,10 @@ def test2():
     mat_contents     = sio.loadmat(pathdat+'im_pca.mat')#im.mat
     I                = np.array(mat_contents["I"].astype(np.float32))
     nx, ny, nz, ndiv = I.shape
+    #print(I.shape)
     imall            = I.reshape([nx*ny*nz, ndiv])
     npar             = 4
-    imall = imall/np.ndarray.max(imall.flatten())
+    #imall = imall/np.ndarray.max(imall.flatten())
     #ut.plotim3(imall.reshape(I.shape)[...,0])
     #for i in range(imall.shape[0]):
     #    tc = imall[i,:] #- np.mean(imall[i,:])        
@@ -157,22 +184,23 @@ def test2():
     #        imall[i,:] = tc/normtc
     #    else:
     #        imall[i,:] = np.zeros([1,ndiv])
-    imall = 30.0*imall/np.ndarray.max(imall.flatten())#0.2
+    imall = 1500.0*imall/np.ndarray.max(imall.flatten())#0.2
 
-    ut.plotim3(imall.reshape(I.shape)[...,0],[10, 6],pause_close = 1)
+    ut.plotim3(imall.reshape(I.shape)[...,0],[5, -1],pause_close = 1)
 
-    model   = tf_wrap.tf_model_top([None,  ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func)
+    model   = tf_wrap.tf_model_top([None,  ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
     model.restore(pathdat + 'test_model_save')
 
     prey    = model.prediction(imall, np.zeros([imall.shape[0],npar]))
     immatch = prey.reshape([nx, ny, nz, npar])
-    ut.plotim3(immatch[...,0],[10, 6],bar = 1, pause_close = 5)
-    ut.plotim3(immatch[...,1],[10, 6],bar = 1, pause_close = 5)
-    ut.plotim3(immatch[...,2],[10, 6],bar = 1, pause_close = 5)   
-    ut.plotim3(immatch[...,3],[10, 6],bar = 1, pause_close = 5)   
+    ut.plotim3(immatch[...,0],[10, -1],bar = 1, pause_close = 5)
+    ut.plotim3(immatch[...,1],[10, -1],bar = 1, pause_close = 5)
+    ut.plotim3(immatch[...,2],[10, -1],bar = 1, pause_close = 5)   
+    ut.plotim3(immatch[...,3],[10, -1],bar = 1, pause_close = 5)   
       
     sio.savemat(pathdat + 'MRF_cnn_matchtt.mat', {'immatch':immatch, 'imall':imall})
 
+"""
 def test3():
     mat_contents  = sio.loadmat(pathdat+'dict_pca.mat');
     dictall       = np.array(mat_contents["avedictall"].astype(np.float32))
@@ -192,6 +220,7 @@ def test3():
     ut.plot(prey[...,0], label[...,0], line_type = '.')
     ut.plot(prey[...,1], label[...,1], line_type = '.')
     ut.plot(prey[...,2], label[...,2], line_type = '.')
+"""
 #if __name__ == '__main__':
     #test1()
     #test2()

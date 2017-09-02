@@ -85,7 +85,34 @@ def FIST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
         print np.linalg.norm(r)
     return x
 
-
+"""
+fast iterative soft-thresholding
+argmin ||A(x)-b|||_2^2+(th/2)*||Tfunc(x)||_1
+function A() input
+Tfunc can be wavelet, singular values of Hankel etc.
+proximal gradient method which is
+y^0 = x^0
+x^k = prox_tkh(y^k-1 - tk * grad(y^k-1))
+t^(k+1) = (1+(1+4*t^k^2)^0.5)/2
+y^k = x^k + (t^k-1)/(t^(k+1)) (x^k - x^k-1)
+""" 
+def FIST_4( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
+    y     = step*invAfunc(b) #np.zeros(x.shape)
+    y_acc = np.zeros(y.shape,dtype=b.dtype)
+    x_pre = y
+    t     = np.ones(Nite+1)
+    # iteration
+    for k in range(Nite):
+        #residual
+        r      = Afunc(y) - b
+        y_acc  = y_acc - step*invAfunc(r)
+        # soft threshold
+        x      = pf.prox_l1_Tf_soft_thresh2(Tfunc,invTfunc,y_acc, th)    
+        t[k+1] = (1+(1+4*t[k]^2)^0.5)/2   
+        y      = x + np.multiply((t[k]-1)/(t[k+1]), (x - x_pre))
+        x_pre  = x
+        print np.linalg.norm(r)
+    return x
 """
 ADMM for argmin ||Ax-b|||_2^2+lambda*||x||_1
 Lagrangian is L(x,z,y) = f(x) + g(z) + y^H(x-z) + (rho/2)*||x-z||_2^2

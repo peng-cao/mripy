@@ -12,6 +12,7 @@ import os
 import tensorflow as tf
 import bloch_sim.sim_seq_MRF_irssfp_cuda as ssmrf
 import utilities.utilities_func as ut
+import bloch_sim.sim_utilities_func as simut
 
 pathdat  = '/working/larson/UTE_GRE_shuffling_recon/MRF/sim_ssfp_fa10_t1t2/IR_ssfp_t1t2b0pd5/'
 pathexe  = '/home/pcao/git/mripy/test/neural_network_training/'
@@ -54,7 +55,9 @@ def tf_error_func( model ):
     #training accuracy
     correct_prediction = tf.pow(tf.subtract(model.prediction, model.target),2)
     return tf.reduce_mean(correct_prediction)
-
+    #mistakes = tf.reduce_sum(tf.pow(tf.subtract(model.target,model.prediction),2) )/tf.reduce_sum(tf.pow(model.target,2) )
+    # error=cost(mistakes) = ||mistakes||_2
+    #return (tf.cast(mistakes, tf.float32))**(0.5)
 
 #############################
 
@@ -69,6 +72,8 @@ def test1():
     far        = np.multiply(far_amp, np.exp(far_phase)).astype(np.complex128).squeeze()
     trr        = np.random.uniform(3.0, 16.0, (Nk,)).astype(np.float64).squeeze()
 
+    #far, trr   = simut.rftr_const(Nk, 15.0, 4.0)
+    #far,trr    = simut.rftr_rand(Nk, fa, 3, 16)
     # prepare for sequence simulation, y->x_hat
     ti         = 10 #ms
     M0         = np.array([0.0,0.0,1.0]).astype(np.float64)
@@ -105,6 +110,12 @@ def test1():
         if i%1000 == 0 or i >= (Nite - 1):
             model.save('../save_data/MRF_encoder_t1t2b0')
             sio.savemat('../save_data/MRF_far_trr.mat', {'far':far, 'trr':trr})
+        if i % 100 == 0:
+            prey = model.prediction(batch_xs,np.zeros(batch_ys.shape))
+            ut.plot(prey[...,0], batch_ys[...,0], line_type = '.', pause_close = 1)
+            ut.plot(prey[...,1], batch_ys[...,1], line_type = '.', pause_close = 1)
+            ut.plot(prey[...,2], batch_ys[...,2], line_type = '.', pause_close = 1)
+            ut.plot(prey[...,3], batch_ys[...,3], line_type = '.', pause_close = 1)
 
 def test2():
     Nk            = 960#far.shape[0]
