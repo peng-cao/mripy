@@ -51,7 +51,7 @@ def bloch_sim_irssfp_cuda( Nexample, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti, S
     Afp  = cuda.local.array(shape=(3, 3), dtype=numba.float32)
     Bfp  = cuda.local.array(shape=3,      dtype=numba.float32)
     # sequence has multiple BSSFP-TRs for one IR
-    if T1r[i] > 0.0001 and T2r[i] > 0.0001:#PDr[i] > 0.0001 and 
+    if PDr[i] > 0.1 and T1r[i] > 0.0001 and T2r[i] > 0.0001 :#and T1r[i] > 3*T2r[i]
         PD = PDr[i] # proton density
         T1 = T1r[i] # T1
         T2 = T2r[i] # T2

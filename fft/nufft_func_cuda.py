@@ -1031,7 +1031,7 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps)
     #try to override nspread
-    #nspread = min(3, nspread)
+    nspread = min(3, nspread)
 
     # Construct the convolved grid
     if gridfast is 0:

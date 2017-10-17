@@ -9,6 +9,8 @@ import scipy.io as sio
 import test.MRI_recon.IDEAL_class as idealc
 from skimage.restoration import unwrap_phase
 #from unwrap import unwrap
+pathdat = '/working/larson/UTE_GRE_shuffling_recon/IDEAL_ZTE/20170929/save_data1slice.mat'
+#datpath = './data/kellman_data/PKdata3.mat'
 
 def unwrap_freq( im ):
     max_im    = 0.8*ut.scaling(np.absolute(im))
@@ -20,7 +22,7 @@ def unwrap_freq( im ):
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('data/kellman_data/PKdata3.mat', struct_as_record=False, squeeze_me=True)
+    mat_contents = sio.loadmat(pathdat, struct_as_record=False, squeeze_me=True)
     xdata        = mat_contents["data"] 
     im           = xdata.images
     TE           = xdata.TE
@@ -28,7 +30,7 @@ def test():
     fat_freq_arr = 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
     print(TE)
-    ut.plotim3(np.real(im[:,:,:]))
+    ut.plotim3(np.angle(im[:,:,:]))
     nx,ny,nte = im.shape
 
     scaling = ut.scaling(im)
@@ -44,19 +46,21 @@ def test():
     IDEAL.set_x(xpar) #should update in each gauss newton iteration
     residual    = IDEAL.residual(b)
     #do L2 cs mri recon
-    Nite  = 20 #number of iterations   
+    Nite  = 200 #number of iterations   
     ostep = 1.0 
     for i in range(40):
         dxpar = pf.prox_l2_Afxnb_CGD2( IDEAL.forward, IDEAL.backward, residual, Nite )
-        if i%5 == 0:
-            ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1)
-            ut.plotim3(np.real(xpar + ostep*dxpar)[...,2],bar=1)
-            ut.plotim3(np.imag(xpar + ostep*dxpar)[...,2],bar=1)
-        xpar = xpar + ostep * dxpar#.astype(np.float64)   
+        if i%10 == 0:
+            ut.plotim3(np.absolute(xpar + ostep*dxpar)[...,0:2],bar=1, pause_close = 5)
+            ut.plotim3(np.real(xpar + ostep*dxpar)[...,2],bar=1, pause_close = 5)
+            ut.plotim3(np.imag(xpar + ostep*dxpar)[...,2],bar=1, pause_close = 5)
+        xpar = xpar + ostep * dxpar#.astype(np.float64) 
+        #xpar[...,2] = np.real(xpar[...,2])  
         #xpar[:,:,2] = np.real(xpar[:,:,2])
         #if i > 0: 
         #    xpar[:,:,2] = unwrap_freq(np.real(xpar[:,:,2]))\
         #    +1j*(np.imag(xpar[:,:,2]))
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual    = IDEAL.residual(b)
-    ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)
+    ut.plotim3(np.absolute(xpar)[...,0:2],bar=1, pause_close = 5)
+    sio.savemat(pathdat + 'IDEAL_org_result.mat', {'xpar':xpar, 'residual':residual})

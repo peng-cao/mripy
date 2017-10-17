@@ -12,6 +12,8 @@ import test.MRI_recon.IDEAL_class as idealc
 
 from skimage.restoration import unwrap_phase
 #from unwrap import unwrap
+pathdat = '/working/larson/UTE_GRE_shuffling_recon/IDEAL_ZTE/20170929/save_data1slice.mat'
+#datpath = './data/kellman_data/PKdata3.mat'
 
 def unwrap_freq( im ):
     max_im    = ut.scaling(np.absolute(im))
@@ -23,7 +25,7 @@ def unwrap_freq( im ):
 
 def test():
     # simulated image
-    mat_contents = sio.loadmat('data/kellman_data/PKdata3.mat', struct_as_record=False, squeeze_me=True)
+    mat_contents = sio.loadmat(pathdat, struct_as_record=False, squeeze_me=True)
     xdata        = mat_contents["data"] 
     im           = xdata.images
     field        = xdata.FieldStrength
@@ -135,3 +137,4 @@ def test():
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)
     ut.plotim3(np.real(xpar + ostep*dxpar)[...,2],bar=1)
     ut.plotim3(np.imag(xpar + ostep*dxpar)[...,2],bar=1)
+    sio.savemat(pathdat + 'IDEAL_CGD_result.mat', {'xpar':xpar, 'residual':residual})

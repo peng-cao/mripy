@@ -104,7 +104,7 @@ def test1():
     
     read_coeff_flag = 1 # 0 not use coeff; 1 read coeff from mat file; 2 generate coeff by pca
     abs_flag        = 0 #apply pca on absolute time course
-    batch_size      = 200
+    batch_size      = 800
     Nk              = par[0]['irfreq'][0][0][0]#892#far.shape[0]#par.irfreq#
 
     if read_coeff_flag is 1:
@@ -194,6 +194,14 @@ def test1():
         else:
             batch_xs = np.absolute(batch_xs)
 
+        for dd in range(batch_xs.shape[0]):
+            tc1 = batch_xs[dd,:] #- np.mean(imall[i,:])     
+            normtc1 = np.linalg.norm(tc1)
+            if normtc1  > 0.04 and batch_ys[dd,0]*5000 > 3*500*batch_ys[dd,1]:
+                batch_xs[dd,:] = tc1#/normtc1
+            else:
+                batch_ys[dd,:] = np.zeros([1,npar])
+
         batch_xs = 1000*batch_xs
         #ut.plot(np.absolute(batch_xs[0,:]),pause_close =1)  
         #batch_ys[:,2]      = np.zeros(batch_size)
@@ -211,7 +219,7 @@ def test1():
 
 def test2():
     mat_contents     = sio.loadmat(pathdat+'im_pca.mat')#im.mat
-    I                = np.array(mat_contents["I"].astype(np.float32))[:,:,30,:]
+    I                = np.array(mat_contents["I"])[:,:,25:45,:]
     if len(I.shape) == 3:
         nx, ny, ndiv = I.shape
         nz           = 1
@@ -222,7 +230,9 @@ def test2():
     npar             = 4
     abs_flag         = 0 #apply pca on absolute time course, else compute absolute value after pca
     if abs_flag is 0:
-        imall = np.absolute(imall)
+        imall = np.absolute(imall).astype(np.float32)
+    else:
+        imall = imall.astype(np.float32)
     #imall = imall/np.ndarray.max(imall.flatten())
     #ut.plotim3(imall.reshape(I.shape)[...,0])
     #for i in range(imall.shape[0]):

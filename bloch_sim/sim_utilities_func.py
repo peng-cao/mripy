@@ -67,3 +67,14 @@ def average_dict( dictionary, Ndiv ):
     #ut.plot(cnt)
 
     return avedict
+
+def average_dict_cnorders( dictionary, cn_orders ):
+    Ndiv              = cn_orders.shape[1]
+    avedict           = np.dot(dictionary, cn_orders)
+    cnt               = np.sum(cn_orders,axis = 0)
+
+    for idx in range(Ndiv):
+        avedict[...,idx] =  avedict[...,idx]/cnt[idx]
+    #ut.plot(cnt)
+
+    return avedict

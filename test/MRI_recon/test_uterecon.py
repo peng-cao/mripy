@@ -1,5 +1,5 @@
 import fft.nufft_func as nft
-import fft.nufft_func_cuda as nft_cuda
+#import fft.nufft_func_cuda as nft_cuda
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ import utilities.utilities_func as ut
 """
 ute recon for one coil image
 """
-def unfft_ute( ktraj, dcf, kdata, ci, im_shape ):
+def nufft_ute( ktraj, dcf, kdata, ci, im_shape ):
     #nufft for one coil
     kdata1coil = kdata[:,:,:,ci].squeeze()
     kdata1coil = np.multiply(kdata1coil, dcf)
@@ -37,7 +37,7 @@ def ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape ):
     im = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
     for i in range(ncoils):#ncoils
         print('Reconstructing coil: %d/%d' % (i+1, ncoils))
-        im[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )
+        im[:,:,:,i] = nufft_ute( ktraj, dcf, kdata, i, im_shape )
     return im
 
 def allcoil_nufft( ktraj, dcf, kdata, ncoils, im_shape ):
@@ -86,12 +86,12 @@ def test():
     ktraj[2,:] = ktraj[2,:]*(1.0*im_shape[0]/im_shape[2])
 
     #im_under = np.zeros((im_shape[0], im_shape[1], im_shape[2], ncoils), dtype=kdata.dtype)
-    im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
-    #im_under = allcoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
+    #im_under = ncoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
+    im_under = allcoil_nufft( ktraj, dcf, kdata, ncoils, im_shape )
 
     #for i in range(ncoils):
     #    print('Reconstructing coil: %d/%d' % (i+1, ncoils))
-    #    im_under[:,:,:,i] = unfft_ute( ktraj, dcf, kdata, i, im_shape )
+    #    im_under[:,:,:,i] = nufft_ute( ktraj, dcf, kdata, i, im_shape )
 
     sio.savemat(path +'nufftrecon2.mat', {'im_under': im_under})
     #im_under = ut.loadmat(path +'nufftrecon.mat','im_under')

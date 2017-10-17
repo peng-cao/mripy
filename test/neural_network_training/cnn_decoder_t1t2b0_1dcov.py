@@ -110,7 +110,7 @@ b_fc1 = bias_variable([1024])
 h_pool2_flat = tf.reshape(h_pool7, [-1, 5*3*64])
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
-
+#h_fc1_ = tf.contrib.layers.layer_norm(h_fc1, center=True, scale=True) #layer norm
 
 #############dense connection layer 2
 #weighting and bias for a layer with 1024 neurons
@@ -120,6 +120,7 @@ b_fc2 = bias_variable([1024])
 # densely connected layer with relu output
 h_fc2 = tf.sigmoid(tf.matmul(h_fc1, W_fc2) + b_fc2)
 
+#h_fc2_ = tf.contrib.layers.layer_norm(h_fc2, center=True, scale=True) #layer norm
 
 #############dense connection layer 3
 #weighting and bias for a layer with 1024 neurons

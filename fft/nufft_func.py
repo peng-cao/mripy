@@ -255,8 +255,8 @@ Accelerating the Nonuniform Fast Fourier Transform by Greengard, Leslie and Lee,
 Some descriptions are from nufft1d1f90()
 Fast Gaussian gridding is based on the following observation.
 #calculate the grid, type 1
-# nopython=True means an error will be raised if fast compilation is not possible.
-@numba.jit(nopython=True)
+# nopython=True, nogil=True means an error will be raised if fast compilation is not possible.
+@numba.jit(nopython=True, nogil=True)
 def build_grid_1d1( x, c, tau, nspread, ftau ):
     nf1 = ftau.shape[0]
     hx = 2 * np.pi / nf1
@@ -278,8 +278,8 @@ g(x) = exp(-x^2 / 4*tau)
 
 """
 #calculate the grid, type 1
-# nopython=True means an error will be raised if fast compilation is not possible.
-@numba.jit(nopython=True)
+# nopython=True, nogil=True means an error will be raised if fast compilation is not possible.
+@numba.jit(nopython=True, nogil=True)
 def build_grid_1d1( x, c, tau, nspread, ftau ):
     nf1 = ftau.shape[0]
     hx = 2 * np.pi / nf1
@@ -294,7 +294,7 @@ def build_grid_1d1( x, c, tau, nspread, ftau ):
 
 
 #type1, fast version with precompute of exponentials
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_1d1_fast( x, c, tau, nspread, ftau, E3 ):
     nf1 = ftau.shape[0]
     hx = 2 * np.pi / nf1
@@ -317,7 +317,7 @@ def build_grid_1d1_fast( x, c, tau, nspread, ftau, E3 ):
     return ftau
 
 #1d grid type 2
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_1d2( x, fntau, tau, nspread ):
     nf1 = fntau.shape[0]
     hx = 2 * np.pi / nf1
@@ -330,7 +330,7 @@ def build_grid_1d2( x, fntau, tau, nspread ):
     return c/nf1
 
 #1d grid type 2 fast
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_1d2_fast( x, fntau, tau, nspread, E3 ):
     nf1 = fntau.shape[0]
     hx = 2 * np.pi / nf1
@@ -353,7 +353,7 @@ def build_grid_1d2_fast( x, fntau, tau, nspread, E3 ):
     return c/nf1
 
 #1d grid type 2 & type 1
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_1d21( x, fntau, tau, nspread ):
     # had problem when ftau is used for both input and output, current version seperate it as fntau/ftau
     nf1  = fntau.shape[0]
@@ -520,7 +520,7 @@ def nufft1d21_gaussker( x, Fk, ms, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
 #####################################################################################################
 
 #2d grid type 1
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_2d1( x, y, c, tau, nspread, ftau ):
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -541,7 +541,7 @@ def build_grid_2d1( x, y, c, tau, nspread, ftau ):
     return ftau
 
 #type1 2d grid, fast version with precompute of exponentials
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_2d1_fast( x, y, c, tau, nspread, ftau, E3 ):
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -576,7 +576,7 @@ def build_grid_2d1_fast( x, y, c, tau, nspread, ftau, E3 ):
     return ftau
 
 #2d type 2
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_2d2( x, y, fntau, tau, nspread ):
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
@@ -598,7 +598,7 @@ def build_grid_2d2( x, y, fntau, tau, nspread ):
     return c/(nf1*nf2)
 
 #type2 2d grid, fast version with precompute of exponentials
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_2d2_fast( x, y, fntau, tau, nspread, E3 ):
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
@@ -633,7 +633,7 @@ def build_grid_2d2_fast( x, y, fntau, tau, nspread, E3 ):
     return c/(nf1*nf2)
 
 #2d type 2 & type 1
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_2d21( x, y, fntau, tau, nspread ):
     nf1  = fntau.shape[0]
     nf2  = fntau.shape[1]
@@ -827,7 +827,7 @@ def nufft2d21_gaussker( x, y, Fk, ms, mt, df=1.0, eps=1E-15, iflag=1, gridfast=1
 #####################################################################################################
 
 #3d grid type 1
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True,parallel=True)
 def build_grid_3d1( x, y, z, c, tau, nspread, ftau ):
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -854,7 +854,7 @@ def build_grid_3d1( x, y, z, c, tau, nspread, ftau ):
     return ftau
 
 #type1 3d grid, fast version with precompute of exponentials
-@numba.jit(nopython=True)
+@numba.jit(nopython=True,nogil=True)#, parallel=True
 def build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 ):
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -878,7 +878,7 @@ def build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 ):
         xi = (xi - hx * mx) #
         yi = (yi - hy * my)
         zi = (zi - hz * mz)
-        E1 = np.exp(-0.25 * (xi ** 2 + yi ** 2 * zi ** 2) / tau)
+        E1 = np.exp(-0.25 * (xi ** 2 + yi ** 2 + zi ** 2) / tau)
         E2x = np.exp((xi * np.pi) / (nf1 * tau))
         E2y = np.exp((yi * np.pi) / (nf2 * tau))
         E2z = np.exp((zi * np.pi) / (nf3 * tau))
@@ -903,7 +903,7 @@ def build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 ):
     return ftau
 
 #3d grid type 2
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_3d2( x, y, z, fntau, tau, nspread ):
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
@@ -931,7 +931,7 @@ def build_grid_3d2( x, y, z, fntau, tau, nspread ):
     return c/(nf1*nf2*nf3)
 
 #type 2 3d grid, fast version with precompute of exponentials
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_3d2_fast( x, y, z, fntau, tau, nspread, E3 ):
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
@@ -981,7 +981,7 @@ def build_grid_3d2_fast( x, y, z, fntau, tau, nspread, E3 ):
     return c/(nf1*nf2*nf3)
 
 #3d grid type 2 & type 1
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_3d21( x, y, z, fntau, tau, nspread ):
     nf1   = fntau.shape[0]
     nf2   = fntau.shape[1]
@@ -1023,7 +1023,7 @@ def build_grid_3d21( x, y, z, fntau, tau, nspread ):
 
 #3d grid type 2 & type 1 with coil sensitivity kernel, sens_ker
 #assume sens_ker matches the fntau data resolution, and size matches 2*nspread+1 for each dimension
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, nogil=True)
 def build_grid_3d21_sensker( x, y, z, fntau, tau, nspread, sens_ker = None ):
     if sens_ker is None: #then no coil sensitivity map will be used, but sill sens_ker need to be 4d
         sens_ker = np.ones((2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1, 1),\
@@ -1116,11 +1116,12 @@ output:
 the nufft result, output dim is ms X mt X mu
 """
 # 3d nufft type 1
-def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
+#@numba.jit(nopython=True, nogil=True,parallel=True)
+def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
     #try to override nspread
-    #nspread = min(3, nspread)
+    nspread = min(3, nspread)
     #compute Ftaushape
     if len(c.shape) > 1:
         Ftaushape = (nf1, nf2, nf3) + c.shape[1:len(c.shape)]
@@ -1154,7 +1155,7 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
     np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
 #3d unfft type 2
-def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
 

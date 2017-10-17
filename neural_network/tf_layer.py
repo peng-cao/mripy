@@ -62,7 +62,7 @@ class tf_layer:
             y_act = x
         return y_act
 
-    def full_connection( self, x, in_fc_wide = None, out_fc_wide = None, activate_type = 'ReLU' ):
+    def full_connection( self, x, in_fc_wide = None, out_fc_wide = None, activate_type = 'ReLU', layer_norm = None ):
         if self.debug is 1:
             x = tf.Print(x, [tf.shape(x)],
                                message='Shape of input in fc',
@@ -72,14 +72,18 @@ class tf_layer:
         b_fc = self.bias_variable([out_fc_wide])
         # densely connected layer
         h_fc = tf.matmul(x, W_fc) + b_fc
-        y_act = self.activate( h_fc, activate_type)
+        if layer_norm is not None:
+            h_ln = tf.contrib.layers.layer_norm(h_fc, center=True, scale=True)
+        else:
+            h_ln = h_fc
+        y_act = self.activate( h_ln, activate_type)
         if self.debug is 1:
             y_act = tf.Print(y_act, [tf.shape(y_act)],
                                message='Shape of output in fc',
                                summarize=4, first_n=1)
         return y_act
 
-    def full_connection_dropout( self, x, arg = 1.0, in_fc_wide = None, out_fc_wide = None, activate_type = 'ReLU' ):
+    def full_connection_dropout( self, x, arg = 1.0, in_fc_wide = None, out_fc_wide = None, activate_type = 'ReLU', layer_norm = None ):
         #do dropout for the input
         h_fcn_drop = tf.nn.dropout(x, arg)
         #weighting and bias for a layer
@@ -87,10 +91,14 @@ class tf_layer:
         b_fc = self.bias_variable([out_fc_wide])
         # densely connected layer
         h_fc = tf.matmul(h_fcn_drop, W_fc) + b_fc
-        y_act = self.activate( h_fc, activate_type)
+        if layer_norm is not None:
+            h_ln = tf.contrib.layers.layer_norm(h_fc, center=True, scale=True)
+        else:
+            h_ln = h_fc
+        y_act = self.activate( h_ln, activate_type)
         return y_act
 
-    def multi_full_connection( self, x, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU' ):
+    def multi_full_connection( self, x, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU', layer_norm = None ):
         for i in range(n_fc_layers):
             #set fc_wide parameters
             if in_fc_wide_arr is None:
@@ -108,10 +116,10 @@ class tf_layer:
             else:
                 yin = yout
             #define fc layers
-            yout  = self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type =activate_type)
+            yout  = self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type =activate_type, layer_norm = layer_norm )
         return yout
 
-    def multi_full_connection_dropout( self, x, arg = 1.0, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU' ):
+    def multi_full_connection_dropout( self, x, arg = 1.0, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU', layer_norm = None):
         for i in range(n_fc_layers):
             # set fc_wide parameters
             if in_fc_wide_arr is None:
@@ -129,8 +137,30 @@ class tf_layer:
             else:
                 yin = yout
             #define fc layers
-            yout  = self.full_connection_dropout(yin, arg = arg, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'ReLU')
+            yout  = self.full_connection_dropout(yin, arg = arg, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'ReLU', layer_norm = layer_norm)
         return yout
+
+    def multi_full_connection_residual( self, x, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU', layer_norm = None ):
+        for i in range(n_fc_layers):
+            #set fc_wide parameters
+            if in_fc_wide_arr is None:
+                in_fc_wide = x.get_shape().as_list()[1]#x.shape[0]
+            else:
+                in_fc_wide = in_fc_wide_arr[i]
+
+            if out_fc_wide_arr is None:
+                out_fc_wide = x.get_shape().as_list()[1]#x.shape[0]
+            else:
+                out_fc_wide = out_fc_wide_arr[i]
+            #set input output
+            if i is 0:
+                yin = x
+            else:
+                yin = yout
+            #define fc layers
+            yout  = yin + self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type =activate_type, layer_norm = layer_norm )
+        return yout
+
 
     def convolution2d( self, x, cov_ker_size = (5,1), in_n_features = 1,\
                        out_n_features = 1, conv_strides = [1, 1, 1, 1],\
