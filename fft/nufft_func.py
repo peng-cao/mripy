@@ -2,6 +2,7 @@ from __future__ import print_function, division
 import numpy as np
 import numba
 import utilities.utilities_func as ut
+import utilities.utilities_class as utc
 import matplotlib.pyplot as plt
 import nufft_test_func
 from numba import cuda
@@ -228,13 +229,16 @@ nf1 = rat*ms  points, where rat is the oversampling ratio.
 nf2 = rat*mt  points, where rat is the oversampling ratio.
 nf3 = rat*mu  points, where rat is the oversampling ratio.
 """
-def _compute_3d_grid_params( ms, mt, mu, eps ):
+def _compute_3d_grid_params( ms, mt, mu, eps, max_nspread = None ):
     # Choose Nspread & tau from eps following Dutt & Rokhlin (1993)
     if eps <= 1E-33 or eps >= 1E-1:
         raise ValueError("eps = {0:.0e}; must satisfy "
                          "1e-33 < eps < 1e-1.".format(eps))
     rat = 2 if eps > 1E-11 else 3
     nspread = int(-np.log(eps) / (np.pi * (rat - 1) / (rat - 0.5)) + 0.5)
+    if max_nspread is not None:
+        nspread = min(nspread, max_nspread)
+        nspread = max(nspread, 3)
     nf1 = max(rat * ms, 2 * nspread)
     nf2 = max(rat * mt, 2 * nspread)
     nf3 = max(rat * mu, 2 * nspread)
@@ -982,7 +986,7 @@ def build_grid_3d2_fast( x, y, z, fntau, tau, nspread, E3 ):
 
 #3d grid type 2 & type 1
 @numba.jit(nopython=True, nogil=True)
-def build_grid_3d21( x, y, z, fntau, tau, nspread ):
+def build_grid_3d21( x, y, z, dcf, fntau, tau, nspread ):
     nf1   = fntau.shape[0]
     nf2   = fntau.shape[1]
     nf3   = fntau.shape[2]
@@ -1009,7 +1013,7 @@ def build_grid_3d21( x, y, z, fntau, tau, nspread ):
                     (xi - hx * (m1 + mm1)) ** 2 + \
                     (yi - hy * (m2 + mm2)) ** 2 + \
                     (zi - hz * (m3 + mm3)) ** 2 ) / tau)
-                    c += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
+                    c += dcf[i] * fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
                          * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
         #grid again
         c = c/(nf1*nf2*nf3)
@@ -1129,6 +1133,8 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
         Ftaushape = (nf1, nf2, nf3)
     #print(Ftaushape)
     # Construct the convolved grid
+    timer = utc.timing()
+    timer.start('nufft griding ')
     if gridfast is 0:
         Ftau = build_grid_3d1(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros(Ftaushape, dtype=c.dtype))
@@ -1136,12 +1142,14 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
         Ftau = build_grid_3d1_fast(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros(Ftaushape, dtype=c.dtype), \
                       np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype))
-
+    timer.stop().display()
+    timer.start('fft ')
     # Compute the FFT on the convolved grid
     if iflag < 0:
         Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(Ftau,s=None,axes=(0,1,2))
     else:
         Ftau = np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
+    timer.stop().display()
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:,:], Ftau[:ms//2 + ms % 2,:,:]],0)
@@ -1196,7 +1204,7 @@ def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, grid
     return fx
 
 #3d unfft type 2
-def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, dcf = None, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
 
@@ -1229,9 +1237,12 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gri
     else:
         Ftau = np.fft.fftn(Ftau,s=None,axes=(0,1,2))
 
+    if dcf is None:
+        dcf = np.ones(x.shape)
+
     # Construct the convolved grid
     if 1:# gridfast is not 1:
-        Ftau = build_grid_3d21(x*df, y*df, z*df, Ftau, tau, nspread)
+        Ftau = build_grid_3d21(x*df, y*df, z*df, dcf, Ftau, tau, nspread)
     #else:
     #    fx = build_grid_3d21_fast(x/df, y/df, z/df, fntau, tau, nspread,\
     #     np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))

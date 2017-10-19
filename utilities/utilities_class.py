@@ -7,9 +7,14 @@ class timing():
         self.time = 0.0
         self.t0   = 0.0
         self.t1   = 0.0
+        self.str  = ''
         #self.listtime = []
 
-    def start( self ):
+    def start( self, str = '' ):
+        if str is not '':
+            self.str = str
+        else:
+            self.str  = ''
         self.t0   = time()
         self.t1   = self.t0
         return self
@@ -23,5 +28,8 @@ class timing():
         return self.time
 
     def display( self, str='' ):
-        print( str + 'Executime time: %g sec' % self.time) 
+        if str is not '':
+            self.str = str
+        print( self.str + 'Executime time: %g sec' % self.time) 
+        self.str  = ''
         return self

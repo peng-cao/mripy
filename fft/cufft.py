@@ -5,23 +5,60 @@ from skcuda.fft import fft, ifft, Plan
 import utilities.utilities_class as utc
 
 #wrap for fft in cufft
-def fftnc2c_cuda( x ):
-    x = np.array(x).astype(np.complex64)
-    x_gpu  = gpuarray.to_gpu(x)
-    xf_gpu = gpuarray.empty(x.shape, np.complex64)
-    plan   = Plan(x.shape, np.complex64, np.complex64)
-    fft(x_gpu, xf_gpu, plan)
-    return xf_gpu.get()
+#def fftnc2c_cuda( x ):
+#    x = np.array(x).astype(np.complex64)
+#    x_gpu  = gpuarray.to_gpu(x)
+#    xf_gpu = gpuarray.empty(x.shape, np.complex64)
+#    plan   = Plan(x.shape, np.complex64, np.complex64)
+#    fft(x_gpu, xf_gpu, plan)
+#    return xf_gpu.get()
 
 #wrap for ifft in cufft, noted that the cufft functions are not normalized
 #here I normalize ifft by 1/N
-def ifftnc2c_cuda( x ):
+#def ifftnc2c_cuda( x ):
+#    x = np.array(x).astype(np.complex64)
+#    x_gpu  = gpuarray.to_gpu(x)
+#    xf_gpu = gpuarray.empty(x.shape, np.complex64)
+#    plan   = Plan(x.shape, np.complex64, np.complex64)
+#    ifft(x_gpu, xf_gpu, plan)
+#    return xf_gpu.get()/np.prod(x.shape)
+
+#wrap for fft in cufft
+def fftnc2c_cuda( x, axes = (0, 1, 2) ):
+    rank = len(axes) 
+    x = np.array(x).astype(np.complex64)
+    x_gpu  = gpuarray.to_gpu(x)
+    xf_gpu = gpuarray.empty(x.shape, np.complex64)     
+    if len(x.shape) > rank:       
+        batch = np.prod(x.shape[rank:len(x.shape)])
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64, batch, None, 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1 )        
+    else:      
+        batch = 1
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64 )        
+    fft(x_gpu, xf_gpu, plan)
+    xf = xf_gpu.get()
+    return xf
+
+#wrap for ifft in cufft, noted that the cufft functions are not normalized
+#here I normalize ifft by 1/N
+def ifftnc2c_cuda( x, axes = (0, 1, 2) ):
+    rank = len(axes)
     x = np.array(x).astype(np.complex64)
     x_gpu  = gpuarray.to_gpu(x)
     xf_gpu = gpuarray.empty(x.shape, np.complex64)
-    plan   = Plan(x.shape, np.complex64, np.complex64)
+    if len(x.shape) > rank:       
+        batch = np.prod(x.shape[rank:len(x.shape)])
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64, batch, None, 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1, \
+        np.array(x.shape[0:rank]).astype(np.int32), np.prod(x.shape[rank:len(x.shape)]), 1 )        
+    else:      
+        batch = 1
+        plan  = Plan(x.shape[0:rank], np.complex64, np.complex64 )        
     ifft(x_gpu, xf_gpu, plan)
-    return xf_gpu.get()/np.prod(x.shape)
+    return xf_gpu.get()/np.prod(x.shape[0:rank])
+
 
 #wrap for fft in cufft
 def fft2c2c_cuda( x, axes = (0, 1) ):
