@@ -1012,8 +1012,6 @@ def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread ):
     hx = 2 * np.pi / nf1
     hy = 2 * np.pi / nf2
     hz = 2 * np.pi / nf3
-    #c is coefficients
-    c = np.zeros(x.shape,dtype = fntau.dtype)
     #prepare for CUDA, compute CUDA parameters n, tpb, bpg
     device = cuda.get_current_device()
     n = x.shape[0] #number of kernels in the computing
@@ -1022,17 +1020,20 @@ def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread ):
     #computing start here
     #gaussker_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, fntau)
     if len(fntau.shape) is 3:
+        #c is coefficients
+        c = np.zeros(x.shape,dtype = fntau.dtype)        
         gaussker_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, fntau)
 
     elif len(fntau.shape) is 4:
         nt       = np.prod(fntau.shape[3:])
+        c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)        
         gaussker_array_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, fntau)
 
     elif len(fntau.shape) > 4:
         nt       = np.prod(fntau.shape[3:])
         tmp_dims = fntau.shape[3:]
         # flatten dims > 3
-        c = np.reshape(c, (c.shape[0], nt))
+        c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)
         fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
         gaussker_array_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, fntau)
         c = np.reshape(c, c.shape[0] + tmp_dims)
@@ -1139,8 +1140,7 @@ def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
     hx = 2 * np.pi / nf1
     hy = 2 * np.pi / nf2
     hz = 2 * np.pi / nf3
-    #c is coefficients
-    c = np.zeros(x.shape,dtype = fntau.dtype)
+
     # precompute some exponentials
     for p in range(nspread + 1):
         for l in range(nspread + 1):
@@ -1155,17 +1155,21 @@ def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
     #computing start here
     #gaussker_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, fntau)
     if len(fntau.shape) is 3:
+        #c is coefficients
+        c = np.zeros(x.shape,dtype = fntau.dtype)        
         gaussker_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, fntau)
 
     elif len(fntau.shape) is 4:
+        #c is coefficients
         nt       = np.prod(fntau.shape[3:])
+        c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)
         gaussker_array_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, fntau)
 
     elif len(fntau.shape) > 4:
         nt       = np.prod(fntau.shape[3:])
         tmp_dims = fntau.shape[3:]
         # flatten dims > 3
-        c = np.reshape(c, (c.shape[0], nt))
+        c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)
         fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
         gaussker_array_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, fntau)
         c = np.reshape(c, c.shape[0] + tmp_dims)
@@ -1227,9 +1231,10 @@ def gaussker_array_3d21_cuda(x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nsprea
     mx = 1 + int(xi // hx) #index for the closest grid point
     my = 1 + int(yi // hy) #index for the closest grid point
     mz = 1 + int(zi // hz) #index for the closest grid point
-    c  = 0.0 #coefficient, saved temporarily
+    #c  = 0.0 #coefficient, saved temporarily
     #do the 3d griding here
     for t in range(nt):
+        c = 0.0
         for mmx in range(-nspread, nspread): #mm index for all the spreading points
             for mmy in range(-nspread,nspread):#mm index for all the spreading points
                 for mmz in range(-nspread,nspread):#mm index for all the spreading points
@@ -1332,7 +1337,7 @@ the nufft result, output dim is ms X mt X mu
 #3d nufft type 1
 def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 3)
+    nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
     #compute Ftaushape
     if len(c.shape) > 1:
         Ftaushape = (nf1, nf2, nf3) + c.shape[1:len(c.shape)]
@@ -1373,9 +1378,9 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
     np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
 #3d unfft type 2
-def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
+def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 3)
+    nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2, k3 = nufft_func.nufftfreqs3d(ms, mt, mu)
     # Note the np.sqrt(np.pi / tau)**3 due to the 3 dimentions of nufft
@@ -1415,7 +1420,7 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
 #3d unfft type 2 & type 1
 def nufft3d21_gaussker_cuda( x, y, z, Fk, ms, mt, mu, dcf, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 3)#
+    nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)#
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2, k3 = nufft_func.nufftfreqs3d(ms, mt, mu)
 

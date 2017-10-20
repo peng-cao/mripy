@@ -908,14 +908,14 @@ def build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 ):
 
 #3d grid type 2
 @numba.jit(nopython=True, nogil=True)
-def build_grid_3d2( x, y, z, fntau, tau, nspread ):
+def build_grid_3d2( x, y, z, c, fntau, tau, nspread ):
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
     nf3 = fntau.shape[2]
     hx = 2 * np.pi / nf1
     hy = 2 * np.pi / nf2
     hz = 2 * np.pi / nf3
-    c = np.zeros(x.shape,dtype = fntau.dtype)
+    #c = np.zeros(x.shape,dtype = fntau.dtype)
     for i in range(x.shape[0]):
         xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
         yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
@@ -936,14 +936,14 @@ def build_grid_3d2( x, y, z, fntau, tau, nspread ):
 
 #type 2 3d grid, fast version with precompute of exponentials
 @numba.jit(nopython=True, nogil=True)
-def build_grid_3d2_fast( x, y, z, fntau, tau, nspread, E3 ):
+def build_grid_3d2_fast( x, y, z, c, fntau, tau, nspread, E3 ):
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
     nf3 = fntau.shape[2]
     hx = 2 * np.pi / nf1
     hy = 2 * np.pi / nf2
     hz = 2 * np.pi / nf3
-    c = np.zeros(x.shape,dtype = fntau.dtype)
+    #c = np.zeros(x.shape,dtype = fntau.dtype)
     # precompute some exponents
     for p in range(nspread + 1):
         for l in range(nspread + 1):
@@ -986,7 +986,7 @@ def build_grid_3d2_fast( x, y, z, fntau, tau, nspread, E3 ):
 
 #3d grid type 2 & type 1
 @numba.jit(nopython=True, nogil=True)
-def build_grid_3d21( x, y, z, dcf, fntau, tau, nspread ):
+def build_grid_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread ):
     nf1   = fntau.shape[0]
     nf2   = fntau.shape[1]
     nf3   = fntau.shape[2]
@@ -995,8 +995,9 @@ def build_grid_3d21( x, y, z, dcf, fntau, tau, nspread ):
     hz    = 2 * np.pi / nf3
     Em    = np.zeros((2*nspread+1,2*nspread+1,2*nspread+1),dtype = fntau.dtype) #will reuse this exponential
     ftau  = np.zeros(fntau.shape, dtype = fntau.dtype)
+
     for i in range(x.shape[0]):
-        c  = 0.0 #coefficient, saved temporarily
+        ctmp = 0.0 * ctmp
         xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
         yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
         zi = z[i] % (2 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
@@ -1013,16 +1014,16 @@ def build_grid_3d21( x, y, z, dcf, fntau, tau, nspread ):
                     (xi - hx * (m1 + mm1)) ** 2 + \
                     (yi - hy * (m2 + mm2)) ** 2 + \
                     (zi - hz * (m3 + mm3)) ** 2 ) / tau)
-                    c += dcf[i] * fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
+                    ctmp += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
                          * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
         #grid again
-        c = c/(nf1*nf2*nf3)
+        ctmp = dcf[i] * ctmp/(nf1*nf2*nf3)
         for mm1 in range(-nspread, nspread): #mm index for all the spreading points
             for mm2 in range(-nspread,nspread):
                 for mm3 in range(-nspread,nspread):
                     #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
                     ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
-                    += c * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
+                    += ctmp * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
     return ftau
 
 #3d grid type 2 & type 1 with coil sensitivity kernel, sens_ker
@@ -1195,11 +1196,16 @@ def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, grid
     else:
         Fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))
 
+    if len(Ftaushape) > 3:
+        c = np.zeros(x.shape+Ftaushape[3:], dtype = Fntau.dtype)
+    else:
+        c = np.zeros(x.shape, dtype = Fntau.dtype)
+
     # Construct the convolved grid
     if gridfast is not 1:
-        fx = build_grid_3d2(x*df, y*df, z*df, Fntau, tau, nspread)
+        fx = build_grid_3d2(x*df, y*df, z*df, c, Fntau, tau, nspread)
     else:
-        fx = build_grid_3d2_fast(x*df, y*df, z*df, Fntau, tau, nspread,\
+        fx = build_grid_3d2_fast(x*df, y*df, z*df, c, Fntau, tau, nspread,\
          np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
     return fx
 
@@ -1241,8 +1247,13 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, dcf = None, df=1.0, eps=1E-15, 
         dcf = np.ones(x.shape)
 
     # Construct the convolved grid
+    if len(Ftaushape) > 3:
+        ctmp = np.zeros(Ftaushape[3:], dtype = Ftau.dtype)
+    else:
+        ctmp = 0.0
+
     if 1:# gridfast is not 1:
-        Ftau = build_grid_3d21(x*df, y*df, z*df, dcf, Ftau, tau, nspread)
+        Ftau = build_grid_3d21(x*df, y*df, z*df, dcf, ctmp, Ftau, tau, nspread)
     #else:
     #    fx = build_grid_3d21_fast(x/df, y/df, z/df, fntau, tau, nspread,\
     #     np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))

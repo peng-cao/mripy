@@ -20,7 +20,7 @@ def test():
     nx,ny,nz,nc  = x.shape
     #crop k-space
     xcrop        = ut.crop3d( x, 12 )  
-    if 0:#do espirit  
+    if 1:#do espirit  
         Vim, sim = espirit_3d(xcrop, x.shape, 150, hkwin_shape = (12,12,12),\
          pad_before_espirit = 0, pad_fact = 2)
         #coil map

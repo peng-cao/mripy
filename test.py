@@ -25,8 +25,8 @@
 ##########################################################################
 # MRI regular reconstruction function testing
 ##########################################################################
-import test.MRI_recon.test_uterecon as test_uterecon
-test_uterecon.test()
+#import test.MRI_recon.test_uterecon as test_uterecon
+#test_uterecon.test()
 
 #import test.espirit.espirit_2d as espirit_2d
 #espirit_2d.test()
@@ -86,6 +86,10 @@ test_uterecon.test()
 
 #import test.CS_MRI.pics_IST_3d_wavelet_L1_shuffledmprage as pics_IST_3d_wavelet_L1_shuffledmprage
 #pics_IST_3d_wavelet_L1_shuffledmprage.test()
+
+import test.CS_MRI.pics_IST_3dute_wavelet_L1 as pics_IST_3dute_wavelet_L1
+pics_IST_3dute_wavelet_L1.test()
+
 
 #import test.CS_MRI.cs_TV_ADMM_3d as cs_TV_ADMM_3d
 #cs_TV_ADMM_3d.test()

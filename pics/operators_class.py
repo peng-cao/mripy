@@ -2,6 +2,7 @@ import numpy as np
 import dwt.dwt_func as dwt_func
 import scipy.io as sio
 #from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
+import fft.nufft_func as nft
 import fft.fftw_func as fftw
 from utilities.utilities_func import dim_match
 class data_class:
@@ -92,6 +93,9 @@ class FFT2d_kmask:
         im = np.fft.ifftshift(im,self.axes)
         return im
 
+    def forward_backward( self, im ):
+        return self.backward(self.forward(im))
+
 #nd fft, default is 3d
 class FFTnd:
     "this is ndim FFT without k-space mask for CS MRI recon"
@@ -154,6 +158,9 @@ class FFTnd_kmask:
         im  = np.fft.ifftn(ksp,s=None,axes=self.axes)
         im  = np.fft.ifftshift(im,self.axes)          
         return im
+
+    def forward_backward( self, im ):
+        return self.backward(self.forward(im))
 
 """
 those classes use fftw lib wihich support multi-threads
@@ -220,6 +227,8 @@ class FFTW2d_kmask:
         im  = np.fft.ifftshift(im,self.axes)          
         return im
 
+    def forward_backward( self, im ):
+        return self.backward(self.forward(im))
 
 #nd fft
 class FFTWnd:
@@ -283,7 +292,76 @@ class FFTWnd_kmask:
         im  = np.fft.ifftshift(im,self.axes)          
         return im
 
+    def forward_backward( self, im ):
+        return self.backward(self.forward(im))
 
+
+"""
+ NUFFT3d operators, apply to mutliple coil array data as a whole
+"""
+class NUFFT3d:
+    def __init__( self, im_shape=None, dcf=None, ktrajx=None, ktrajy=None, ktrajz =None, axes = (0, 1, 2)):
+        self.axes     = axes
+        if ktrajx is not None:
+            self.ktrajx   = ktrajx.flatten()
+        else:
+            self.ktrajx   = None
+        if ktrajy is not None:
+            self.ktrajy   = ktrajy.flatten()
+        else:
+            self.ktrajy   = None
+        if ktrajz is not None:
+            self.ktrajz   = ktrajz.flatten()
+        else:
+            self.ktrajz   = None
+        self.im_shape = im_shape
+        if dcf is not None:
+            self.dcf      = dcf.flatten()
+        else:
+            self.dcf      = None
+
+    def normalize_set_ktraj( self, ktraj ):
+        ktraj           = np.pi * ktraj/ktraj.flatten().max()#2.0 * 
+        self.ktrajx     = ktraj[0,:].flatten()
+        self.ktrajy     = ktraj[1,:].flatten()
+        self.ktrajz     = ktraj[2,:].flatten()#*(1.0*im_shape[0]/im_shape[2])    
+        return self.ktrajx, self.ktrajy, self.ktrajz    
+
+    def set_ktraj( self, ktrajx, ktrajy, ktrajz, dcf ):
+        self.ktrajx   = ktrajx.flatten()
+        self.ktrajy   = ktrajy.flatten()
+        self.ktrajz   = ktrajz.flatten()
+        self.dcf      = dcf.flatten()
+
+    #def flatten_dims( self, kdata, axes = (0, 1, 2) ):
+    #    return kdata.reshape(((np.prod(kdata.shape[axes]),) + kdata.shape[axes[-1]:])).squeeze()
+
+    def density_weighting( self, kdata, dcf ):
+        kdatashape, dcfshape = dim_match(kdata.shape, dcf.shape)
+        kdata                = np.multiply(kdata.reshape(kdatashape), dcf.reshape(dcfshape)).squeeze()
+        return kdata
+
+    def forward( self, im ):
+        kdata    = nft.nufft3d2_gaussker(self.ktrajx,      self.ktrajy,      self.ktrajz,     im, \
+                                         self.im_shape[0], self.im_shape[1], self.im_shape[2], \
+                                         df=1.0, eps=1E-5, gridfast=1 )
+        return kdata
+
+    def backward( self, kdata ):
+        # density conpensation
+        kdata = self.density_weighting(kdata, self.dcf)
+        # nufft type 1,
+        im    = nft.nufft3d1_gaussker(self.ktrajx,      self.ktrajy,      self.ktrajz,       kdata, \
+                                      self.im_shape[0], self.im_shape[1], self.im_shape[2],\
+                                      df=1.0, eps=1E-5,  gridfast=1)
+        return im
+
+    def forward_backward( self, im ):
+        im    = nft.nufft3d21_gaussker(self.ktrajx,      self.ktrajy,      self.ktrajz,       im, \
+                                       self.im_shape[0], self.im_shape[1], self.im_shape[2], \
+                                       dcf = self.dcf, \
+                                       df=1.0, eps=1E-5, gridfast=1 )
+        return im
 """
 discrete wavelet transform operators
 """
@@ -429,12 +507,18 @@ class joint2operators:
         xout = self.Aopt.backward(self.Bopt.backward(xin))
         return xout
 
+    def forward_backward( self, xin ):
+        if "forward_backward" in dir(self.Bopt):
+            return self.Aopt.backward(self.Bopt.forward_backward(self.Aopt.forward(xin)))
+        else:
+            return self.Aopt.backward(self.Bopt.backward(self.Bopt.forward(self.Aopt.forward(xin))))
+
 """
 this class combine three operators together
 
 """
 class joint3operators:
-    "this apply two operators jointly"
+    "this apply three operators jointly"
     def __inital__( self, Aopt, Bopt, Copt ):
         self.Aopt = Aopt
         self.Bopt = Bopt
@@ -447,3 +531,9 @@ class joint3operators:
     def backward( self, xin ):
         xout = self.Copt.backward(self.Aopt.backward(self.Bopt.backward(xin)))
         return xout
+
+    def forward_backward( self, xin ):
+        if "forward_backward" in dir(self.Copt):
+            return self.Bopt.backward(self.Copt.forward_backward(self.Bopt.forward(xin)))
+        else:
+            return self.Aopt.backward(self.Bopt.backward(self.Copt.backward(self.Copt.forward(self.Bopt.forward(self.Aopt.forward(xin))))))

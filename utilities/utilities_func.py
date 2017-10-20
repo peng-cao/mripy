@@ -389,3 +389,13 @@ def dim_match( A_shape ,B_shape ):
         for _ in range(len(B_shape),len(A_shape)):
             B_out_shape += (1,)
     return  A_out_shape, B_out_shape
+
+"""
+calculate the root sum of square, for combining the coil elements
+"""
+def rss( im_coils, axis_rss=None ):
+    #print(np.absolute(im_coils).flatten().max())
+    #im_coils=im_coils/np.absolute(im_coils).flatten().max()
+    if axis_rss is None:
+        axis_rss = len(im_coils.shape) - 1 # assume the last dimention is the coil dimention
+    return np.linalg.norm(im_coils, ord=None, axis = axis_rss)

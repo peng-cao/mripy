@@ -30,6 +30,6 @@ class timing():
     def display( self, str='' ):
         if str is not '':
             self.str = str
-        print( self.str + 'Executime time: %g sec' % self.time) 
+        print( self.str + 'execute time: %g sec' % self.time) 
         self.str  = ''
         return self

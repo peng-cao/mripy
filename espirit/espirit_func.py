@@ -22,7 +22,7 @@ Vim the sensitivity map
 sim the singular value map
 
 """
-def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_before_espirit = 0, pad_fact = 1 ):
+def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_before_espirit = 0, pad_fact = 1, sigv_th = 0.9 ):
     ft = op.FFT2d()#2d fft operator
     #timing = utc.timing()
     #multidimention tensor as the block hankel matrix
@@ -84,7 +84,7 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_bef
             U, s, V      = np.linalg.svd(vvH, full_matrices=False)
             sim[ix,iy]   = s[0]
             Vim[ix,iy,:] = V[0,:].squeeze()
-            Vim[ix,iy,:] = Vim[ix,iy,:]
+
 
     Vim = np.conj(Vim)
     if pad_before_espirit is 0:
@@ -110,7 +110,7 @@ sim the singular value map
 
 """
 def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
-    pad_before_espirit = 0, pad_fact = 1 ):
+    pad_before_espirit = 0, pad_fact = 1, sigv_th = 0.9 ):
     ft = op.FFTnd((0,1,2))#3d fft operator
     timing = utc.timing()
     #multidimention tensor as the block hankel matrix
@@ -180,6 +180,13 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
                 sim[ix,iy,iz]   = s[0]
                 Vim[ix,iy,iz,:] = V[0,:].squeeze()
 
+    sim = sim/np.max(sim.flatten())
+    for ix in range(nx):
+        for iy in range(ny):
+            for iz in range (nz):
+                    if s[0] < sigv_th:
+                        Vim[ix,iy,iz,:] = np.zeros(nc)
+
     Vim = np.conj(Vim)    
     timing.stop().display('ESPIRIT ')
     #pad the image after espirit
@@ -187,8 +194,8 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
         Vim = ft.backward(ut.pad3d(ft.forward(Vim),x_shape[0],x_shape[1],x_shape[2]))
         sim = ft.backward(ut.pad3d(ft.forward(sim),x_shape[0],x_shape[1],x_shape[2]))
     #plot first eigen vector, which is coil sensitvity map, and eigen value
-    #ut.plotim3(np.absolute(Vim[Vim.shape[0]//2,:,:,:].squeeze()))
-    #ut.plotim1(np.absolute(sim[Vim.shape[0]//2,:,:].squeeze()))
+    ut.plotim3(np.absolute(Vim[Vim.shape[0]//2,:,:,:].squeeze()))
+    ut.plotim1(np.absolute(sim[Vim.shape[0]//2,:,:].squeeze()))
     #Vim_dims_name = ['x', 'y', 'z', 'coil']
     #sim_dims_name = ['x', 'y', 'z']
     Vimnorm = np.linalg.norm(Vim, axis = 3)
