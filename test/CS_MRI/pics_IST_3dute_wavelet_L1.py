@@ -1,6 +1,7 @@
 """
 test tv denoising and CS recon, algrithm using ADMM
 """
+import config
 import numpy as np
 import pics.proximal_func as pf
 import pics.CS_MRI_solvers_func as solvers
@@ -11,15 +12,18 @@ import scipy.io as sio
 import pics.operators_class as optc
 import pics.operators_cuda_class as cuoptc
 
+#config.debug_print.atlevel(1,'hello debug world! ').global_level()
+
+
 def test():
-    path = '/home/pcao/3d_recon/'
-    matfile = 'Phantom_res256_256_20.mat'
+    #path = '/home/pcao/3d_recon/'
+    #matfile = 'Phantom_res256_256_20.mat'
     #phantom data
     #path = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/scan_1_phantom/'
     #matfile = 'Phantom_utecone.mat'
     #lung data
-    #path         = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/lung_exp4_no_prep/'
-    #matfile      = 'lung_utecone.mat'
+    path         = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/lung_exp4_no_prep/'
+    matfile      = 'lung_utecone.mat'
   
     mat_contents = sio.loadmat(path + matfile);
 
@@ -38,19 +42,21 @@ def test():
     kdata      = kdata.reshape((np.prod(kdata.shape[0:3]),ncoils)).squeeze()
     #call nufft3d here
     nft = cuoptc.NUFFT3d_cuda(im_shape, dcf)
+    #nft = optc.NUFFT3d(im_shape, dcf)
     nft.normalize_set_ktraj(ktraj)
     ft  = opts.FFTnd()    
 
     im  = nft.backward(kdata)
+
     x   = ft.forward(im)
     ut.plotim3(np.absolute(im[:,:,:,1]))
     #get shape
     #nx,ny,nz,nc  = x.shape
     #crop k-space
     xcrop        = ut.crop3d( x, 12 )  
-    if 1:#do espirit  
-        Vim, sim = espirit_3d(xcrop, x.shape, 150, hkwin_shape = (12,12,12),\
-         pad_before_espirit = 0, pad_fact = 2, sigv_th = 0.01 )
+    if 0:#do espirit  
+        Vim, sim = espirit_3d(xcrop, x.shape, 450, hkwin_shape = (12,12,12),\
+         pad_before_espirit = 0, pad_fact = 2, sigv_th = 0.001, nsigv_th = 0.3 )
         #coil map
         #ut.plotim3(np.absolute(Vim[:,:,im.shape[2]//2,:]),bar = 1)
         #ut.plotim3(np.absolute(sim),bar = 1)
@@ -67,11 +73,8 @@ def test():
     Aopt = opts.joint2operators(esp, nft)
 
     #wavelet operator
-    #dwt  = opts.DWTnd(wavelet = 'haar', level=4)
-
-    nkdata = Aopt.forward(im)
-    print(np.linalg.norm(nkdata-kdata)/np.linalg.norm(kdata))  
-    #sio.savemat(path +'test_im.mat', {'nkdata': nkdata,'kdata':kdata})
+    dwt  = opts.DWTnd(wavelet = 'haar', level=4) 
+    #
 
     scaling = ut.optscaling(Aopt,kdata)
     kdata = kdata/scaling
@@ -84,12 +87,16 @@ def test():
     #xopt = solvers.ADMM_l2Afxnb_tvx( Aopt.forward, Aopt.backward, kdata, Nite, step, tv_r, rho )
 
     #do wavelet l1 soft thresholding
-    Nite = 20 #number of iterations
+    Nite = 1 #number of iterations
     step = 0.1 #step size
     th = 0.04 # theshold level
-    xopt = solvers.IST_2( Aopt.forward, Aopt.backward, kdata, Nite, step, th )
-  
-    ut.plotim3(np.absolute(xopt[:,:,:,1]))
-
+    #xopt = solvers.IST_2( Aopt.forward, Aopt.backward, kdata, Nite, step, th )
+    #xopt = solvers.IST_22( Aopt.forward_backward, Aopt.backward, kdata, Nite, step, th )    
+    #xopt = solvers.FIST_3( Aopt.forward, Aopt.backward, dwt.backward, dwt.forward, kdata, Nite, step, th )
+    #xopt = solvers.FIST_32( Aopt.forward_backward, Aopt.backward, dwt.backward, dwt.forward, kdata, Nite, step, th )
+    xopt = solvers.FIST_wrap( Aopt, dwt, kdata, Nite, step, th )
+    #xopt = solvers.IST_wrap( Aopt, dwt, kdata, Nite, step, th )    
+    ut.plotim3(np.absolute(xopt[:,:,:]))
+    sio.savemat(path +'test_im.mat', {'xopt': xopt})
 #if __name__ == "__main__":
     #test()

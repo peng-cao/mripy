@@ -1,3 +1,4 @@
+
 ##########################################################################
 # fft function testing
 ##########################################################################
@@ -87,8 +88,8 @@
 #import test.CS_MRI.pics_IST_3d_wavelet_L1_shuffledmprage as pics_IST_3d_wavelet_L1_shuffledmprage
 #pics_IST_3d_wavelet_L1_shuffledmprage.test()
 
-import test.CS_MRI.pics_IST_3dute_wavelet_L1 as pics_IST_3dute_wavelet_L1
-pics_IST_3dute_wavelet_L1.test()
+#import test.CS_MRI.pics_IST_3dute_wavelet_L1 as pics_IST_3dute_wavelet_L1
+#pics_IST_3dute_wavelet_L1.test()
 
 
 #import test.CS_MRI.cs_TV_ADMM_3d as cs_TV_ADMM_3d
@@ -202,6 +203,10 @@ pics_IST_3dute_wavelet_L1.test()
 
 #import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
 #tf_wrap_cnn2d_Unet_lung_kaggle.test1()
+
+import test.neural_network_training.tf_wrap_cnn2d_Unet_heart as tf_wrap_cnn2d_Unet_heart
+tf_wrap_cnn2d_Unet_heart.test1()
+
 
 #import test.neural_network_training.gan_example as gan_example
 #gan_example.test1()

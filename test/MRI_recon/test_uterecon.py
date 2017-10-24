@@ -1,5 +1,6 @@
+import config 
 import fft.nufft_func as nft
-import fft.nufft_func_cuda as nft_cuda
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -10,7 +11,11 @@ import scipy.io as sio
 import utilities.utilities_func as ut
 import utilities.utilities_class as utc
 import pics.operators_class as optc
+
+#if config.gpu_available is True:
+import fft.nufft_func_cuda as nft_cuda
 import pics.operators_cuda_class as cuoptc
+
 #from numba import jit
 
 #def plot_recon():
@@ -68,14 +73,12 @@ def rss( im_coils, axis_rss=None ):
     return np.linalg.norm(im_coils, ord=None, axis = axis_rss)
 
 def test():
-    path = '/home/pcao/3d_recon/'
-    matfile = 'Phantom_res256_256_20.mat'
+    #path = '/home/pcao/3d_recon/'
+    #matfile = 'Phantom_res256_256_20.mat'
     #phantom data
-    #im_shape = [128, 128, 64]
-    #path = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/scan_1_phantom/'
-    #matfile = 'Phantom_utecone.mat'
+    path = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/scan_1_phantom/'
+    matfile = 'Phantom_utecone.mat'
     #lung data
-    #im_shape     = [220, 220, 80]
     #path         = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/lung_exp4_no_prep/'
     #matfile      = 'lung_utecone.mat'
   
@@ -83,7 +86,7 @@ def test():
 
     ktraj      = mat_contents["ktraj"]
     dcf        = mat_contents["dcf"]
-    kdata      = mat_contents["kdata"]
+    kdata      = mat_contents["kdata"].astype(np.complex64)
     ncoils     = kdata.shape[3]
 
     #bart nufft assumes the im_shape is weighted on ktraj, so I can extract this info here
@@ -95,12 +98,12 @@ def test():
     #reshape the kdata, flatten the xyz dims
     kdata      = kdata.reshape((np.prod(kdata.shape[0:3]),ncoils)).squeeze()
     #call nufft3d here
-    nufft_cuda = cuoptc.NUFFT3d_cuda(im_shape, dcf)
-    nufft_cuda.normalize_set_ktraj(ktraj)
+    nufft = cuoptc.NUFFT3d_cuda(im_shape, dcf)
+    nufft.normalize_set_ktraj(ktraj)
     #nufft      = optc.NUFFT3d(im_shape, dcf)    
     #nufft.normalize_set_ktraj(ktraj)
-    im_under   = nufft_cuda.backward(kdata)
-    #im_under   = nufft_cuda.forward_backward(im_under)
+    im_under   = nufft.backward(kdata)
+    im_under   = nufft.forward_backward(im_under)
     #kdata      = nufft.forward(im_under)
     #im_under   = nufft.backward(kdata)
 

@@ -1,5 +1,7 @@
 import numpy as np
 import proximal_func as pf
+import opt_alg as alg
+
 #from numba import jit
 """
 iterative soft-thresholding
@@ -37,6 +39,19 @@ def IST_2( Afunc, invAfunc, b, Nite, step, th ):
         print np.linalg.norm(r)
     return x
 
+def IST_22( Afunc, invAAfunc, invAfunc, b, Nite, step, th ):
+    invAb = invAfunc(b)
+    x_acc = step*invAb#np.zeros(x.shape)
+    # iteration
+    for _ in range(Nite):
+        # soft threshold
+        x = pf.prox_l1_soft_thresh2(x_acc, th)
+        #residual
+        r = invAAfunc(x) - invAb      
+        x_acc = x_acc - step*r
+        print np.linalg.norm(r)
+    return x
+
 """
 iterative soft-thresholding
 argmin ||A(x)-b|||_2^2+(th/2)*||Tfunc(x)||_1
@@ -57,6 +72,42 @@ def IST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
         print np.linalg.norm(r)
     return x
 
+def IST_32( Afunc, invAAfunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
+    invAb = invAfunc(b)
+    x_acc = step*invAb #np.zeros(x.shape)
+    # iteration
+    for _ in range(Nite):
+        # soft threshol
+        x = pf.prox_l1_Tf_soft_thresh2(Tfunc,invTfunc,x_acc, th)
+        #residual
+        r = invAAfunc(x) - invAb
+        x_acc = x_acc - step*r
+        print np.linalg.norm(r)
+    return x
+
+# wrap of several IST function
+def IST_wrap ( Aopt, Topt = None, b = None, Nite = None, step = None, th = None ):
+    if b is None:
+        print('FIST donot has input data!')
+        return 
+    if Nite is None:
+        Nite = 20 #number of iterations
+    if step is None:
+        step = 0.1 #step size
+    if th is None:
+        th = 0.04 # theshold level
+
+    if Topt is not None:#||Ax - b||_2 + ||Tx||_1
+        if "forward_backward" in dir(Aopt):
+            x = IST_32( Aopt.forward, Aopt.forward_backward, Aopt.backward, Topt.backward, Topt.forward, b, Nite, step, th )
+        else:
+            x = IST_3 ( Aopt.forward,          Aopt.backward, Topt.backward, Topt.forward, b, Nite, step, th )
+    else: #||Ax - b||_2 + ||x||_1
+        if "forward_backward" in dir(Aopt):
+            x = IST_22( Aopt.forward, Aopt.forward_backward, Aopt.backward, b, Nite, step, th )
+        else:
+            x = IST_2 ( Aopt.forward,          Aopt.backward, b, Nite, step, th )       
+    return x
 """
 fast iterative soft-thresholding
 argmin ||A(x)-b|||_2^2+(th/2)*||Tfunc(x)||_1
@@ -67,6 +118,7 @@ y^0 = x^0
 x^k = prox_tkh(y^k-1 - tk * grad(y^k-1))
 y^k = x^k + (k-1)/(k+2) (x^k - x^k-1)
 """ 
+"""
 def FIST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
     y     = step*invAfunc(b) #np.zeros(x.shape)
     y_acc = np.zeros(y.shape,dtype=b.dtype)
@@ -84,7 +136,7 @@ def FIST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
         k += 1
         print np.linalg.norm(r)
     return x
-
+"""
 """
 fast iterative soft-thresholding
 argmin ||A(x)-b|||_2^2+(th/2)*||Tfunc(x)||_1
@@ -96,7 +148,44 @@ x^k = prox_tkh(y^k-1 - tk * grad(y^k-1))
 t^(k+1) = (1+(1+4*t^k^2)^0.5)/2
 y^k = x^k + (t^k-1)/(t^(k+1)) (x^k - x^k-1)
 """ 
-def FIST_4( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
+def FIST_2( Afunc, invAfunc, b, Nite, step, th ):
+    y     = step*invAfunc(b) #np.zeros(x.shape)
+    y_acc = np.zeros(y.shape,dtype=b.dtype)
+    x_pre = y
+    t     = np.ones(Nite+1)
+    # iteration
+    for k in range(Nite):
+        #residual
+        r      = Afunc(y) - b
+        y_acc  = y_acc - step*invAfunc(r)
+        # soft threshold
+        x      = pf.prox_l1_soft_thresh2(y_acc, th)
+        t[k+1] = (1+(1+4*t[k]**2)**0.5)/2   
+        y      = x + np.multiply((t[k]-1)/(t[k+1]), (x - x_pre))
+        x_pre  = x
+        print np.linalg.norm(r)
+    return x
+
+def FIST_22( Afunc, invAAfunc, invAfunc, b, Nite, step, th ):
+    invAb = invAfunc(b) #np.zeros(x.shape)
+    y     = step*invAb
+    y_acc = np.zeros(y.shape,dtype=b.dtype)
+    x_pre = y
+    t     = np.ones(Nite+1)
+    # iteration
+    for k in range(Nite):
+        #residual
+        r      = invAAfunc(y) - invAb
+        y_acc  = y_acc - step*r
+        # soft threshold
+        x      = pf.prox_l1_soft_thresh2(y_acc, th)   
+        t[k+1] = (1+(1+4*t[k]**2)**0.5)/2   
+        y      = x + np.multiply((t[k]-1)/(t[k+1]), (x - x_pre))
+        x_pre  = x
+        print np.linalg.norm(r)
+    return x
+
+def FIST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
     y     = step*invAfunc(b) #np.zeros(x.shape)
     y_acc = np.zeros(y.shape,dtype=b.dtype)
     x_pre = y
@@ -108,10 +197,52 @@ def FIST_4( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
         y_acc  = y_acc - step*invAfunc(r)
         # soft threshold
         x      = pf.prox_l1_Tf_soft_thresh2(Tfunc,invTfunc,y_acc, th)    
-        t[k+1] = (1+(1+4*t[k]^2)^0.5)/2   
+        t[k+1] = (1+(1+4*t[k]**2)**0.5)/2   
         y      = x + np.multiply((t[k]-1)/(t[k+1]), (x - x_pre))
         x_pre  = x
         print np.linalg.norm(r)
+    return x
+
+def FIST_32( Afunc, invAAfunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
+    invAb = invAfunc(b) #np.zeros(x.shape)
+    y     = step*invAb
+    y_acc = np.zeros(y.shape,dtype=b.dtype)
+    x_pre = y
+    t     = np.ones(Nite+1)
+    # iteration
+    for k in range(Nite):
+        #residual
+        r      = invAAfunc(y) - invAb
+        y_acc  = y_acc - step*r
+        # soft threshold
+        x      = pf.prox_l1_Tf_soft_thresh2(Tfunc,invTfunc,y_acc, th)    
+        t[k+1] = (1+(1+4*t[k]**2)**0.5)/2   
+        y      = x + np.multiply((t[k]-1)/(t[k+1]), (x - x_pre))
+        x_pre  = x
+        print np.linalg.norm(r)
+    return x
+
+# wrap of several FIST function
+def FIST_wrap ( Aopt, Topt = None, b = None, Nite = None, step = None, th = None ):
+    if b is None:
+        print('FIST donot has input data!')
+        return 
+    if Nite is None:
+        Nite = 20 #number of iterations
+    if step is None:
+        step = 0.1 #step size
+    if th is None:
+        th = 0.04 # theshold level
+    if Topt is not None:#||Ax - b||_2 + ||Tx||_1
+        if "forward_backward" in dir(Aopt):
+            x = FIST_32( Aopt.forward, Aopt.forward_backward, Aopt.backward, Topt.backward, Topt.forward, b, Nite, step, th )
+        else:
+            x = FIST_3 ( Aopt.forward,          Aopt.backward, Topt.backward, Topt.forward, b, Nite, step, th )
+    else: #||Ax - b||_2 + ||x||_1
+        if "forward_backward" in dir(Aopt):
+            x = FIST_22( Aopt.forward, Aopt.forward_backward, Aopt.backward, b, Nite, step, th )
+        else:
+            x = FIST_2 ( Aopt.forward,          Aopt.backward, b, Nite, step, th )       
     return x
 """
 ADMM for argmin ||Ax-b|||_2^2+lambda*||x||_1

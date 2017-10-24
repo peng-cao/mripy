@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import config
 import numpy as np
 import numba
 import utilities.utilities_func as ut
@@ -10,6 +11,10 @@ from numba import cuda
 from time import time
 from math import exp
 from fft.cufft import fftnc2c_cuda, ifftnc2c_cuda
+import fftw_func
+
+#from numba.cuda.cudadrv.devices import reset
+#reset()
 
 
 #####################################################################################################
@@ -704,7 +709,7 @@ def gaussker_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, real_
                 cuda.atomic.add(imag_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3), tmp.imag)
 
 @cuda.jit
-def gaussker_array_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau ):
+def gaussker_array_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau, save_ram = 0 ):
     """This kernel function for gauss grid 1d typ1, and it will be executed by a thread."""
     i  = cuda.grid(1)
     if i > x.shape[0]:
@@ -729,7 +734,7 @@ def gaussker_array_3d1_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, 
                     cuda.atomic.add(real_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3, t), (c[i, t] * tmp).real)
                     cuda.atomic.add(imag_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3, t), (c[i, t] * tmp).imag)
 
-def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau ):
+def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau, save_ram = 0 ):
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
     nf3 = ftau.shape[2]
@@ -748,7 +753,17 @@ def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau ):
 
     elif len(real_ftau.shape) is 4:
         nt       = np.prod(real_ftau.shape[3:])
-        gaussker_array_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau)
+        if save_ram is not 0:
+            for t in range(nt):
+                ct  = np.ascontiguousarray(c[...,t])
+                rft = np.ascontiguousarray(real_ftau[...,t])
+                ift = np.ascontiguousarray(imag_ftau[...,t])
+                gaussker_3d1_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, rft, ift)
+                real_ftau[...,t] = rft
+                imag_ftau[...,t] = ift
+        else:
+            gaussker_array_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau)
+        #gaussker_array_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau)
 
     elif len(real_ftau.shape) > 4:
         nt       = np.prod(real_ftau.shape[3:])
@@ -757,7 +772,22 @@ def build_grid_3d1_cuda( x, y, z, c, tau, nspread, ftau ):
         c = np.reshape(c, (c.shape[0], nt))
         real_ftau = np.reshape(real_ftau, real_ftau.shape[0:3] + (nt,))
         imag_ftau = np.reshape(imag_ftau, imag_ftau.shape[0:3] + (nt,))
-        gaussker_array_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau)
+    if len(real_ftau.shape) is 3:
+        gaussker_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, real_ftau, imag_ftau)
+
+    elif len(real_ftau.shape) is 4:
+        nt       = np.prod(real_ftau.shape[3:])
+        if save_ram is not 0:
+            for t in range(nt):
+                ct  = np.ascontiguousarray(c[...,t])
+                rft = np.ascontiguousarray(real_ftau[...,t])
+                ift = np.ascontiguousarray(imag_ftau[...,t])
+                gaussker_3d1_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, rft, ift)
+                real_ftau[...,t] = rft
+                imag_ftau[...,t] = ift
+        else:
+            gaussker_array_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau)
+        #gaussker_array_3d1_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, real_ftau, imag_ftau)
         real_ftau = np.reshape(real_ftau, ftau.shape)
         imag_ftau = np.reshape(imag_ftau, ftau.shape)
 
@@ -906,7 +936,7 @@ def gaussker_array_3d1_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspr
         E2mmx *= E2x
 
 
-def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3 ):
+def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3, save_ram = 0 ):
     #number of pioints along x, y, z
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -935,9 +965,16 @@ def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3 ):
 
     elif len(real_ftau.shape) is 4:
         nt       = np.prod(real_ftau.shape[3:])
-        #for t in range(nt):
-        #    gaussker_3d1_fast_cuda[bpg, tpb](x, y, z, c[...,t], hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, real_ftau[...,t], imag_ftau[...,t] )
-        gaussker_array_3d1_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, real_ftau, imag_ftau )
+        if save_ram is not 0:
+            for t in range(nt):
+                ct  = np.ascontiguousarray(c[...,t])
+                rft = np.ascontiguousarray(real_ftau[...,t])
+                ift = np.ascontiguousarray(imag_ftau[...,t])
+                gaussker_3d1_fast_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, rft, ift)
+                real_ftau[...,t] = rft
+                imag_ftau[...,t] = ift
+        else:
+            gaussker_array_3d1_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, real_ftau, imag_ftau )
 
     elif len(real_ftau.shape) > 4:
         nt       = np.prod(real_ftau.shape[3:])
@@ -946,7 +983,16 @@ def build_grid_3d1_fast_cuda( x, y, z, c, tau, nspread, ftau, E3 ):
         c = np.reshape(c, (c.shape[0], nt))
         real_ftau = np.reshape(real_ftau, real_ftau.shape[0:3] + (nt,))
         imag_ftau = np.reshape(imag_ftau, imag_ftau.shape[0:3] + (nt,))
-        gaussker_array_3d1_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, real_ftau, imag_ftau )
+        if save_ram is not 0:
+            for t in range(nt):
+                ct  = np.ascontiguousarray(c[...,t])
+                rft = np.ascontiguousarray(real_ftau[...,t])
+                ift = np.ascontiguousarray(imag_ftau[...,t])
+                gaussker_3d1_fast_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, rft, ift)
+                real_ftau[...,t] = rft
+                imag_ftau[...,t] = ift
+        else:
+            gaussker_array_3d1_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, real_ftau, imag_ftau )
         real_ftau = np.reshape(real_ftau, ftau.shape)
         imag_ftau = np.reshape(imag_ftau, ftau.shape)
     ftau = real_ftau + 1j*imag_ftau
@@ -1003,7 +1049,7 @@ def gaussker_array_3d2_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, 
                     (yi - hy * (my + mmy)) ** 2 + \
                     (zi - hz * (mz + mmz)) ** 2 ) / tau)
 
-def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread ):
+def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread, save_ram = 0 ):
     #number of pioints along x, y, z
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
@@ -1027,6 +1073,15 @@ def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread ):
     elif len(fntau.shape) is 4:
         nt       = np.prod(fntau.shape[3:])
         c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)        
+        
+        #if save_ram is not 0:
+        #    for t in range(nt):
+        #        ct = np.ascontiguousarray(c[...,t])
+        #        ft = np.ascontiguousarray(fntau[...,t])
+        #        gaussker_3d2_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ft)
+        #        c[...,t] = ct
+        #else:
+        #    gaussker_array_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, fntau)
         gaussker_array_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, fntau)
 
     elif len(fntau.shape) > 4:
@@ -1034,7 +1089,15 @@ def build_grid_3d2_cuda( x, y, z, fntau, tau, nspread ):
         tmp_dims = fntau.shape[3:]
         # flatten dims > 3
         c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)
-        fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
+        #fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
+        #if save_ram is not 0:
+        #    for t in range(nt):
+        #        ct = np.ascontiguousarray(c[...,t])
+        #        ft = np.ascontiguousarray(fntau[...,t])
+        #        gaussker_3d2_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ft)
+        #        c[...,t] = ct
+        #else:
+        #    gaussker_array_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, fntau)        
         gaussker_array_3d2_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, fntau)
         c = np.reshape(c, c.shape[0] + tmp_dims)
     #type2 nufft has 1/N term
@@ -1084,6 +1147,7 @@ def gaussker_3d2_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nspread, tau, 
                 E2mmz *= E2z
             E2mmy *= E2y
         E2mmx *= E2x
+    
 
 #type 2 3d, fast version with precomputing of exponentials
 @cuda.jit
@@ -1131,7 +1195,7 @@ def gaussker_array_3d2_fast_cuda(x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspr
             E2mmy *= E2y
         E2mmx *= E2x
 
-def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
+def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3, save_ram = 0 ):
     #number of pioints along x, y, z
     nf1 = fntau.shape[0]
     nf2 = fntau.shape[1]
@@ -1163,6 +1227,14 @@ def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
         #c is coefficients
         nt       = np.prod(fntau.shape[3:])
         c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)
+        #if save_ram is not 0:
+        #    for t in range(nt):
+        #        ct = np.ascontiguousarray(c[...,t])
+        #        ft = np.ascontiguousarray(fntau[...,t])
+        #        gaussker_3d2_fast_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, ft)
+        #        c[...,t] = ct
+        #else:
+        #    gaussker_array_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, fntau)      
         gaussker_array_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, fntau)
 
     elif len(fntau.shape) > 4:
@@ -1170,7 +1242,15 @@ def build_grid_3d2_fast_cuda( x, y, z, fntau, tau, nspread, E3 ):
         tmp_dims = fntau.shape[3:]
         # flatten dims > 3
         c = np.zeros(x.shape + (nt,), dtype = fntau.dtype)
-        fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
+        #fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
+        #if save_ram is not 0:
+        #    for t in range(nt):
+        #        ct = np.ascontiguousarray(c[...,t])
+        #        ft = np.ascontiguousarray(fntau[...,t])
+        #        gaussker_3d2_fast_cuda[bpg, tpb](x, y, z, ct, hx, hy, hz, nf1, nf2, nf3, nspread, tau, E3, ft)
+        #        c[...,t] = ct
+        #else:
+        #    gaussker_array_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, fntau)           
         gaussker_array_3d2_fast_cuda[bpg, tpb](x, y, z, c, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, E3, fntau)
         c = np.reshape(c, c.shape[0] + tmp_dims)
     #type2 nufft has 1/N term
@@ -1259,7 +1339,7 @@ def gaussker_array_3d21_cuda(x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nsprea
                     cuda.atomic.add(imag_ftau, ((mx + mmx) % nf1, (my + mmy) % nf2, (mz + mmz) % nf3, t), tmp.imag)
 
 
-def build_grid_3d21_cuda( x, y, z, dcf, ftau, tau, nspread ):
+def build_grid_3d21_cuda( x, y, z, dcf, ftau, tau, nspread, save_ram = 0 ):
     #number of pioints along x, y, z
     nf1 = ftau.shape[0]
     nf2 = ftau.shape[1]
@@ -1283,9 +1363,17 @@ def build_grid_3d21_cuda( x, y, z, dcf, ftau, tau, nspread ):
 
     elif len(real_ftau.shape) is 4:
         nt       = np.prod(real_ftau.shape[3:])
-        #for t in range(nt):
-        #    gaussker_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ftau[...,t], real_ftau[...,t], imag_ftau[...,t])
-        gaussker_array_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, ftau, real_ftau, imag_ftau)
+        if save_ram is not 0:
+            for t in range(nt):
+                ft  = np.ascontiguousarray(ftau[...,t])
+                rft = np.ascontiguousarray(real_ftau[...,t])
+                ift = np.ascontiguousarray(imag_ftau[...,t])
+                gaussker_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ft, rft, ift)
+                real_ftau[...,t] = rft
+                imag_ftau[...,t] = ift
+        else:
+            gaussker_array_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, ftau, real_ftau, imag_ftau)  
+        #gaussker_array_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, ftau, real_ftau, imag_ftau)
 
     elif len(real_ftau.shape) > 4:
         nt       = np.prod(real_ftau.shape[3:])
@@ -1295,7 +1383,17 @@ def build_grid_3d21_cuda( x, y, z, dcf, ftau, tau, nspread ):
         ftau      = np.reshape(ftau,           ftau.shape[0:3] + (nt,))
         real_ftau = np.reshape(real_ftau, real_ftau.shape[0:3] + (nt,))
         imag_ftau = np.reshape(imag_ftau, imag_ftau.shape[0:3] + (nt,))
-        gaussker_array_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, ftau, real_ftau, imag_ftau)
+        if save_ram is not 0:
+            for t in range(nt):
+                ft  = np.ascontiguousarray(ftau[...,t])
+                rft = np.ascontiguousarray(real_ftau[...,t])
+                ift = np.ascontiguousarray(imag_ftau[...,t])
+                gaussker_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nspread, tau, ft, rft, ift)
+                real_ftau[...,t] = rft
+                imag_ftau[...,t] = ift
+        else:
+            gaussker_array_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, ftau, real_ftau, imag_ftau)          
+        #gaussker_array_3d21_cuda[bpg, tpb](x, y, z, dcf, hx, hy, hz, nf1, nf2, nf3, nt, nspread, tau, ftau, real_ftau, imag_ftau)
         real_ftau = np.reshape(real_ftau, ftau.shape)
         imag_ftau = np.reshape(imag_ftau, ftau.shape)
 
@@ -1335,7 +1433,34 @@ output:
 the nufft result, output dim is ms X mt X mu
 """
 #3d nufft type 1
-def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+
+def seg_fft3d_cuda( Ftau ):
+    nt = Ftau.shape[3]
+    if len(Ftau.shape) is 3: 
+        Ftau = fftnc2c_cuda(Ftau, axes=(0,1,2))
+    elif len(Ftau.shape) > 3:  
+        nt       = np.prod(Ftau.shape[3:])
+        tmp_dims = Ftau.shape[3:]    
+        Ftau      = np.reshape(Ftau, Ftau.shape[0:3] + (nt,)) 
+        for t in range(nt):
+            Ftau[...,t] = fftnc2c_cuda(Ftau[...,t], axes=(0,1,2))
+        Ftau = np.reshape(Ftau, Ftau.shape[0:3] + tmp_dims)   
+    return Ftau
+
+def seg_ifft3d_cuda( Ftau ):
+    nt = Ftau.shape[3]
+    if len(Ftau.shape) is 3: 
+        Ftau = fftnc2c_cuda(Ftau, axes=(0,1,2))
+    elif len(Ftau.shape) > 3: 
+        nt       = np.prod(Ftau.shape[3:])
+        tmp_dims = Ftau.shape[3:]    
+        Ftau      = np.reshape(Ftau, Ftau.shape[0:3] + (nt,)) 
+        for t in range(nt):
+            Ftau[...,t] = ifftnc2c_cuda(Ftau[...,t], axes=(0,1,2))
+        Ftau = np.reshape(Ftau, Ftau.shape[0:3] + tmp_dims)   
+    return Ftau
+
+def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1, save_ram = 1  ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
     #compute Ftaushape
@@ -1349,19 +1474,25 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
     # Construct the convolved grid
     if gridfast is 0:
         Ftau = build_grid_3d1_cuda(x * df, y * df, z *df, c, tau, nspread,\
-                      np.zeros(Ftaushape, dtype=c.dtype))
+                      np.zeros(Ftaushape, dtype=c.dtype), save_ram = save_ram)
     else:#precompute some exponentials, not working
         Ftau = build_grid_3d1_fast_cuda(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros(Ftaushape, dtype=c.dtype), \
-                      np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype))
+                      np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype), save_ram = save_ram)
 
     timer.stop().display()
     timer.start('fft ')
     # Compute the FFT on the convolved grid
-    if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * fftnc2c_cuda(Ftau, axes=(0,1,2))#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
+    if save_ram is not 0:
+        if iflag < 0:
+            Ftau = (1 / (nf1 * nf2 * nf3)) * seg_fft3d_cuda(Ftau)#fftw_func.fftwnd(Ftau, threads = config.cpu_count-1)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
+        else:
+            Ftau = seg_ifft3d_cuda(Ftau)#fftw_func.ifftwnd(Ftau, threads = config.cpu_count-1)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#        
     else:
-        Ftau = ifftnc2c_cuda(Ftau,axes = (0,1,2))#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
+        if iflag < 0:
+            Ftau = (1 / (nf1 * nf2 * nf3)) * fftnc2c_cuda(Ftau, axes=(0,1,2))#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
+        else:
+            Ftau = ifftnc2c_cuda(Ftau,axes = (0,1,2))#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
     timer.stop().display()
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
@@ -1378,7 +1509,7 @@ def nufft3d1_gaussker_cuda( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, 
     np.multiply(np.exp(tau * (k1 ** 2 + k2 ** 2 + k3 ** 2)).reshape(outkshape), Ftau.reshape(outFkshape))
 
 #3d unfft type 2
-def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1, save_ram = 0):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
@@ -1403,22 +1534,32 @@ def nufft3d2_gaussker_cuda( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1,
     Fntau[:ms//2 + ms % 2,       -(mt//2):, :mu//2 + mu % 2] = Fk[ms//2:ms, 0:mt//2 ,mu//2:mu]# 2 1 2
     Fntau[-(ms//2):      , :mt//2 + mt % 2, :mu//2 + mu % 2] = Fk[0:ms//2 ,mt//2:mt ,mu//2:mu]# 1 2 2
 
+    timer = utc.timing()
+    timer.start('fft ')
     # Compute the FFT on the convolved grid
-    if iflag < 0:
-        Fntau = (nf1 * nf2 * nf3) * ifftnc2c_cuda(Fntau)#np.fft.ifftn(Fntau,s=None,axes=(0,1,2))#
+    if save_ram is not 0:
+        if iflag < 0:
+            Fntau = (nf1 * nf2 * nf3) * seg_ifft3d_cuda(Fntau)#fftw_func.ifftwnd(Fntau, threads = config.cpu_count-1)#np.fft.ifftn(Fntau,s=None,axes=(0,1,2))#
+        else:
+            Fntau = seg_fft3d_cuda(Fntau)#fftw_func.fftwnd(Fntau, threads = config.cpu_count-1)#np.fft.fftn(Fntau,s=None,axes=(0,1,2))#        
     else:
-        Fntau = fftnc2c_cuda(Fntau)#np.fft.fftn(Fntau,s=None,axes=(0,1,2))#
-
+        if iflag < 0:
+            Fntau = (nf1 * nf2 * nf3) * ifftnc2c_cuda(Fntau)#np.fft.ifftn(Fntau,s=None,axes=(0,1,2))#
+        else:
+            Fntau = fftnc2c_cuda(Fntau)#np.fft.fftn(Fntau,s=None,axes=(0,1,2))#
+    timer.stop().display()
+    timer.start('nufft regriding ')
     # Construct the convolved grid
     if gridfast is not 1:
-        fx = build_grid_3d2_cuda(x * df, y * df, z * df, Fntau, tau, nspread)
+        fx = build_grid_3d2_cuda(x * df, y * df, z * df, Fntau, tau, nspread, save_ram = save_ram)
     else:
         fx = build_grid_3d2_fast_cuda(x * df, y * df, z * df, Fntau, tau, nspread,\
-         np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
+         np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype), save_ram = save_ram)
+    timer.stop().display()
     return fx
 
 #3d unfft type 2 & type 1
-def nufft3d21_gaussker_cuda( x, y, z, Fk, ms, mt, mu, dcf, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
+def nufft3d21_gaussker_cuda( x, y, z, Fk, ms, mt, mu, dcf, df=1.0, eps=1E-15, iflag=1, gridfast=0, save_ram = 1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
     nspread, nf1, nf2, nf3, tau = nufft_func._compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)#
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
@@ -1446,11 +1587,19 @@ def nufft3d21_gaussker_cuda( x, y, z, Fk, ms, mt, mu, dcf, df=1.0, eps=1E-15, if
     Ftau[:ms//2 + ms % 2,       -(mt//2):, :mu//2 + mu % 2] = Fk[ms//2:ms, 0:mt//2 ,mu//2:mu]# 2 1 2
     Ftau[-(ms//2):      , :mt//2 + mt % 2, :mu//2 + mu % 2] = Fk[0:ms//2 ,mt//2:mt ,mu//2:mu]# 1 2 2
 
+    timer = utc.timing()
+    timer.start('fft ')
     # Compute the FFT on the convolved grid
-    if iflag < 0:
-        Ftau = (nf1 * nf2 * nf3) * ifftnc2c_cuda(Ftau)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
+    if save_ram is not 0:
+        if iflag < 0:
+            Ftau = (nf1 * nf2 * nf3) * seg_ifft3d_cuda(Ftau)#fftw_func.ifftwnd(Ftau, threads = config.cpu_count-1)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
+        else:
+            Ftau = seg_fft3d_cuda(Ftau)#fftw_func.fftwnd(Ftau, threads = config.cpu_count-1)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#        
     else:
-        Ftau = fftnc2c_cuda(Ftau)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
+        if iflag < 0:
+            Ftau = (nf1 * nf2 * nf3) * ifftnc2c_cuda(Ftau)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
+        else:
+            Ftau = fftnc2c_cuda(Ftau)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
 
     if dcf is None:
         dcf = np.ones(x.shape)
@@ -1459,17 +1608,23 @@ def nufft3d21_gaussker_cuda( x, y, z, Fk, ms, mt, mu, dcf, df=1.0, eps=1E-15, if
     # Construct the convolved grid
     timer.start( 'nufft regriding ')
     if 1 :#gridfast is not 1:
-        Ftau = build_grid_3d21_cuda(x * df, y * df, z * df, dcf, Ftau, tau, nspread)
+        Ftau = build_grid_3d21_cuda(x * df, y * df, z * df, dcf, Ftau, tau, nspread, save_ram = save_ram)
     #else:
     #    Ftau = build_grid_3d21_fast_cuda(x * df, y * df, z * df, Ftau, tau, nspread,\
     #     np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
     timer.stop().display()
     timer.start('fft ')
     # Compute the FFT on the convolved grid
-    if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * fftnc2c_cuda(Ftau)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
+    if save_ram is not 0:
+        if iflag < 0:
+            Ftau = (nf1 * nf2 * nf3) * seg_fft3d_cuda(Ftau)#fftw_func.fftwnd(Ftau, threads = config.cpu_count-1)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
+        else:
+            Ftau = seg_ifft3d_cuda(Ftau)#fftw_func.ifftwnd(Ftau, threads = config.cpu_count-1)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#        
     else:
-        Ftau = ifftnc2c_cuda(Ftau)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
+        if iflag < 0:
+            Ftau = (1 / (nf1 * nf2 * nf3)) * fftnc2c_cuda(Ftau)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
+        else:
+            Ftau = ifftnc2c_cuda(Ftau)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
     timer.stop().display()
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed

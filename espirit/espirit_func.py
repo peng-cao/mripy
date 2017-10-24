@@ -22,8 +22,9 @@ Vim the sensitivity map
 sim the singular value map
 
 """
-def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_before_espirit = 0, pad_fact = 1, sigv_th = 0.9 ):
-    ft = op.FFT2d()#2d fft operator
+def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_before_espirit = 0, pad_fact = 1, sigv_th = 0.01, nsigv_th = 0.2 ):
+    #ft = op.FFT2d()#2d fft operator
+    ft = op.FFTW2d()#2d fft operator
     #timing = utc.timing()
     #multidimention tensor as the block hankel matrix
     #first 2 are x, y dims with rolling window size of hkwin_shape
@@ -39,10 +40,14 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_bef
     #timing.stop().display('Reshape Hankel ').start()
     #svd, could try other approaches
     # V has the coil information since the second dim of hmtx has coil data    
-    #U, s, V = np.linalg.svd(hmtx, full_matrices=False)
-    U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )   
+    U, s, V = np.linalg.svd(hmtx, full_matrices=False)
+    #U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )   
     #U, s, V = scipy.sparse.linalg.svds(hmtx, nsingularv )
     #timing.stop().display('SVD ')
+    for k in range(len(s)):
+        if s[k] > s[0]*nsing_th:
+            nsingularv = k
+    print('exctract %g out of %g singular vectors:' % (nsingularv, len(s)))
     #S = np.diag(s)
     #ut.plotim1(np.absolute(V[:,0:150]).T)#plot V singular vectors
     #ut.plot(s)#plot singular values
@@ -97,6 +102,11 @@ def espirit_2d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16), pad_bef
     #sim_dims_name = ['x', 'y']
     Vimnorm = np.linalg.norm(Vim, axis = 2)
     Vim = np.divide(Vim, 1e-6 + Vimnorm[:,:,np.newaxis])
+    sim = sim/np.max(sim.flatten())
+    for ix in range(x_shape[0]):
+        for iy in range(x_shape[1]):
+                if sim[ix,iy] < sigv_th:
+                    Vim[ix,iy,:] = np.zeros(nc)    
     return Vim, np.absolute(sim) #, Vim_dims_name, sim_dims_name
 
 """
@@ -110,8 +120,9 @@ sim the singular value map
 
 """
 def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
-    pad_before_espirit = 0, pad_fact = 1, sigv_th = 0.9 ):
-    ft = op.FFTnd((0,1,2))#3d fft operator
+    pad_before_espirit = 0, pad_fact = 1, sigv_th = 0.01, nsigv_th = 0.2 ):
+    #ft = op.FFTnd((0,1,2))#3d fft operator
+    ft = op.FFTWnd((0,1,2))#3d fft operator
     timing = utc.timing()
     #multidimention tensor as the block hankel matrix
     #first 2 are x, y dims with rolling window size of hkwin_shape
@@ -134,7 +145,11 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
     timing.stop().display('SVD ').start()
     #S = np.diag(s)
     #ut.plotim1(np.absolute(V[:,0:150]).T)#plot V singular vectors
-    #ut.plot(s)#plot singular values
+    ut.plot(s.T)#plot singular values
+    for k in range(len(s)):
+        if s[k] > s[0]*nsigv_th:
+            nsingularv = k
+    print('extract %g out of %g singular vectors' % (nsingularv, len(s)))
     #invh = np.zeros(x.shape,complex)
     #print h.shape
     #hk.invhankelnd(h,invh,(2,3,1))
@@ -180,13 +195,6 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
                 sim[ix,iy,iz]   = s[0]
                 Vim[ix,iy,iz,:] = V[0,:].squeeze()
 
-    sim = sim/np.max(sim.flatten())
-    for ix in range(nx):
-        for iy in range(ny):
-            for iz in range (nz):
-                    if s[0] < sigv_th:
-                        Vim[ix,iy,iz,:] = np.zeros(nc)
-
     Vim = np.conj(Vim)    
     timing.stop().display('ESPIRIT ')
     #pad the image after espirit
@@ -200,5 +208,12 @@ def espirit_3d( xcrop, x_shape, nsingularv = 150, hkwin_shape = (16,16,16),\
     #sim_dims_name = ['x', 'y', 'z']
     Vimnorm = np.linalg.norm(Vim, axis = 3)
     Vim = np.divide(Vim, 1e-6 + Vimnorm[:,:,:,np.newaxis])
+
+    sim = sim/np.max(sim.flatten())
+    for ix in range(x_shape[0]):
+        for iy in range(x_shape[1]):
+            for iz in range (x_shape[2]):
+                    if sim[ix,iy,iz] < sigv_th:
+                        Vim[ix,iy,iz,:] = np.zeros(nc)    
     return Vim, np.absolute(sim) #, Vim_dims_name, sim_dims_name
 

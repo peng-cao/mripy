@@ -135,7 +135,7 @@ def plot( x, y=None, line_type = '-', legend = None, pause_close = None ):
     fig = plt.figure()
     # Prepare the data
     if y is None:
-        y = np.linspace(0, 1, x.size)
+        y = np.linspace(0, x.size, x.size)
         plt.plot(y, x, line_type)
     else:
         plt.plot(x, y, line_type)

@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import config
 import numpy as np
 import numba
 import utilities.utilities_func as ut
@@ -8,7 +9,8 @@ import nufft_test_func
 from numba import cuda
 from time import time
 from math import exp
-
+import fftw_func
+#from multiprocessing import cpu_count
 #####################################################################################################
 #ft direct calculation, 1d,2d,3d, type1
 #####################################################################################################
@@ -905,6 +907,51 @@ def build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 ):
                 E2mmy *= E2y
             E2mmx *= E2x
     return ftau
+#from multiprocessing import Pool, cpu_count
+#from functools import partial
+#from joblib import Parallel, delayed
+
+#do parallel for function f, f only have one argument, which must be the index of loop
+#def par_for(f, arg, seqx, use_num_cores = 'all'):
+#    if use_num_cores is 'all':#use all the cpu cores available
+#        use_num_cores = cpu_count()-1
+#    pool = Pool(processes=use_num_cores)
+#    #y = pool.map(f, seqx)
+#    results = [pool.apply_async(f, args = arg + (t,)) for t in seqx]
+#    results = [p.get() for p in results]
+#    #results.sort()
+#    pool.close()
+#    pool.join()
+#    return results
+
+#def seg_build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3, t):
+#    build_grid_3d1_fast( x, y, z, c[...,t], tau, nspread, ftau[...,t], E3 )
+#    return ftau[...,t]
+
+@numba.njit(parallel = True)#nopython=True, nogil=True, 
+def build_grid_array_3d1_fast( x, y, z, c, tau, nspread, ftau, E3, nt ):
+    #t = 0
+    #par_for(seg_build_grid_3d1_fast, (x, y, z, c, tau, nspread, ftau, E3), range(nt))
+    for t in numba.prange(nt):
+        ftau[...,t]=build_grid_3d1_fast(x, y, z, c[...,t], tau, nspread, ftau[...,t], E3)
+    return ftau
+
+def build_grid_3d1_fast_wrap( x, y, z, c, tau, nspread, ftau, E3 ):
+    if len(ftau.shape) is 3:
+        build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 )
+
+    elif len(ftau.shape) is 4:
+        nt      = np.prod(ftau.shape[3:])
+        build_grid_array_3d1_fast( x, y, z, c, tau, nspread, ftau, E3, nt )
+    elif len(ftau.shape) > 4:
+        nt       = np.prod(ftau.shape[3:])
+        tmp_dims = ftau.shape[3:]
+        # flatten dims > 3
+        c = np.reshape(c, (c.shape[0], nt))
+        ftau = np.reshape(ftau, ftau.shape[0:3] + (nt,))
+        build_grid_array_3d1_fast( x, y, z, c, tau, nspread, ftau, E3, nt )
+        ftau = np.reshape(ftau, ftau.shape[0:3] + tmp_dims)    
+    return ftau
 
 #3d grid type 2
 @numba.jit(nopython=True, nogil=True)
@@ -984,6 +1031,29 @@ def build_grid_3d2_fast( x, y, z, c, fntau, tau, nspread, E3 ):
             E2mmx *= E2x
     return c/(nf1*nf2*nf3)
 
+@numba.njit(nopython=True, nogil=True, parallel = True )
+def build_grid_array_3d2_fast( x, y, z, c, fntau, tau, nspread, E3, nt ):
+    for t in numba.prange(nt):
+        c[...,t]=build_grid_3d2_fast( x, y, z, c[...,t], fntau[...,t], tau, nspread, E3)
+    return c
+
+def build_grid_3d2_fast_wrap( x, y, z, c, fntau, tau, nspread, E3 ):
+    if len(fntau.shape) is 3:
+        build_grid_3d1_fast( x, y, z, c, tau, nspread, ftau, E3 )
+
+    elif len(fntau.shape) is 4:
+        nt      = np.prod(fntau.shape[3:])
+        build_grid_array_3d2_fast( x, y, z, c, fntau, tau, nspread, E3, nt )
+    elif len(fntau.shape) > 4:
+        nt       = np.prod(fntau.shape[3:])
+        tmp_dims = fntau.shape[3:]
+        # flatten dims > 3
+        c = np.reshape(c, (c.shape[0], nt))
+        fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
+        build_grid_array_3d2_fast( x, y, z, c, fntau, tau, nspread, E3, nt )
+        c = np.reshape(c, c.shape[0] + tmp_dims)    
+    return c
+
 #3d grid type 2 & type 1
 @numba.jit(nopython=True, nogil=True)
 def build_grid_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread ):
@@ -1016,6 +1086,10 @@ def build_grid_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread ):
                     (zi - hz * (m3 + mm3)) ** 2 ) / tau)
                     ctmp += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
                          * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
+                    #ctmp += fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] * exp(-0.25 * (\
+                    #(xi - hx * (m1 + mm1)) ** 2 + \
+                    #(yi - hy * (m2 + mm2)) ** 2 + \
+                    #(zi - hz * (m3 + mm3)) ** 2 ) / tau)                    
         #grid again
         ctmp = dcf[i] * ctmp/(nf1*nf2*nf3)
         for mm1 in range(-nspread, nspread): #mm index for all the spreading points
@@ -1024,72 +1098,41 @@ def build_grid_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread ):
                     #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
                     ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
                     += ctmp * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread]
+                    #ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] = ctmp * exp(-0.25 * (\
+                    #(xi - hx * (m1 + mm1)) ** 2 + \
+                    #(yi - hy * (m2 + mm2)) ** 2 + \
+                    #(zi - hz * (m3 + mm3)) ** 2 ) / tau)
+
     return ftau
+
+
+
+@numba.njit(nopython=True, nogil=True, parallel = True )
+def build_grid_array_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread, nt):
+    for t in numba.prange(nt):
+        fntau[...,t]=build_grid_3d21( x, y, z, dcf, 0.0, fntau[...,t], tau, nspread)
+    return fntau
+
+def build_grid_3d21_wrap( x, y, z, dcf, ctmp, fntau, tau, nspread ):
+    if len(fntau.shape) is 3:
+        build_grid_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread )
+
+    elif len(fntau.shape) is 4:
+        nt      = np.prod(fntau.shape[3:])
+        build_grid_array_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread, nt )
+    elif len(fntau.shape) > 4:
+        nt       = np.prod(fntau.shape[3:])
+        tmp_dims = fntau.shape[3:]
+        # flatten dims > 3
+        fntau = np.reshape(fntau, fntau.shape[0:3] + (nt,))
+        build_grid_array_3d21( x, y, z, dcf, ctmp, fntau, tau, nspread, nt )
+        fntau = np.reshape(fntau, fntau.shape[0:3] + tmp_dims)    
+    return fntau
+
 
 #3d grid type 2 & type 1 with coil sensitivity kernel, sens_ker
 #assume sens_ker matches the fntau data resolution, and size matches 2*nspread+1 for each dimension
-@numba.jit(nopython=True, nogil=True)
-def build_grid_3d21_sensker( x, y, z, fntau, tau, nspread, sens_ker = None ):
-    if sens_ker is None: #then no coil sensitivity map will be used, but sill sens_ker need to be 4d
-        sens_ker = np.ones((2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1, 1),\
-                   dtype = fntau.dtype)/((2 * nspread + 1)**3)
-    nc    = sens_ker.shape[3] #currently fix the forth dim as the coil dim
-    nf1   = fntau.shape[0]    #in addtion, the forth dim of fntau need to be 1 or None
-    nf2   = fntau.shape[1]
-    nf3   = fntau.shape[2]
-    hx    = 2 * np.pi / nf1
-    hy    = 2 * np.pi / nf2
-    hz    = 2 * np.pi / nf3
-    Em    = np.zeros((2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1)) #will reuse this exponential
-    # make the forth dim be the coil dim, which need to be length = 1 for fntau
-    if len(fntau.shape) > 3 and fntau.shape[3] > 1: #if dim > 3, and dim 4 (coil dim) is not 1
-        # input dim [nf1, nf2, nf3, a ,b c] output [nf1, nf2, nf3, 1, a, b, c]
-        fntau     = np.expand_dims(fntau, axis = 3)
-    #zero pad the sens_ker, enforce the sens_ker equals to convlution kernel for simplicity
-    if sens_ker.shape[0:3] != (2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1 ):
-        sens_ker  = ut.pad_or_cut3d( sens_ker, 2 * nspread + 1, 2 * nspread + 1, 2 * nspread + 1 )
-    #initial ftau as zeros for output data
-    ftau          = np.zeros(fntau.shape, dtype = fntau.dtype)
-    outftaushape, outsenskshape = ut.dim_match(fntau.shape, sens_ker.shape)#match the dim, by adding 1 in extra dim
-    fntau         = fntau.reshape(outftaushape)# [nf1, nf2, nf3, 1, a, b, c] or [nf1, nf2, nf3, 1] if 3d data
-    ftau          = ftau.reshape(outftaushape) # [nf1, nf2, nf3, 1, a, b, c] or [nf1, nf2, nf3, 1] if 3d data
-    sens_ker      = sens_ker.reshape(outsenskshape) #[nk, nk, nk, nc, 1, 1, 1] or [nk, nk, nk, nc] nk = 2*nspread + 1
-    #do gridding for each ksp data point
-    for i in range(x.shape[0]):
-        c  = np.multiply(np.zeros(fntau[0,0,0].shape, dtype = fntau.dtype), \
-             np.zeros(sens_ker[0,0,0].shape, dtype = fntau.dtype)) #coefficient, saved temporarily
-        xi = x[i] % (2 * np.pi) #x, shift the source point xj so that it lies in [0,2*pi]
-        yi = y[i] % (2 * np.pi) #y, shift the source point yj so that it lies in [0,2*pi]
-        zi = z[i] % (2 * np.pi) #z, shift the source point zj so that it lies in [0,2*pi]
-        m1 = 1 + int(xi // hx) #index for the closest grid point
-        m2 = 1 + int(yi // hy) #index for the closest grid point
-        m3 = 1 + int(zi // hz) #index for the closest grid point
-        #grid once
-        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-            for mm2 in range(-nspread,nspread):
-                for mm3 in range(-nspread,nspread):
-                    #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
-                    Em[mm1 + nspread, mm2 + nspread, mm3 + nspread] =\
-                     np.exp(-0.25 * (\
-                    (xi - hx * (m1 + mm1)) ** 2 + \
-                    (yi - hy * (m2 + mm2)) ** 2 + \
-                    (zi - hz * (m3 + mm3)) ** 2 ) / tau)
-                    #added sens_ker this is covlution with expoential Em and sens_kernel
-                    c += np.multiply(\
-                         fntau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3]\
-                             * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread], \
-                         sens_ker[mm1 + nspread, mm2 + nspread, mm3 + nspread])
-        #grid again
-        c = c/(nf1*nf2*nf3)
-        for mm1 in range(-nspread, nspread): #mm index for all the spreading points
-            for mm2 in range(-nspread,nspread):
-                for mm3 in range(-nspread,nspread):
-                    #griding with g(x,y) = exp(-(x^2 + y^2 + z^2) / 4*tau)
-                    #convlute with Em and conj(sens_ker), then sum along coil dimension
-                    ftau[(m1 + mm1) % nf1, (m2 + mm2) % nf2, (m3 + mm3) % nf3] \
-                    += np.sum(np.multiply(c * Em[mm1 + nspread, mm2 + nspread, mm3 + nspread],\
-                                np.conj(sens_ker[mm1 + nspread, mm2 + nspread, mm3 + nspread])), axis = 3)
-    return ftau
+
 """
 main function of nufft3d
 The Gaussian used for convolution is:
@@ -1121,12 +1164,11 @@ output:
 the nufft result, output dim is ms X mt X mu
 """
 # 3d nufft type 1
-#@numba.jit(nopython=True, nogil=True,parallel=True)
 def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
+    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
     #try to override nspread
-    nspread = min(3, nspread)
+    #nspread = min(3, nspread)
     #compute Ftaushape
     if len(c.shape) > 1:
         Ftaushape = (nf1, nf2, nf3) + c.shape[1:len(c.shape)]
@@ -1140,16 +1182,16 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
         Ftau = build_grid_3d1(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros(Ftaushape, dtype=c.dtype))
     else:#precompute some exponentials, not working
-        Ftau = build_grid_3d1_fast(x * df, y * df, z *df, c, tau, nspread,\
+        Ftau = build_grid_3d1_fast_wrap(x * df, y * df, z *df, c, tau, nspread,\
                       np.zeros(Ftaushape, dtype=c.dtype), \
                       np.zeros((nspread+1, nspread+1, nspread+1), dtype=c.dtype))
     timer.stop().display()
     timer.start('fft ')
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(Ftau,s=None,axes=(0,1,2))
+        Ftau = (1 / (nf1 * nf2 * nf3)) * fftw_func.fftwnd(Ftau, threads = config.cpu_count-1)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))#
     else:
-        Ftau = np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
+        Ftau = fftw_func.ifftwnd(Ftau, threads = config.cpu_count-1)# np.fft.ifftn(Ftau,s=None,axes=(0,1,2))#
     timer.stop().display()
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
@@ -1166,7 +1208,7 @@ def nufft3d1_gaussker( x, y, z, c, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridf
 #3d unfft type 2
 def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
+    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
@@ -1190,29 +1232,35 @@ def nufft3d2_gaussker( x, y, z, Fk, ms, mt, mu, df=1.0, eps=1E-15, iflag=1, grid
     Fntau[:ms//2 + ms % 2,       -(mt//2):, :mu//2 + mu % 2] = Fk[ms//2:ms, 0:mt//2 ,mu//2:mu]# 2 1 2
     Fntau[-(ms//2):      , :mt//2 + mt % 2, :mu//2 + mu % 2] = Fk[0:ms//2 ,mt//2:mt ,mu//2:mu]# 1 2 2
 
+    timer = utc.timing()
+    timer.start('fft ')
+
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Fntau = (nf1 * nf2 * nf3) * np.fft.ifftn(Fntau,s=None,axes=(0,1,2))
+        Fntau = (nf1 * nf2 * nf3) * fftw_func.ifftwnd(Fntau, threads = config.cpu_count-1)#np.fft.ifftn(Fntau,s=None,axes=(0,1,2))# 
     else:
-        Fntau = np.fft.fftn(Fntau,s=None,axes=(0,1,2))
+        Fntau = fftw_func.fftwnd(Fntau, threads = config.cpu_count-1)#np.fft.fftn(Fntau,s=None,axes=(0,1,2))# 
 
     if len(Ftaushape) > 3:
         c = np.zeros(x.shape+Ftaushape[3:], dtype = Fntau.dtype)
     else:
         c = np.zeros(x.shape, dtype = Fntau.dtype)
-
+    timer.stop().display()
+    timer.start('nufft regriding ')
     # Construct the convolved grid
     if gridfast is not 1:
         fx = build_grid_3d2(x*df, y*df, z*df, c, Fntau, tau, nspread)
     else:
-        fx = build_grid_3d2_fast(x*df, y*df, z*df, c, Fntau, tau, nspread,\
+        fx = build_grid_3d2_fast_wrap(x*df, y*df, z*df, c, Fntau, tau, nspread,\
          np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
+    timer.stop().display()
+ 
     return fx
 
 #3d unfft type 2
-def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, dcf = None, df=1.0, eps=1E-15, iflag=1, gridfast=1 ):
+def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, dcf = None, df=1.0, eps=1E-15, iflag=1, gridfast=0 ):
     """Fast Non-Uniform Fourier Transform with Numba"""
-    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps)
+    nspread, nf1, nf2, nf3, tau = _compute_3d_grid_params(ms, mt, mu, eps, max_nspread = 6)
 
     # Deconvolve the grid using convolution theorem, Ftau * G(k1)^-1
     k1, k2, k3 = nufftfreqs3d(ms, mt, mu)
@@ -1237,14 +1285,20 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, dcf = None, df=1.0, eps=1E-15, 
     Ftau[:ms//2 + ms % 2,       -(mt//2):, :mu//2 + mu % 2] = Fk[ms//2:ms, 0:mt//2 ,mu//2:mu]# 2 1 2
     Ftau[-(ms//2):      , :mt//2 + mt % 2, :mu//2 + mu % 2] = Fk[0:ms//2 ,mt//2:mt ,mu//2:mu]# 1 2 2
 
+    timer = utc.timing()
+    timer.start('fft ')
+
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (nf1 * nf2 * nf3) * np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
+        Ftau = (nf1 * nf2 * nf3) * fftw_func.ifftwnd(Ftau, threads = config.cpu_count-1)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
     else:
-        Ftau = np.fft.fftn(Ftau,s=None,axes=(0,1,2))
+        Ftau = fftw_func.fftwnd(Ftau, threads = config.cpu_count-1)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))
 
     if dcf is None:
         dcf = np.ones(x.shape)
+
+    timer.stop().display()
+    timer.start('nufft regriding ')
 
     # Construct the convolved grid
     if len(Ftaushape) > 3:
@@ -1252,17 +1306,19 @@ def nufft3d21_gaussker( x, y, z, Fk, ms, mt, mu, dcf = None, df=1.0, eps=1E-15, 
     else:
         ctmp = 0.0
 
-    if 1:# gridfast is not 1:
-        Ftau = build_grid_3d21(x*df, y*df, z*df, dcf, ctmp, Ftau, tau, nspread)
+    if 1:#gridfast is not 1:
+        Ftau = build_grid_3d21_wrap(x*df, y*df, z*df, dcf, ctmp, Ftau, tau, nspread)
     #else:
-    #    fx = build_grid_3d21_fast(x/df, y/df, z/df, fntau, tau, nspread,\
-    #     np.zeros((nspread+1, nspread+1, nspread+1), dtype=Fk.dtype))
+    #    Ftau = build_grid_3d21_fast_wrap(x*df, y*df, z*df, dcf, ctmp, Ftau, tau, nspread, \
+    #      np.zeros((nspread+1, nspread+1, nspread+1), dtype=Ftau.dtype))        
+
+    timer.stop().display()
 
     # Compute the FFT on the convolved grid
     if iflag < 0:
-        Ftau = (1 / (nf1 * nf2 * nf3)) * np.fft.fftn(Ftau,s=None,axes=(0,1,2))
+        Ftau = (1 / (nf1 * nf2 * nf3)) * fftw_func.fftwnd(Ftau, threads = config.cpu_count-1)#np.fft.fftn(Ftau,s=None,axes=(0,1,2))
     else:
-        Ftau = np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
+        Ftau = fftw_func.ifftwnd(Ftau, threads = config.cpu_count-1)#np.fft.ifftn(Ftau,s=None,axes=(0,1,2))
     #ut.plotim3(np.absolute(Ftau[:,:,:]))
     #truncate the Ftau to match the size of output, alias are removed
     Ftau = np.concatenate([Ftau[-(ms//2):,:,:], Ftau[:ms//2 + ms % 2,:,:]],0)

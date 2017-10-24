@@ -98,7 +98,7 @@ class NUFFT3d_cuda:
     def forward( self, im ):
         kdata    = nft_cuda.nufft3d2_gaussker_cuda(self.ktrajx,      self.ktrajy,      self.ktrajz,     im, \
                                                    self.im_shape[0], self.im_shape[1], self.im_shape[2], \
-                                                   df=1.0, eps=1E-5, gridfast=1 )
+                                                   df=1.0, eps=1E-5, gridfast=1, save_ram = 1 )
         return kdata
 
     def backward( self, kdata ):
