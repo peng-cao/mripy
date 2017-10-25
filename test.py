@@ -205,7 +205,7 @@
 #tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 
 import test.neural_network_training.tf_wrap_cnn2d_Unet_heart as tf_wrap_cnn2d_Unet_heart
-tf_wrap_cnn2d_Unet_heart.test1()
+tf_wrap_cnn2d_Unet_heart.test2()
 
 
 #import test.neural_network_training.gan_example as gan_example
