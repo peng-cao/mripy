@@ -110,6 +110,18 @@ def plotim3( im, catdim = [10,-1] , colormap = None, title = None, bar = None, v
         plotim1(im, colormap = colormap, title = title, bar = bar, vmin = vmin, vmax = vmax, pause_close = pause_close)
     return
 
+def compare_plot( im1, im2, nx, pause_close = None ):
+    fig, ax = plt.subplots(nx,2, figsize = (8,4))
+    for i in range(nx):
+        ax[i,0].imshow(im1[i,:,:], cmap='gray', origin='lower', interpolation='none')
+        ax[i,1].imshow(im2[i,:,:], cmap='gray', origin='lower', interpolation='none')
+    if pause_close is not None and pause_close > 0:
+        plt.show(block = False)
+        time.sleep(pause_close)
+        plt.close(fig)
+    else:
+        plt.show()
+
 """
 #gray image plot
 """

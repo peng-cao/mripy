@@ -139,7 +139,7 @@ class tf_layer:
             #define fc layers
             yout  = self.full_connection_dropout(yin, arg = arg, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type = 'ReLU', layer_norm = layer_norm)
         return yout
-
+    
     def multi_full_connection_residual( self, x, n_fc_layers = 1, in_fc_wide_arr = None, out_fc_wide_arr = None, activate_type = 'ReLU', layer_norm = None ):
         for i in range(n_fc_layers):
             #set fc_wide parameters
@@ -161,10 +161,9 @@ class tf_layer:
             yout  = yin + self.full_connection(yin, in_fc_wide = in_fc_wide, out_fc_wide = out_fc_wide, activate_type =activate_type, layer_norm = layer_norm )
         return yout
 
-
     def convolution2d( self, x, cov_ker_size = (5,1), in_n_features = 1,\
                        out_n_features = 1, conv_strides = [1, 1, 1, 1],\
-                       pool_size = [1, 1, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU' ):
+                       pool_size = [1, 1, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU', layer_norm = None ):
         if self.debug is 1:
             x = tf.Print(x, [tf.shape(x)],
                                message='Shape of input in conv ',
@@ -176,7 +175,12 @@ class tf_layer:
         #define convolution
         h_conv = self.conv2d(x, W_conv, strides = conv_strides) + b_conv
         h_pool = self.pool(h_conv, pool_size = pool_size, pool_type = pool_type) #pooling
-        y_act  = self.activate( h_pool, activate_type = activate_type)
+
+        if layer_norm is not None:
+            h_ln = tf.contrib.layers.layer_norm(h_pool, center=True, scale=True)
+        else:
+            h_ln = h_pool
+        y_act  = self.activate( h_ln, activate_type = activate_type)
         if self.debug is 1:
             y_act = tf.Print(y_act, [tf.shape(y_act)],
                                message='Shape of output in conv ',
@@ -186,7 +190,8 @@ class tf_layer:
 
     def multi_convolution2d( self, x, n_cnn_layers = 1, cov_ker_size = (5,1), in_n_features_arr = None,\
                              out_n_features_arr = None, conv_strides = [1, 1, 1, 1],\
-                             pool_size = [1, 1, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU'):
+                             pool_size = [1, 1, 1, 1], pool_type = 'max_pool', activate_type = 'ReLU',\
+                             layer_norm = None):
         for i in range(n_cnn_layers):
             # set n_features parameters
             if in_n_features_arr is None:
@@ -207,13 +212,50 @@ class tf_layer:
             yout = self.convolution2d(yin, cov_ker_size = cov_ker_size, \
                                       in_n_features = in_n_features, out_n_features = out_n_features, \
                                       conv_strides = conv_strides, pool_size = pool_size, \
-                                      pool_type = pool_type, activate_type = activate_type)
+                                      pool_type = pool_type, activate_type = activate_type,
+                                      layer_norm = layer_norm)
+        return yout
+
+
+
+    def convolution2d_residual( self, x, cov_ker_size = (5,1), in_n_features = 1, conv_strides = [1, 1, 1, 1],\
+                       pool_size = [1, 1, 1, 1], pool_type = 'None', activate_type = 'ReLU', layer_norm = 1 ):
+
+        y_1 = self.convolution2d(x, cov_ker_size = cov_ker_size, \
+                                          in_n_features = in_n_features, out_n_features = in_n_features, \
+                                          conv_strides = conv_strides, pool_size = pool_size, \
+                                          pool_type = pool_type, activate_type = activate_type,\
+                                          layer_norm = layer_norm)
+        y_2 = self.convolution2d(y_1, cov_ker_size = cov_ker_size, \
+                                          in_n_features = in_n_features, out_n_features = in_n_features, \
+                                          conv_strides = conv_strides, pool_size = pool_size, \
+                                          pool_type = pool_type, activate_type = 'None',\
+                                          layer_norm = layer_norm)
+        y_res = self.activate(x + y_2, activate_type = activate_type)
+        return y_res
+
+    def multi_convolution2d_residual( self, x, n_cnn_layers = 1, cov_ker_size = (5,1), in_n_features = 1,\
+                             conv_strides = [1, 1, 1, 1],\
+                             pool_size = [1, 1, 1, 1], pool_type = 'None', activate_type = 'ReLU',\
+                             layer_norm = 1):
+        for i in range(n_cnn_layers):
+            #set input output
+            if i is 0:
+                yin = x
+            else:
+                yin = yout
+            # define cnn layers
+            yout = self.convolution2d_residual(yin, cov_ker_size = cov_ker_size, \
+                                      in_n_features = in_n_features, \
+                                      conv_strides = conv_strides, pool_size = pool_size, \
+                                      pool_type = pool_type, activate_type = activate_type,
+                                      layer_norm = layer_norm)
         return yout
 
 
     def deconvolution2d( self, x, cov_ker_size = (5,1), in_n_features = 1,\
                           out_n_features = 1, conv_strides = [1, 1, 1, 1],\
-                         out_shape = None, activate_type = 'ReLU'):
+                         out_shape = None, activate_type = 'ReLU', layer_norm = None):
         if self.debug is 1:
             x = tf.Print(x, [tf.shape(x)],
                                message='Shape of input in deconv ',
@@ -235,7 +277,13 @@ class tf_layer:
         b_deconv = self.bias_variable([out_n_features])
         h_deconv = self.deconv2d(x, W_deconv, out_shape = out_shape, \
                                strides = conv_strides) + b_deconv
-        y_act    = self.activate( h_deconv, activate_type = activate_type)
+
+
+        if layer_norm is not None:
+            h_ln = tf.contrib.layers.layer_norm(h_deconv, center=True, scale=True)
+        else:
+            h_ln = h_deconv
+        y_act    = self.activate( h_ln, activate_type = activate_type)
         if self.debug is 1:
             y_act = tf.Print(y_act, [tf.shape(x)],
                                message='Shape of output in deconv ',
@@ -244,7 +292,7 @@ class tf_layer:
 
     def multi_deconvolution2d(self, x, n_cnn_layers = 1, cov_ker_size = (5,1), in_n_features_arr = None,\
                               out_n_features_arr = None, conv_strides = [1, 1, 1, 1],\
-                              out_shape = None, activate_type = 'ReLU'):
+                              out_shape = None, activate_type = 'ReLU', layer_norm = None):
         for i in range(n_cnn_layers):
             # set n_features parameters
             if in_n_features_arr is None:
@@ -265,7 +313,7 @@ class tf_layer:
             yout = self.deconvolution2d(yin, cov_ker_size = cov_ker_size, \
                    in_n_features = in_n_features, out_n_features = out_n_features, \
                    conv_strides  = conv_strides, out_shape = None,\
-                   activate_type = activate_type)
+                   activate_type = activate_type, layer_norm = layer_norm)
         return yout
 
     def crop_or_pad( self, x, new_height, new_width ):
