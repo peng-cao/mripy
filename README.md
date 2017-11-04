@@ -12,7 +12,7 @@ A python based MRI reconstruction toolbox with compressed sensing, parallel imag
 <table>
     <tr>
         <td>
-            <img alt="open opps 1" src="docs/examples_pic/readme_fig1.png">
+            <img alt="open opps 1" src="doc/readme_fig1.png">
         </td>
     </tr>
 </table>
@@ -20,7 +20,7 @@ A python based MRI reconstruction toolbox with compressed sensing, parallel imag
 <table>
     <tr>
         <td>
-            <img alt="open opps 1" src="docs/examples_pic/readme_fig2.png">
+            <img alt="open opps 1" src="doc/readme_fig2.png">
         </td>
     </tr>
 </table>
@@ -28,7 +28,7 @@ A python based MRI reconstruction toolbox with compressed sensing, parallel imag
 <table>
     <tr>
         <td>
-            <img alt="open opps 1" src="docs/examples_pic/readme_fig3.png">
+            <img alt="open opps 1" src="doc/readme_fig3.png">
         </td>
     </tr>
 </table>
@@ -36,7 +36,7 @@ A python based MRI reconstruction toolbox with compressed sensing, parallel imag
 <table>
     <tr>
         <td>
-            <img alt="open opps 1" src="docs/examples_pic/readme_fig4.png">
+            <img alt="open opps 1" src="doc/readme_fig4.png">
         </td>
     </tr>
 </table>
@@ -44,7 +44,7 @@ A python based MRI reconstruction toolbox with compressed sensing, parallel imag
 <table>
     <tr>
         <td>
-            <img alt="open opps 1" src="docs/examples_pic/readme_fig5.png">
+            <img alt="open opps 1" src="doc/readme_fig5.png">
         </td>
     </tr>
 </table>
