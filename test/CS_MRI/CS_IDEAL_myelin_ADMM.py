@@ -25,18 +25,20 @@ def test():
     # simulated image
     #mat_contents = sio.loadmat('/data/larson/brain_uT2/2016-09-13_3T-volunteer/ute_32echo_random-csreconallec_l2_r0p01.mat', struct_as_record=False, squeeze_me=True)
 
-    #datpath = '/data/larson/brain_uT2/2016-12-22_7T-volunteer/' #
+    #datpath = '/data/larson/brain_uT2/2016-12-19_7T-volunteer/' #
     datpath = '/data/larson/brain_uT2/2016-09-13_3T-volunteer/'
     f = h5py.File(datpath+'ute_32echo_random-csreconallec_l2_r0p01.mat')
 
     #im3d         = f['imallplus'][0:10].transpose([1,2,3,0])
     #im           = im3d[:,40,:,:].squeeze().view(np.complex128)
-    Ndiv         = 8
+    Ndiv         = 16
     im3d         = f['imallplus'][0:Ndiv].transpose([1,3,2,0])
     im           = im3d[35,:,:,:].squeeze().view(np.complex128)
 
     b0_gain      = 1000.0
     TE           = b0_gain * 1e-6 * f['TE'][0][0:Ndiv]
+    #TE = TEi[0:Ndiv]
+
     field        = 3.0
     fat_freq_arr = (1.0/b0_gain) * 42.58 * field * np.array([-3.80, -3.40, -2.60, -1.94, -0.39, 0.60])
     fat_rel_amp  = np.array([0.087, 0.693, 0.128, 0.004, 0.039, 0.048])
@@ -44,6 +46,13 @@ def test():
     #ut.plotim3(np.absolute(im[:,:,-10:-1]),[4,-1])
 
     nx,ny,nte  = im.shape
+    if 0:
+        nte = nte - 1
+        im = 1j*np.zeros((nx,ny,Ndiv))
+        for nd in range(Ndiv):
+            im[:,:,nd] = (imi[:,:,nd] - imi[:,:,nd+1])/(TEi[nd]-TEi[nd+1])
+
+    print(im.shape)
     #undersampling
     #mask       = ut.mask3d( nx, ny, nte, [15,15,0], 0.8)
     #FTm   = opts.FFT2d_kmask(mask)
@@ -114,19 +123,19 @@ def test():
     #    return gradall
 
     #do soft thresholding
-    Nite = 20 #number of iterations
-    step = 0.1 #step size
-    #th   = 0.001 # theshold level
+    Nite = 40 #number of iterations
+    step = 0.001 #step size
+    th   = 0.001 # theshold level
     #do tv cs mri recon
     #Nite = 20 #number of iterations
     #step = 1 #step size
-    tv_r = 0.0001 # regularization term for tv term
-    rho  = 1.0  
+    #tv_r = 0.001 # regularization term for tv term
+    #rho  = 1.0  
     ostep = 0.6      
     for i in range(40):
         #wavelet L1 IST
-    #    dxpar = solvers.IST_3( Aideal_ftm.forward, Aideal_ftm.backward,\
-    #                Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, th )
+        dxpar = solvers.IST_3( Aideal_ftm.forward, Aideal_ftm.backward,\
+                    Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, th )
         #wavelet L1 ADMM
     #    dxpar = solvers.ADMM_l2Afxnb_l1Tfx( Aideal_ftm.forward, Aideal_ftm.backward, \
     #               Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, tv_r, rho,25 )
@@ -134,8 +143,8 @@ def test():
         # TV ADMM
     #    dxpar = solvers.ADMM_l2Afxnb_tvx( Aideal_ftm.forward, Aideal_ftm.backward, residual\
     #    	, Nite, step, tv_r, rho ) 
-        dxpar = solvers.ADMM_l2Afxnb_tvTfx( Aideal_ftm.forward, Aideal_ftm.backward, \
-                   addx.backward, addx.forward, residual, Nite, step, tv_r, rho,25)
+    #    dxpar = solvers.ADMM_l2Afxnb_tvTfx( Aideal_ftm.forward, Aideal_ftm.backward, \
+    #               addx.backward, addx.forward, residual, Nite, step, tv_r, rho,25)
 
         # L2 CGD
     #    dxpar = pf.prox_l2_Afxnb_CGD2( Aideal_ftm.forward, Aideal_ftm.backward, residual, rho, Nite )
@@ -152,18 +161,21 @@ def test():
             ut.plotim3(b0_gain * np.imag(nxpar)[...,2],colormap='viridis',bar=1, pause_close = 2)
             ut.plotim3(b0_gain * np.real(nxpar)[...,3],colormap='viridis',bar=1, pause_close = 2)
             ut.plotim3(b0_gain * np.imag(nxpar)[...,3],colormap='viridis',bar=1, pause_close = 2)
-            sio.savemat(datpath + 'cs_ideal_fitting/cs_IDEAL_ADMM_dyn8.mat', {'xpar': nxpar, 'residual': residual})
+            #sio.savemat(datpath + 'cs_ideal_fitting/cs_IDEAL_ADMM_dyn8.mat', {'xpar': nxpar, 'residual': residual})
         xpar = xpar + ostep*dxpar#.astype(np.float64)   
 
-        #if i > 1: #fix the frequence offset to be equal for two components
-        #    freq_ave    = 0.5 * np.real(xpar[:,:,2]) + 0.5 * np.real(xpar[:,:,3])
-        #    xpar[:,:,2] = freq_ave +1j*(np.imag(xpar[:,:,2]))
-        #    xpar[:,:,3] = freq_ave +1j*(np.imag(xpar[:,:,3]))
+        if i > 1: #fix the frequence offset to be equal for two components
+            freq_ave    = 0.5 * np.real(xpar[:,:,2]) + 0.5 * np.real(xpar[:,:,3])
+            xpar[:,:,2] = freq_ave +1j*(np.imag(xpar[:,:,2]))
+            xpar[:,:,3] = freq_ave +1j*(np.imag(xpar[:,:,3]))
 
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(im)
         ut.plotim3(np.absolute(residual),[4,-1],bar=1, pause_close = 2)
         
+        sio.savemat('../save_data/myelin/ideal_result.mat', \
+             {'xpar':xpar})
+
         addx.set_x(xpar) #should update in each gauss newton iteration
         #addx_water.set_x(xpar[...,0]) #should update in each gauss newton iteration
         #addx_fat.set_x  (xpar[...,1])

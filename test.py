@@ -123,8 +123,8 @@
 #import test.CS_MRI.CS_IDEAL_myelin_CGD as CS_IDEAL_myelin_CGD
 #CS_IDEAL_myelin_CGD.test()
 
-#import test.CS_MRI.CS_IDEAL_myelin_ADMM as CS_IDEAL_myelin_ADMM
-#CS_IDEAL_myelin_ADMM.test()
+import test.CS_MRI.CS_IDEAL_myelin_ADMM as CS_IDEAL_myelin_ADMM
+CS_IDEAL_myelin_ADMM.test()
 
 #import test.CS_MRI.CS_IDEAL_waterfat_myelin_CGD as CS_IDEAL_waterfat_myelin_CGD
 #CS_IDEAL_waterfat_myelin_CGD.test()
@@ -204,8 +204,8 @@
 #import test.neural_network_training.tf_wrap_cnn2d_Unet_lung_kaggle as tf_wrap_cnn2d_Unet_lung_kaggle
 #tf_wrap_cnn2d_Unet_lung_kaggle.test1()
 
-import test.neural_network_training.tf_wrap_cnn2d_Unet_heart as tf_wrap_cnn2d_Unet_heart
-tf_wrap_cnn2d_Unet_heart.test1()
+#import test.neural_network_training.tf_wrap_cnn2d_Unet_heart as tf_wrap_cnn2d_Unet_heart
+#tf_wrap_cnn2d_Unet_heart.test1()
 
 
 #import test.neural_network_training.gan_example as gan_example
@@ -227,6 +227,10 @@ tf_wrap_cnn2d_Unet_heart.test1()
 #import test.neural_network_training.tfwrap_fc_jing_randt1t2 as tfwrap_fc_jing_randt1t2
 #tfwrap_fc_jing_randt1t2.test1()
 #tfwrap_fc_jing_randt1t2.test2()
+
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
+#tfwrap_fc_jing_randt1t2_segment.test1()
+#tfwrap_fc_jing_randt1t2_segment.test2()
 ##########################################################################
 # parallel testing
 ##########################################################################

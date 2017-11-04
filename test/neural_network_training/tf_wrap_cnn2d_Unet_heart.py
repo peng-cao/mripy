@@ -281,6 +281,88 @@ def tf_prediction_func_unet4( model ):
     # softmax output
     return conv6_12#tf.argmax(conv6_12)
 
+
+def tf_prediction_func_fcn2( model ):
+    #if model.arg is None:
+    #    model.arg = [1.0, 1.0]
+    # get data size
+    NNlayer     = tf_layer()
+    #data_size   = int(model.data.get_shape()[1])
+    im_shape    = (100, 100)#(model.data.shape[1], model.data.shape[2])#
+    #target_size = int(model.target.get_shape()[1])
+    pool_len    = 2
+    n_features  = 8
+    cnn_ksize   = (10,10)
+
+    y0 = NNlayer.convolution2d(model.data, cov_ker_size = cnn_ksize, \
+                                           in_n_features  = 1, out_n_features = n_features, \
+                                           pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
+
+    y_res = NNlayer.multi_convolution2d_residual(y0, n_cnn_layers = 10, cov_ker_size = cnn_ksize, in_n_features  = n_features, activate_type = 'ReLU')
+
+    #out_size = data_size#n_features*data_size//(pool_len**4)
+    #y1_4d    = tf.reshape(model.data, [-1,im_shape[0],im_shape[1],1]) #reshape into 4d tensor
+    # input size   [-1, im_shape[0],          im_shape[1],         1 ]
+    # output size  [-1, im_shape[0],          im_shape[1], n_features ]
+    conv1_12 = NNlayer.multi_convolution2d(y_res, cov_ker_size = cnn_ksize, n_cnn_layers = 3, \
+                                           in_n_features_arr  = (n_features, n_features,  n_features), \
+                                           out_n_features_arr = (n_features, n_features,  n_features), \
+                                           pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
+    # input size   [-1, im_shape[0],          im_shape[1],          n_features ]
+    # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ]
+    pool1    = NNlayer.pool(conv1_12, pool_size = [1, pool_len, pool_len, 1], \
+                            pool_type = 'max_pool')
+    # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 2*n_features ]
+    # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 2*n_features ]
+    conv2_12 = NNlayer.multi_convolution2d(pool1, cov_ker_size = cnn_ksize, n_cnn_layers = 3, \
+                                           in_n_features_arr  = (n_features,   2*n_features,  2*n_features), \
+                                           out_n_features_arr = (2*n_features, 2*n_features,  2*n_features), \
+                                           pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
+    # input size   [-1, im_shape[0]/pool_len,      im_shape[1]/pool_len,      2*n_features ]
+    # output size  [-1, im_shape[0]/(pool_len**2), im_shape[1]/(pool_len**2), 2*n_features ]
+    pool2    = NNlayer.pool(conv2_12, pool_size = [1, pool_len, pool_len, 1], \
+                            pool_type = 'max_pool')
+
+    # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 4*n_features ]
+    # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 4*n_features ]
+    conv3_12 = NNlayer.multi_convolution2d(pool2, cov_ker_size = cnn_ksize, n_cnn_layers = 3, \
+                                           in_n_features_arr  = (2*n_features,   4*n_features,  4*n_features), \
+                                           out_n_features_arr = (4*n_features,   4*n_features,  4*n_features), \
+                                           pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
+    #conv3_12_dropout = tf.nn.dropout(conv3_12, keep_prob = model.arg)
+    # input size   [-1, im_shape[0]/(pool_len**2), im_shape[1]/(pool_len**2), 4*n_features ]
+    # output size  [-1, im_shape[0]/pool_len,      im_shape[1]/pool_len,      4*n_features ]
+    up3      = NNlayer.deconvolution2d(conv3_12, cov_ker_size = ( pool_len, pool_len), \
+                                            in_n_features = 4*n_features, out_n_features = 2*n_features, \
+                                            conv_strides = [1, pool_len, pool_len, 1], activate_type = 'ReLU', layer_norm = 1)
+    # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 4*n_features ]
+    # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 4*n_features ]
+    merge3   = NNlayer.merge(conv2_12, up3, axis = 3, merge_type = 'add')
+    # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, 2*n_features ]
+    # output size  [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ]
+    conv4_12 = NNlayer.multi_convolution2d(merge3, cov_ker_size = (pool_len, pool_len), n_cnn_layers = 3, \
+                                           in_n_features_arr  = (2*n_features, 2*n_features,  2*n_features), \
+                                           out_n_features_arr = (2*n_features, 2*n_features,  2*n_features), \
+                                           pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
+    # input size   [-1, im_shape[0]/pool_len, im_shape[1]/pool_len, n_features ]
+    # output size  [-1, im_shape[0],          im_shape[1],          n_features ]
+    up4      = NNlayer.deconvolution2d(conv4_12, cov_ker_size = cnn_ksize, \
+                                            in_n_features = 2*n_features, out_n_features = 1*n_features, \
+                                            conv_strides = [1, pool_len, pool_len, 1], activate_type = 'ReLU', layer_norm = 1)
+    # input size   [-1, im_shape[0], im_shape[1], n_features ]
+    # output size  [-1, im_shape[0], im_shape[1], 2*n_features ]
+    merge4   = NNlayer.merge(conv1_12, up4, axis = 3, merge_type = 'add')
+    # input size   [-1, im_shape[0], im_shape[1], 2*n_features ]
+    # output size  [-1, im_shape[0], im_shape[1], 1 ]
+    conv5_12 = NNlayer.multi_convolution2d(merge4, cov_ker_size = cnn_ksize, n_cnn_layers = 3, \
+                                           in_n_features_arr  = (1*n_features, n_features,  n_features), \
+                                           out_n_features_arr = (n_features,  n_features,   1), \
+                                           pool_type = 'None', activate_type = 'sigmoid')
+    # input data shape [-1,  data_size/4, 1, cnn_n_feature], output data shape [-1, out_size=n_features*data_size//4]
+    #y = tf.reshape(conv5_12, [-1, im_shape[0], im_shape[1]]) #flatten
+    # softmax output
+    return conv5_12#tf.argmax(conv5_12)
+
 def tf_prediction_func_cnn( model ):
     #if model.arg is None:
     #    model.arg = [1.0, 1.0]
@@ -294,19 +376,26 @@ def tf_prediction_func_cnn( model ):
     cnn_ksize   = (10,10)
 
 
-    #y0 = NNlayer.convolution2d(model.data, cov_ker_size = cnn_ksize, \
-    #                                       in_n_features  = 1, out_n_features = n_features, \
-    #                                       pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
+    y0 = NNlayer.convolution2d(model.data, cov_ker_size = 2*cnn_ksize, \
+                                           in_n_features  = 1, out_n_features = n_features, \
+                                           pool_type = 'None', activate_type = 'ReLU', layer_norm = 1)
 
-    #y_res = NNlayer.multi_convolution2d_residual(y0, n_cnn_layers = 3, cov_ker_size = cnn_ksize, in_n_features  = n_features, activate_type = 'ReLU')
+    y_res = NNlayer.multi_convolution2d_residual(y0, n_cnn_layers = 6, cov_ker_size = cnn_ksize, in_n_features  = n_features, activate_type = 'ReLU')
+    #y_merge1 = NNlayer.merge(y0, y_res, axis = 3, merge_type = 'concat')
+    #y_res2 = NNlayer.multi_convolution2d_residual(y_merge1, n_cnn_layers = 6, cov_ker_size = cnn_ksize, in_n_features  = 2*n_features, activate_type = 'ReLU')
+    #y_merge2 = NNlayer.merge(y_merge1, y_res2, axis = 3, merge_type = 'concat')
+    #y_res3 = NNlayer.multi_convolution2d_residual(y_merge2, n_cnn_layers = 6, cov_ker_size = cnn_ksize, in_n_features  = 4*n_features, activate_type = 'ReLU')
+    #y_merge3 = NNlayer.merge(y_merge2, y_res3, axis = 3, merge_type = 'concat')
 
-    y1 = NNlayer.multi_convolution2d(model.data, cov_ker_size = cnn_ksize, n_cnn_layers = 6, \
+    y1 = NNlayer.multi_convolution2d(y_res, cov_ker_size = cnn_ksize, n_cnn_layers = 6, \
                                            in_n_features_arr  = (n_features,  n_features,  n_features,  n_features,  n_features,  n_features), \
                                            out_n_features_arr = (n_features,  n_features,  n_features,  n_features,  n_features, n_features), \
                                            pool_type = 'None', activate_type = 'sigmoid', layer_norm = 1)
+    y1_dropout = tf.nn.dropout(y1, keep_prob = model.arg)
     y2 = NNlayer.convolution2d(y1, cov_ker_size = cnn_ksize,\
                                            in_n_features  = n_features, \
                                            out_n_features =  1, \
+           
                                            pool_type = 'None', activate_type = 'sigmoid')
 
     return y2
@@ -314,8 +403,12 @@ def tf_prediction_func_cnn( model ):
 
 def dice_coe(prediction, target, axes = (1,2,3), smooth = 0.00001):
     inse = tf.reduce_sum(tf.multiply(prediction, target), axis = axes)
-    l    = tf.reduce_sum(tf.multiply(prediction, prediction), axis = axes)
-    r    = tf.reduce_sum(tf.multiply(target, target), axis = axes)
+    if 0:
+        l    = tf.reduce_sum(tf.multiply(prediction, prediction), axis = axes)
+        r    = tf.reduce_sum(tf.multiply(target, target), axis = axes)
+    else:
+        l    = tf.reduce_sum(prediction, axis = axes)
+        r    = tf.reduce_sum(target, axis = axes)
     dice = tf.div(2.0 * inse + smooth, l + r + smooth)
     return tf.reduce_mean(dice)
 

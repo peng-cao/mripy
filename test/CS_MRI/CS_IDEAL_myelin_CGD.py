@@ -90,14 +90,14 @@ def test():
     #Adwt_addx   = opts.joint2operators(dwt, addx)
 
     #CGD
-    Nite  = 400
+    Nite  = 100
     l1_r1 = 0.01
     l1_r2 = 0.01
     l1_r3 = 0.01
     l1_r4 = 0.01
     def f(xi):
         #return np.linalg.norm(Aideal_ftm.forward(xi)-residual)
-        return alg.obj_fidelity(Aideal_ftm, xi, residual) \
+        return alg.obj_fidelity(Aideal_ftm, xi, residual) #\
         + l1_r1 * alg.obj_sparsity(Adwt_addx_w, xi[...,0])\
         + l1_r2 * alg.obj_sparsity(Adwt_addx_f, xi[...,1])\
         + l1_r3 * alg.obj_sparsity(Adwt_addx_dwat, xi[...,2])\
@@ -159,6 +159,9 @@ def test():
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(im)
         ut.plotim3(np.absolute(residual),[4,-1],bar=1, pause_close = 2)
+
+        sio.savemat('../save_data/myelin/ideal_result_cg.mat', \
+             {'xpar':xpar, 'residual':residual})
         
         #addx.set_x(xpar) #should update in each gauss newton iteration
         addx_water.set_x(xpar[...,0]) #should update in each gauss newton iteration
