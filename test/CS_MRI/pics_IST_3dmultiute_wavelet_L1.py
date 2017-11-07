@@ -10,8 +10,8 @@ import utilities.utilities_func as ut
 from espirit.espirit_func import espirit_2d, espirit_3d
 import scipy.io as sio
 import pics.operators_class as optc
-import pics.operators_cuda_class as cuoptc
-
+#import pics.operators_cuda_class as cuoptc
+import h5py
 #config.debug_print.atlevel(1,'hello debug world! ').global_level()
 
 
@@ -22,34 +22,35 @@ def test():
     #path = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/scan_1_phantom/'
     #matfile = 'Phantom_utecone.mat'
     #lung data
-    path         = '/working/larson/UTE_GRE_shuffling_recon/UTEcones_recon/20170301/lung_exp4_no_prep/'
-    matfile      = 'lung_utecone.mat'
+    path         = '/data/larson/brain_uT2/2017-11-03_eye_7T/'
+    matfile      = 'rawdata.mat'
   
-    mat_contents = sio.loadmat(path + matfile);
-
-    ktraj      = mat_contents["ktraj"]
-    dcf        = mat_contents["dcf"]
-    kdata      = mat_contents["kdata"].astype(np.complex64)
-    ncoils     = kdata.shape[3]
+    #mat_contents = sio.loadmat(path + matfile);
+    f            = h5py.File(path + matfile)
+    ktraj        = f['ktrjall'][0].transpose([4,3,2,1,0]).squeeze()  
+    dcf          = f['decfall'][0].transpose([4,3,2,1,0]).squeeze()  
+    kdata        = f['dataall'][0].transpose([4,3,2,1,0]).squeeze().view(np.complex128).astype(np.complex64)
+    ncoils     = kdata.shape[1]
 
     #bart nufft assumes the im_shape is weighted on ktraj, so I can extract this info here
-    im_shape = [2*int(np.max(ktraj[0])),2*int(np.max(ktraj[1])),2*int(np.max(ktraj[2]))]
+    im_shape = [2*int(np.round(np.max(ktraj[0]))),2*int(np.round(np.max(ktraj[1]))),2*int(np.round(np.max(ktraj[2])))]
+    #print(im_shape)
     # remove the weighting of im_shape from ktraj
     ktraj[0,:] = ktraj[0,:]*(1.0/im_shape[0])
     ktraj[1,:] = ktraj[1,:]*(1.0/im_shape[1])
     ktraj[2,:] = ktraj[2,:]*(1.0/im_shape[2])
     #reshape the kdata, flatten the xyz dims
-    kdata      = kdata.reshape((np.prod(kdata.shape[0:3]),ncoils)).squeeze()
+    #kdata      = kdata.reshape((np.prod(kdata.shape[0:3]),ncoils)).squeeze()
     #call nufft3d here
-    nft = cuoptc.NUFFT3d_cuda(im_shape, dcf)
-    #nft = optc.NUFFT3d(im_shape, dcf)
+    #nft = cuoptc.NUFFT3d_cuda(im_shape, dcf)
+    nft = optc.NUFFT3d(im_shape, dcf)
     nft.normalize_set_ktraj(ktraj)
     ft  = opts.FFTnd()    
 
     im  = nft.backward(kdata)
 
     x   = ft.forward(im)
-    ut.plotim3(np.absolute(im[:,:,:,1]),  pause_close = 5)
+    ut.plotim3(np.absolute(im[:,:,:,0]),  pause_close = 5)
     #get shape
     #nx,ny,nz,nc  = x.shape
     #crop k-space
@@ -87,7 +88,7 @@ def test():
     #xopt = solvers.ADMM_l2Afxnb_tvx( Aopt.forward, Aopt.backward, kdata, Nite, step, tv_r, rho )
 
     #do wavelet l1 soft thresholding
-    Nite = 40 #number of iterations
+    Nite = 20 #number of iterations
     step = 0.1 #step size
     th = 0.06 # theshold level
     #xopt = solvers.IST_2( Aopt.forward, Aopt.backward, kdata, Nite, step, th )
@@ -96,7 +97,7 @@ def test():
     #xopt = solvers.FIST_32( Aopt.forward_backward, Aopt.backward, dwt.backward, dwt.forward, kdata, Nite, step, th )
     xopt = solvers.FIST_wrap( Aopt, dwt, kdata, Nite, step, th )
     #xopt = solvers.IST_wrap( Aopt, dwt, kdata, Nite, step, th )    
-    ut.plotim3(np.absolute(xopt[:,:,:]),  pause_close = 5)
+    ut.plotim3(np.absolute(xopt[:,:,:]))
     sio.savemat(path +'test_im_th0p06.mat', {'xopt': xopt})
 #if __name__ == "__main__":
     #test()

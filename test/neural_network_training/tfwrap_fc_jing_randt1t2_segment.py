@@ -21,8 +21,8 @@ import bloch_sim.sim_utilities_func as simut
 #pathdat  = '/home/pcao/git/save_data/20170814_4/'
 #pathdat  = '/home/pcao/git/save_data/20170814_5/'
 #pathdat  = '/home/pcao/git/save_data/20170801_5/'
-pathdat  = '/home/pcao/git/save_data/jing_dict_5/'
-#pathdat   = '/home/pcao/git/save_data/20170921_6/'
+#pathdat  = '/home/pcao/git/save_data/jing_dict_5/'
+pathdat   = '/home/pcao/git/save_data/20170921_6/'
 #pathsave = '/home/pcao/git/nn_checkpoint/'
 # these functions should be defined specifically for individal neural network
 # example of the prediction function, defined using tensorflow lib
@@ -113,13 +113,14 @@ def test1():
     fa         = par[0]['fa'][0][0][0].astype(np.float32)#35#30 #deg
     tr         = par[0]['tr'][0][0][0].astype(np.float32)#3.932#4.337 #ms
     ti         = par[0]['ti'][0][0][0].astype(np.float32)#11.0 #ms
+    te         = 1.5 #ms
     #print(fa)
     #print(tr)
     #print(ti)
     #print(Nk)
     #print(Ndiv)
 
-    far, trr   = simut.rftr_const(Nk, fa, tr)
+    far, trr,ter   = simut.rftr_const(Nk, fa, tr, te)
     M0         = simut.def_M0()
 
     #run tensorflow on cpu, count of gpu = 0
@@ -169,7 +170,7 @@ def test1():
 
 
         T1r, T2r, dfr, PDr = ssmrf.set_par(batch_ys[...,0:4])
-        batch_xs_c         = ssmrf.bloch_sim_batch_cuda( batch_size, 100, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti )
+        batch_xs_c         = ssmrf.bloch_sim_batch_cuda2( batch_size, 100, Nk, PDr, T1r, T2r, dfr, M0, trr, ter, far, ti )
 
 
         #ut.plot(np.absolute(batch_xs_c[0,:]))   

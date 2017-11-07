@@ -460,13 +460,13 @@ class espirit:
                         self.sens.reshape(sens_out_shape))
     
     #define save function
-    def save( self, name ):
-        sio.savemat(name, {'sens': self.sens, 'coil_axis': self.coil_axis})
+    def save( self, fname ):
+        sio.savemat(fname, {'sens': self.sens, 'coil_axis': self.coil_axis})
         return self
 
     #restore sensitivity map
-    def restore( self, name ):
-        mat_contents   = sio.loadmat(name); 
+    def restore( self, fname ):
+        mat_contents   = sio.loadmat(fname); 
         self.sens      = mat_contents['sens']
         self.coil_axis = np.int_(mat_contents['coil_axis'])
         return self

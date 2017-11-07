@@ -91,6 +91,8 @@
 #import test.CS_MRI.pics_IST_3dute_wavelet_L1 as pics_IST_3dute_wavelet_L1
 #pics_IST_3dute_wavelet_L1.test()
 
+#import test.CS_MRI.pics_IST_3dmultiute_wavelet_L1 as pics_IST_3dmultiute_wavelet_L1
+#pics_IST_3dmultiute_wavelet_L1.test()
 
 #import test.CS_MRI.cs_TV_ADMM_3d as cs_TV_ADMM_3d
 #cs_TV_ADMM_3d.test()
@@ -123,8 +125,8 @@
 #import test.CS_MRI.CS_IDEAL_myelin_CGD as CS_IDEAL_myelin_CGD
 #CS_IDEAL_myelin_CGD.test()
 
-import test.CS_MRI.CS_IDEAL_myelin_ADMM as CS_IDEAL_myelin_ADMM
-CS_IDEAL_myelin_ADMM.test()
+#import test.CS_MRI.CS_IDEAL_myelin_ADMM as CS_IDEAL_myelin_ADMM
+#CS_IDEAL_myelin_ADMM.test()
 
 #import test.CS_MRI.CS_IDEAL_waterfat_myelin_CGD as CS_IDEAL_waterfat_myelin_CGD
 #CS_IDEAL_waterfat_myelin_CGD.test()
@@ -228,9 +230,9 @@ CS_IDEAL_myelin_ADMM.test()
 #tfwrap_fc_jing_randt1t2.test1()
 #tfwrap_fc_jing_randt1t2.test2()
 
-#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
+import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
 #tfwrap_fc_jing_randt1t2_segment.test1()
-#tfwrap_fc_jing_randt1t2_segment.test2()
+tfwrap_fc_jing_randt1t2_segment.test2()
 ##########################################################################
 # parallel testing
 ##########################################################################

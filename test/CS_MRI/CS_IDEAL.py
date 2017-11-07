@@ -26,8 +26,8 @@ def test():
     nx,ny,nte  = im.shape
     #undersampling
     mask       = ut.mask3d( nx, ny, nte, [15,15,0], 0.8)
-    #FTm   = opts.FFT2d_kmask(mask)
-    FTm        = opts.FFTW2d_kmask(mask)
+    FTm   = opts.FFT2d_kmask(mask)
+    #FTm        = opts.FFTW2d_kmask(mask)
     #FTm   = opts.FFT2d()
     b          = FTm.forward(im)
     scaling    = ut.optscaling(FTm,b)
@@ -59,12 +59,12 @@ def test():
     #do tv cs mri recon
     Nite = 10 #number of iterations
     step = 1 #step size
-    l1_r = 0.02
-    tv_r = 0.001 # regularization term for tv term
+    l1_r = 0.001
+    tv_r = 0.0001 # regularization term for tv term
     rho  = 1.0  
     ostep = 0.3 
       
-    for i in range(200):
+    for i in range(20):
         #wavelet L1 IST
     #    dxpar = solvers.IST_3( Aideal_ftm.forward, Aideal_ftm.backward,\
     #                Adwt_addx.backward, Adwt_addx.forward, residual, Nite, step, th )
@@ -90,5 +90,6 @@ def test():
 
         IDEAL.set_x(xpar) #should update in each gauss newton iteration
         residual = IDEAL.residual(b, FTm)
-        addx.set_x(xpar) #should update in each gauss newton iteration    
+        addx.set_x(xpar) #should update in each gauss newton iteration 
+        sio.savemat('data/kellman_data/xpar.mat', {'xpar': xpar})   
     ut.plotim3(np.absolute(xpar)[...,0:2],bar=1)

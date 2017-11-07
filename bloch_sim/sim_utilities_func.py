@@ -17,15 +17,18 @@ def rf_const(Nk, fa):
     far[::2] = -1*far[::2]
     return far
 
-def tr_const(Nk, tr):
+def tr_const(Nk, tr, te = None):
     "fixed tr constant"
+    if te is None:
+        te = tr/2.0
     trr = tr * np.ones(Nk)
-    return trr
+    ter = te * np.ones(Nk)
+    return trr, ter
 
-def rftr_const(Nk, fa, tr):
+def rftr_const(Nk, fa, tr, te = None):
     far = rf_const(Nk, fa)
-    trr = tr_const(Nk, tr)
-    return far, trr
+    trr,ter = tr_const(Nk, tr, te = te)
+    return far, trr, ter
 
 def rf_rand(Nk, fa):
     'generate far with random amplitude and phase'
