@@ -230,9 +230,9 @@
 #tfwrap_fc_jing_randt1t2.test1()
 #tfwrap_fc_jing_randt1t2.test2()
 
-import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
 #tfwrap_fc_jing_randt1t2_segment.test1()
-tfwrap_fc_jing_randt1t2_segment.test2()
+#tfwrap_fc_jing_randt1t2_segment.test2()
 ##########################################################################
 # parallel testing
 ##########################################################################
