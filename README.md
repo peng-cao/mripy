@@ -32,19 +32,4 @@ A python based MRI reconstruction toolbox with compressed sensing, parallel imag
         </td>
     </tr>
 </table>
-* Figure 4 Examples of MRI reconstruction tasks. (left) IDEAL water and fat separation from a three TEs images, raw image from website (https://www.ismrm.org/workshops/FatWater12/data.htm). (right) NUFFT based reconstruction for UTE cones image.
-<table>
-    <tr>
-        <td>
-            <img alt="open opps 1" src="doc/readme_fig4.png">
-        </td>
-    </tr>
-</table>
-* Figure 5 (top) Whole brain segmentation/relaxometry were the direct output of neural network trained with the synthetic MRI block in Fig. 1. (bottom) Another more complex task that is detection/segmentation of atrium from MRI image. The MRI data is from Dr. Yan Wang.  A fully convolutional network performed the segmentation as an exampled provide in MRIPY.
-<table>
-    <tr>
-        <td>
-            <img alt="open opps 1" src="doc/readme_fig5.png">
-        </td>
-    </tr>
-</table>
+
