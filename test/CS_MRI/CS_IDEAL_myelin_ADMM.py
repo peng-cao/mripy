@@ -29,9 +29,11 @@ def test():
     datpath = '/data/larson/brain_uT2/2016-09-13_3T-volunteer/'
     f = h5py.File(datpath+'ute_32echo_random-csreconallec_l2_r0p01.mat')
 
+    #datpath = '/data/larson/brain_uT2/2017-11-17_3T-DTI-volunteer/'
+    #f = h5py.File(datpath+'P31232_ir4echo.7-csreconallec_l2_r0p01.mat')
     #im3d         = f['imallplus'][0:10].transpose([1,2,3,0])
     #im           = im3d[:,40,:,:].squeeze().view(np.complex128)
-    Ndiv         = 16
+    Ndiv         = 4
     im3d         = f['imallplus'][0:Ndiv].transpose([1,3,2,0])
     im           = im3d[35,:,:,:].squeeze().view(np.complex128)
 

@@ -12,7 +12,9 @@ import test.MRI_recon.IDEAL_class as idealc
 
 from skimage.restoration import unwrap_phase
 #from unwrap import unwrap
-pathdat = '/working/larson/UTE_GRE_shuffling_recon/IDEAL_ZTE/20170929/save_data1slice.mat'
+pathdat = '/working/larson/UTE_GRE_shuffling_recon/IDEAL_ZTE/20171027/save_data1slice.mat'
+
+#pathdat = '/working/larson/UTE_GRE_shuffling_recon/IDEAL_ZTE/20170929/save_data1slice.mat'
 #datpath = './data/kellman_data/PKdata3.mat'
 
 def unwrap_freq( im ):
@@ -39,8 +41,8 @@ def test():
     #undersampling
     mask       = ut.mask3d( nx, ny, nte, [15,15,0], 0.8)
     #FTm   = opts.FFT2d_kmask(mask)
-    FTm        = opts.FFTW2d_kmask(mask)
-    #FTm   = opts.FFT2d()
+    #FTm        = opts.FFTW2d_kmask(mask)
+    FTm   = opts.FFT2d()
     b          = FTm.forward(im)
     scaling    = ut.optscaling(FTm,b)
     b          = b/scaling
@@ -75,8 +77,8 @@ def test():
 
     #CGD
     Nite  = 80
-    l1_r1 = 0.1
-    l1_r2 = 0.1
+    l1_r1 = 0.01
+    l1_r2 = 0.01
     def f(xi):
         #return np.linalg.norm(Aideal_ftm.forward(xi)-residual)
         return alg.obj_fidelity(Aideal_ftm, xi, residual) \

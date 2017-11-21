@@ -64,6 +64,8 @@ def tf_optimize_func( model ):
 
      # l2-norm
   # l2-norm
+    #loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target[:,:4],model.prediction[:,:4]),2) ) \
+    #       + tf.reduce_mean(-tf.reduce_sum(model.target[:,4:] * tf.log(model.prediction[:,4:]), reduction_indices=[1]))
     loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target[:,0],model.prediction[:,0]),2) ) \
           + tf.reduce_sum(tf.pow(tf.subtract(model.target[:,1],model.prediction[:,1]),2) ) \
           + tf.reduce_sum(tf.pow(tf.subtract(model.target[:,2],model.prediction[:,2]),2) ) \
@@ -150,8 +152,8 @@ def test1():
                 batch_ys[k,5] = 0.0
                 batch_ys[k,6] = 0.0
             elif batch_ys_tmp[k] <= 3 and batch_ys_tmp[k] > 2:
-                batch_ys[k,0] = t1t2_group[1,0] + np.random.uniform(-0.025,0.025)
-                batch_ys[k,1] = t1t2_group[1,1] + np.random.uniform(-0.025,0.025)   
+                batch_ys[k,0] = t1t2_group[1,0] + np.random.uniform(-0.035,0.035)
+                batch_ys[k,1] = t1t2_group[1,1] + np.random.uniform(-0.035,0.035)   
                 batch_ys[k,4] = 0.0
                 batch_ys[k,5] = 1.0
                 batch_ys[k,6] = 0.0                            
@@ -196,7 +198,7 @@ def test1():
             #tc2 = batch_xt[dd,:]        
             normtc1 = np.linalg.norm(tc1)
             #normtc2 = np.linalg.norm(tc2)
-            if normtc1  > 0.05: #and batch_ys[dd,0]*5000 > 3*500*batch_ys[dd,1] and batch_ys[dd,0]*5000 < 20*500*batch_ys[dd,1]
+            if normtc1  > 0.005: #and batch_ys[dd,0]*5000 > 3*500*batch_ys[dd,1] and batch_ys[dd,0]*5000 < 20*500*batch_ys[dd,1]
                 batch_xs[dd,:] = tc1#/normtc1
                 #batch_xt[dd,:] = tc2#/normtc2
             else:

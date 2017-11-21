@@ -89,7 +89,7 @@ def test():
     #do wavelet l1 soft thresholding
     Nite = 40 #number of iterations
     step = 0.1 #step size
-    th = 0.06 # theshold level
+    th = 0.1 # theshold level
     #xopt = solvers.IST_2( Aopt.forward, Aopt.backward, kdata, Nite, step, th )
     #xopt = solvers.IST_22( Aopt.forward_backward, Aopt.backward, kdata, Nite, step, th )    
     #xopt = solvers.FIST_3( Aopt.forward, Aopt.backward, dwt.backward, dwt.forward, kdata, Nite, step, th )
@@ -97,6 +97,6 @@ def test():
     xopt = solvers.FIST_wrap( Aopt, dwt, kdata, Nite, step, th )
     #xopt = solvers.IST_wrap( Aopt, dwt, kdata, Nite, step, th )    
     ut.plotim3(np.absolute(xopt[:,:,:]),  pause_close = 5)
-    sio.savemat(path +'test_im_th0p06.mat', {'xopt': xopt})
+    sio.savemat(path +'test_im_th0p1.mat', {'xopt': xopt})
 #if __name__ == "__main__":
     #test()
