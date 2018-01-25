@@ -22,8 +22,10 @@ import bloch_sim.sim_utilities_func as simut
 #pathdat  = '/working/larson/UTE_GRE_shuffling_recon/20170801_5/'
 #pathdat   = '/working/larson/UTE_GRE_shuffling_recon/20170921_6/'
 
-pathdat  = '/working/larson/UTE_GRE_shuffling_recon/circus_firstdata_t1t2/'
-#pathdat   = '/working/larson/UTE_GRE_shuffling_recon/circus_20171208_t1t2/'
+#pathdat  = '/working/larson/UTE_GRE_shuffling_recon/circus_firstdata_t1t2/'
+#pathdat   = '/working/larson/UTE_GRE_shuffling_recon/circus_20171208_t1t2/scan13/'
+#pathdat  = '/working/larson/UTE_GRE_shuffling_recon/circus_20170907_t1t2/'
+pathdat  = '/working/larson/UTE_GRE_shuffling_recon/circus_20180112_invivo/scan2/'
 
 # these functions should be defined specifically for individal neural network
 # example of the prediction function, defined using tensorflow lib
@@ -81,7 +83,7 @@ def test1():
     orig_Ndiv  = coeff.shape[0] 
     npar       = 7
     model = tf_wrap.tf_model_top([None,  Ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
-    #model.restore(pathdat + 'test_model_save')
+    model.restore(pathdat + 'test_model_save_test')
 
 
     fa         = par[0]['fa'][0][0][0].astype(np.float32)#35#30 #deg
@@ -99,7 +101,7 @@ def test1():
     config.gpu_options.allow_growth=True
     t1t2_group = np.zeros((4, 2),dtype = np.float64)
     t1t2_group[0,0] = 600.0/5000.0
-    t1t2_group[0,1] = 40.0/500.0
+    t1t2_group[0,1] = 30.0/500.0  #40
     t1t2_group[1,0] = 1000.0/5000.0
     t1t2_group[1,1] = 80.0/500.0     
     t1t2_group[2,0] = 3000.0/5000.0
@@ -109,25 +111,25 @@ def test1():
 
     for i in range(1000000):
         batch_ys           = np.random.uniform(0,1,(batch_size,npar)).astype(np.float64)
-        batch_ys[:,2]      = np.zeros(batch_size)#np.random.uniform(0,1.0/tr,(batch_size)).astype(np.float64)
+        batch_ys[:,2]      = np.zeros(batch_size)#np.random.uniform(0,1.0/tr,(batch_size)).astype(np.float64)#
         batch_ys_tmp       = np.random.uniform(0,4,(batch_size))
 
         for k in range(batch_size):
             if batch_ys_tmp[k] <= 4 and batch_ys_tmp[k] > 3:
-                batch_ys[k,0] = t1t2_group[0,0] + np.random.uniform(-0.05,0.025)
-                batch_ys[k,1] = t1t2_group[0,1] + np.random.uniform(-0.05,0.025)
+                batch_ys[k,0] = t1t2_group[0,0] + np.random.uniform(-0.025,0.025)  #-0.05,0.025
+                batch_ys[k,1] = t1t2_group[0,1] + np.random.uniform(-0.025,0.025)
                 batch_ys[k,4] = 1.0
                 batch_ys[k,5] = 0.0
                 batch_ys[k,6] = 0.0
             elif batch_ys_tmp[k] <= 3 and batch_ys_tmp[k] > 2:
-                batch_ys[k,0] = t1t2_group[1,0] + np.random.uniform(-0.035,0.035)
-                batch_ys[k,1] = t1t2_group[1,1] + np.random.uniform(-0.035,0.035)   
+                batch_ys[k,0] = t1t2_group[1,0] + np.random.uniform(-0.025,0.025) #-0.035,0.035
+                batch_ys[k,1] = t1t2_group[1,1] + np.random.uniform(-0.025,0.025)   
                 batch_ys[k,4] = 0.0
                 batch_ys[k,5] = 1.0
                 batch_ys[k,6] = 0.0                            
             elif batch_ys_tmp[k] <= 2 and batch_ys_tmp[k] > 1:
-                batch_ys[k,0] = t1t2_group[2,0] + np.random.uniform(-0.15,0.25)
-                batch_ys[k,1] = t1t2_group[2,1] + np.random.uniform(-0.15,0.25) 
+                batch_ys[k,0] = t1t2_group[2,0] + np.random.uniform(-0.025,0.025) #-0.15,0.25
+                batch_ys[k,1] = t1t2_group[2,1] + np.random.uniform(-0.025,0.025) 
                 batch_ys[k,4] = 0.0
                 batch_ys[k,5] = 0.0
                 batch_ys[k,6] = 1.0                             
@@ -165,7 +167,7 @@ def test1():
       
             normtc1 = np.linalg.norm(tc1)
 
-            if normtc1  > 0.01: 
+            if normtc1  > 0.005: 
                 batch_xs[dd,:] = tc1
             else:
 
@@ -182,7 +184,7 @@ def test1():
             ut.plot(prey[...,2], batch_ys[...,2], line_type = '.', pause_close = 1)
             ut.plot(prey[...,3], batch_ys[...,3], line_type = '.', pause_close = 1)
             ut.plot(prey[...,4], batch_ys[...,4], line_type = '.', pause_close = 1)
-            model.save(pathdat + 'test_model_save')
+            model.save(pathdat + 'test_model_save_test')
 
 def test2():
     mat_contents     = sio.loadmat(pathdat+'im_pca.mat')#im.mat
@@ -197,7 +199,7 @@ def test2():
     ut.plotim3(imall.reshape(I.shape)[...,0],[5, -1],pause_close = 1)
 
     model   = tf_wrap.tf_model_top([None,  ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
-    model.restore(pathdat + 'test_model_save')
+    model.restore(pathdat + 'test_model_save_test')
 
     prey    = model.prediction(imall, np.zeros([imall.shape[0],npar]))
     immatch = prey.reshape([nx, ny, nz, npar])

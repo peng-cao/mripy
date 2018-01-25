@@ -230,9 +230,25 @@
 #tfwrap_fc_jing_randt1t2.test1()
 #tfwrap_fc_jing_randt1t2.test2()
 
-import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
-tfwrap_fc_jing_randt1t2_segment.test1()
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment as tfwrap_fc_jing_randt1t2_segment
+#tfwrap_fc_jing_randt1t2_segment.test1()
 #tfwrap_fc_jing_randt1t2_segment.test2()
+
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment_2fa as tfwrap_fc_jing_randt1t2_segment_2fa
+#tfwrap_fc_jing_randt1t2_segment_2fa.test1()
+#tfwrap_fc_jing_randt1t2_segment_2fa.test2()
+
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment_2fa_2freq as tfwrap_fc_jing_randt1t2_segment_2fa_2freq
+#tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test1()
+#tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test2()
+
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment_2freq as tfwrap_fc_jing_randt1t2_segment_2freq
+#tfwrap_fc_jing_randt1t2_segment_2freq.test1()
+#tfwrap_fc_jing_randt1t2_segment_2freq.test2()
+
+import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment_2fa_2freq as tfwrap_fc_jing_randt1t2_segment_2fa_2freq
+#tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test1()
+tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test2()
 ##########################################################################
 # parallel testing
 ##########################################################################

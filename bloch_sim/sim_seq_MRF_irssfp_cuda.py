@@ -154,7 +154,69 @@ def bloch_sim_irssfp_cuda2( Nexample, Nk, PDr, T1r, T2r, dfr, M0, trr, ter, far,
         for k in range(Nk):
             S[i, k]=1j*0.0
 
-# do griding with cuda acceleration
+# test function with b1 estimation
+@cuda.jit
+def bloch_sim_irssfp_cuda3( Nexample, Nk, PDr, T1r, T2r, dfr, b1r, M0, trr, ter, far, ti, S ):
+    i  = cuda.grid(1)
+    if i > Nexample:
+        return
+    # claim local memory
+    Rz   = cuda.local.array(shape=(3, 3), dtype=numba.float32)
+    Rx   = cuda.local.array(shape=(3, 3), dtype=numba.float32)
+    Mtmp = cuda.local.array(shape=3,      dtype=numba.float32)
+    M    = cuda.local.array(shape=3,      dtype=numba.float32)
+    Rth  = cuda.local.array(shape=(3, 3), dtype=numba.float32)
+    Rtho = cuda.local.array(shape=(3, 3), dtype=numba.float32)
+    Em   = cuda.local.array(shape=(3, 3), dtype=numba.float32)
+    Afp  = cuda.local.array(shape=(3, 3), dtype=numba.float32)
+    Bfp  = cuda.local.array(shape=3,      dtype=numba.float32)
+    # sequence has multiple BSSFP-TRs for one IR
+    if PDr[i] > 0.1 and T1r[i] > 0.0001 and T2r[i] > 0.0001 :#and T1r[i] > 3*T2r[i]
+        PD = PDr[i] # proton density
+        T1 = T1r[i] # T1
+        T2 = T2r[i] # T2
+        df = dfr[i] # freq offset
+        b1 = b1r[i] # b1 ratio
+        # M0=[0 0 1] is proton density weighted
+        ss_cu.veccopy_cuda(M, M0)
+        M = ss_cu.vmuls_cuda(M,PD)        
+        #loop for dummy
+        for d in range(5):        
+            #inversion pulse, phi = np.pi
+            ss_cu.excitation_cuda( Mtmp, M, Rtho, Rz, Rx, Rth, np.pi, 0. )
+            ss_cu.veccopy_cuda(M, Mtmp)
+
+            #relaxation during inversion time
+            ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, ti, T1, T2, df, PD )
+            ss_cu.veccopy_cuda(M, Mtmp)
+            #crusher
+            M = ss_cu.xynull_cuda(M)
+
+            #loop for TRs within one IR segment
+            for k in range(Nk):
+                fa = far[k] # rf complex
+                fa_angle = phase(fa)  # rf phase
+                fa_absolute = b1*abs(fa) # rf amplitude, flip angle
+                tr = trr[k]
+                te = ter[k]
+                #excitation
+                ss_cu.excitation_cuda( Mtmp, M, Rtho, Rz, Rx, Rth, fa_absolute, fa_angle )
+                ss_cu.veccopy_cuda(M, Mtmp)
+                #free precession half TR
+                ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, te, T1, T2, df, PD )
+                ss_cu.veccopy_cuda(M, Mtmp)
+                #save the MR signal on the spin echo center
+                #phase correction with rf phase
+                S[i, k]=(M[0]+1j*M[1])*(cos(fa_angle)-1j*sin(fa_angle))
+                #second half of TR
+                ss_cu.relaxation_cuda( Mtmp, M, Afp, Bfp, Rz, Em, tr-te, T1, T2, df, PD )
+                ss_cu.veccopy_cuda(M, Mtmp)
+        
+    else:
+        for k in range(Nk):
+            S[i, k]=1j*0.0
+
+# 
 def bloch_sim_batch_cuda( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr, far, ti ):
     sim_out    = np. zeros((Nexample, Nk),   dtype = np.complex128)   #final output data
     batch_data = np. zeros((batch_size, Nk), dtype = np.complex128)   #batch output data
@@ -181,7 +243,7 @@ def bloch_sim_batch_cuda( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr,
         sim_out[bstart:bstop,:] = batch_data
     return sim_out
 
-# do griding with cuda acceleration
+# 
 def bloch_sim_batch_cuda2( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr, ter, far, ti ):
     sim_out    = np. zeros((Nexample, Nk),   dtype = np.complex128)   #final output data
     batch_data = np. zeros((batch_size, Nk), dtype = np.complex128)   #batch output data
@@ -208,7 +270,38 @@ def bloch_sim_batch_cuda2( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, M0, trr
         sim_out[bstart:bstop,:] = batch_data
     return sim_out
 
-# apply CNN model, x->y,
+
+# test function with b1 estimation
+def bloch_sim_batch_cuda3( Nexample, batch_size, Nk, PDr, T1r, T2r, dfr, b1r, M0, trr, ter, far, ti ):
+    sim_out    = np. zeros((Nexample, Nk),   dtype = np.complex128)   #final output data
+    batch_data = np. zeros((batch_size, Nk), dtype = np.complex128)   #batch output data
+    bT1r       = np. zeros(batch_size,       dtype = np.float32)      #batch T1, T2, PD, df arrays
+    bT2r       = np. zeros(batch_size,       dtype = np.float32)
+    bPDr       = np. zeros(batch_size,       dtype = np.float32)
+    bdfr       = np. zeros(batch_size,       dtype = np.float32)
+    bb1r       = np. zeros(batch_size,       dtype = np.float32)
+    #set total number of threads on GPU
+    device = cuda.get_current_device()
+    tpb = device.WARP_SIZE
+    bpg = int(np.ceil(float(batch_size)/tpb))
+    # batch loop
+    for nb in range(Nexample//batch_size):
+        #print('Doing batch %d/%d for applying Bloch sim' % (nb+1,Nexample//batch_size))
+        bstart = nb*batch_size      #batch start index
+        bstop = bstart + batch_size #batch stop inex
+        #print('%d:%d' % (bstart,bstop))
+        bT1r = T1r[bstart:bstop]    #batch T1, T2, PD, df arrays
+        bT2r = T2r[bstart:bstop]
+        bPDr = PDr[bstart:bstop]
+        bdfr = dfr[bstart:bstop]
+        bb1r = b1r[bstart:bstop]
+        #start the parallel computing on GPU
+        bloch_sim_irssfp_cuda3[bpg, tpb]( batch_size, Nk, bPDr, bT1r, bT2r, bdfr, bb1r, M0, trr, ter, far, ti, batch_data )
+        sim_out[bstart:bstop,:] = batch_data
+    return sim_out
+
+
+#
 def batch_apply_tf_cuda( Nexample, batch_size, sess_run, x, data_x_acc, y_conv, test_outy, keep_prob ):
     for nb in range(Nexample//batch_size):
         #print('Doing batch %d/%d for applying CNN' % (nb+1,Nexample//batch_size))
