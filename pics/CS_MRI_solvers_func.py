@@ -185,6 +185,7 @@ def FIST_22( Afunc, invAAfunc, invAfunc, b, Nite, step, th ):
         print np.linalg.norm(r)
     return x
 
+
 def FIST_3( Afunc, invAfunc, Tfunc, invTfunc, b, Nite, step, th ):
     y     = step*invAfunc(b) #np.zeros(x.shape)
     y_acc = np.zeros(y.shape,dtype=b.dtype)

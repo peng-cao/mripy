@@ -88,6 +88,10 @@
 #import test.CS_MRI.pics_IST_3d_wavelet_L1_shuffledmprage as pics_IST_3d_wavelet_L1_shuffledmprage
 #pics_IST_3d_wavelet_L1_shuffledmprage.test()
 
+import test.CS_MRI.pics_IST_3d_wavelet_L1_circus as pics_IST_3d_wavelet_L1_circus
+pics_IST_3d_wavelet_L1_circus.test()
+
+
 #import test.CS_MRI.pics_IST_3dute_wavelet_L1 as pics_IST_3dute_wavelet_L1
 #pics_IST_3dute_wavelet_L1.test()
 
@@ -246,9 +250,13 @@
 #tfwrap_fc_jing_randt1t2_segment_2freq.test1()
 #tfwrap_fc_jing_randt1t2_segment_2freq.test2()
 
-import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment_2fa_2freq as tfwrap_fc_jing_randt1t2_segment_2fa_2freq
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2_segment_2fa_2freq as tfwrap_fc_jing_randt1t2_segment_2fa_2freq
 #tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test1()
-tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test2()
+#tfwrap_fc_jing_randt1t2_segment_2fa_2freq.test2()
+
+#import test.neural_network_training.tfwrap_fc_jing_randt1t2b1_segment_2fa_2freq as tfwrap_fc_jing_randt1t2b1_segment_2fa_2freq
+#tfwrap_fc_jing_randt1t2b1_segment_2fa_2freq.test1()
+#tfwrap_fc_jing_randt1t2b1_segment_2fa_2freq.test2()
 ##########################################################################
 # parallel testing
 ##########################################################################

@@ -16,8 +16,17 @@ class FFTnd_cuda_kmask:
         im  = np.fft.fftshift(im,self.axes)    
         ksp = fftnc2c_cuda(im)
         ksp = np.fft.ifftshift(ksp,self.axes)
-        return np.multiply(ksp,self.mask)
-
+        #return np.multiply(ksp,self.mask)
+        #try to match the dims of ksp and mask
+        if len(ksp.shape) is not len(self.mask.shape):
+            #try to match the dimensions of ksp and mask
+            ksp_out_shape, mask_out_shape = dim_match(ksp.shape, self.mask.shape)
+            mksp = np.multiply(ksp.reshape(ksp_out_shape),\
+                         self.mask.reshape(mask_out_shape))#apply mask
+        else:
+            mksp = np.multiply(ksp,self.mask)#apply mask
+        return mksp
+        
     # let's call image <- k-space as backward
     def backward( self, ksp ):
         ksp = np.fft.fftshift(ksp,self.axes)

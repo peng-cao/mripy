@@ -8,6 +8,7 @@ import neural_network.tf_wrap as tf_wrap
 from neural_network.tf_layer import tf_layer
 import scipy.io as sio
 import utilities.utilities_func as ut
+import utilities.utilities_class as utc
 import bloch_sim.sim_seq_MRF_irssfp_cuda as ssmrf
 import bloch_sim.sim_utilities_func as simut
 
@@ -17,6 +18,7 @@ import bloch_sim.sim_utilities_func as simut
 #pathdat  = '/working/larson/UTE_GRE_shuffling_recon/circus_20180112_invivo/'
 pathdat = '/working/larson/UTE_GRE_shuffling_recon/circus_20180119_invivo/pw2ms/'
 #pathdat = '/working/larson/UTE_GRE_shuffling_recon/circus_20180119_invivo/pw504us/'
+#pathdat = '/working/larson/UTE_GRE_shuffling_recon/circus_20180126_invivo/irprep/'
 
 # these functions should be defined specifically for individal neural network
 # example of the prediction function, defined using tensorflow lib
@@ -50,7 +52,8 @@ def tf_optimize_func( model ):
   # l2-norm
     #loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target[:,:4],model.prediction[:,:4]),2) ) \
     #       + tf.reduce_mean(-tf.reduce_sum(model.target[:,4:] * tf.log(model.prediction[:,4:]), reduction_indices=[1]))
-    loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target,model.prediction),2) )
+    loss =  tf.reduce_sum(tf.pow(tf.subtract(model.target,model.prediction),2) ) #\
+          #+ tf.reduce_sum(model.prediction[:,4:] )
     return tf.train.AdamOptimizer(1e-4).minimize(loss) 
 
 # example of the error function, defined using tensorflow lib
@@ -78,13 +81,14 @@ def test1():
     orig_Ndiv  = coeff.shape[0]//Nscan
     npar       = 7 ##
     model = tf_wrap.tf_model_top([None,  Ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 0.5)
-    #model.restore(pathdat + 'test_model_save_2fa_2freq')
+    model.restore(pathdat + 'test_model_save_2fa_2freq')
 
     fa1        = 45.0#par[0]['fa1'][0][0][0].astype(np.float32)#35#30 #deg
     fa2        = 30.0#par[0]['fa2'][0][0][0].astype(np.float32)
     tr         = par[0]['tr'][0][0][0].astype(np.float32)#3.932#4.337 #ms
     ti         = par[0]['ti'][0][0][0].astype(np.float32)#11.0 #ms
     te         = par[0]['te'][0][0][0].astype(np.float32)#1.5 #ms
+    df_2freq   = par[0]['df_2freq'][0][0][0].astype(np.float32)
 
     far, trr,ter   = simut.rftr_const(Nk, 1.0, tr, te)
 
@@ -142,7 +146,7 @@ def test1():
         batch_xs_c1         = ssmrf.bloch_sim_batch_cuda2( batch_size, 100, Nk, PDr, T1r, T2r, dfr, M0, trr, ter, fa1*far, ti )        
         batch_xs_c2         = ssmrf.bloch_sim_batch_cuda2( batch_size, 100, Nk, PDr, T1r, T2r, dfr, M0, trr, ter, fa2*far, ti )
         #batch_xs_c3         = ssmrf.bloch_sim_batch_cuda2( batch_size, 100, Nk, PDr, T1r, T2r, dfr, M0, trr, ter, np.absolute(fa2*far), ti )
-        batch_xs_c3         = ssmrf.bloch_sim_batch_cuda2( batch_size, 100, Nk, PDr, T1r, T2r, dfr + 107.0, M0, trr, ter, fa2*far, ti )
+        batch_xs_c3         = ssmrf.bloch_sim_batch_cuda2( batch_size, 100, Nk, PDr, T1r, T2r, dfr + df_2freq, M0, trr, ter, fa2*far, ti )
       
 
 
@@ -168,7 +172,7 @@ def test1():
     
             normtc1 = np.linalg.norm(tc1)
 
-            if normtc1  > 0.01: 
+            if normtc1  > 0.02: 
                 batch_xs[dd,:] = tc1
             else:
                 batch_ys[dd,:] = np.zeros([1,npar])
@@ -193,11 +197,15 @@ def test2():
     imall = imall/np.ndarray.max(imall.flatten())
 
     ut.plotim3(imall.reshape(I.shape)[...,0],[5, -1],pause_close = 1)
+    timer = utc.timing()
 
     model   = tf_wrap.tf_model_top([None,  ndiv], [None,  npar], tf_prediction_func, tf_optimize_func, tf_error_func, arg = 1.0)
     model.restore(pathdat + 'test_model_save_2fa_2freq')
-
+    
+    timer.start()
     prey    = model.prediction(imall, np.zeros([imall.shape[0],npar]))
+    timer.stop().display()
+
     immatch = prey.reshape([nx, ny, nz, npar])
     #ut.plotim3(immatch[...,0],[10, -1],bar = 1, pause_close = 5)
     #ut.plotim3(immatch[...,1],[10, -1],bar = 1, pause_close = 5)

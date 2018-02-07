@@ -9,9 +9,11 @@ import utilities.utilities_func as ut
 from espirit.espirit_func import espirit_2d, espirit_3d
 import scipy.io as sio
 
+pathdat = '/working/larson/UTE_GRE_shuffling_recon/20170718_voluteer_ir_fulksp/exp2_ir_fulksp/'
+
 def test():
     ft = opts.FFT2d()    
-    mat_contents = sio.loadmat('/working/larson/UTE_GRE_shuffling_recon/20170718_voluteer_ir_fulksp/exp2_ir_fulksp/rawdata.mat')
+    mat_contents = sio.loadmat(pathdat + 'rawdata.mat')
     x    = mat_contents["da"].squeeze(axis = 0).squeeze(axis = 3)
     mask = mat_contents["mask"].squeeze(axis = 0).squeeze(axis = 3)
     Vim  = mat_contents["calib"][40,...]
@@ -50,7 +52,7 @@ def test():
     step = 1 #step size
     th   = 0.1 # theshold level
     xopt = solvers.FIST_3( Aopt.forward, Aopt.backward, dwt.backward, dwt.forward, b, Nite, step, th )
-  
+    sio.savemat(pathdat + 'mripy_recon_l1wavelet.mat', {'xopt':xopt})
     ut.plotim3(np.absolute(xopt[:,:,:]))
 
 #if __name__ == "__main__":

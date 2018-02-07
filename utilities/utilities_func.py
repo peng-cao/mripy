@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+mpl.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scipy.io as sio
